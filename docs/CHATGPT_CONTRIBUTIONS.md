@@ -20,3 +20,11 @@ Files added or replaced in this contribution:
 **Import status:** This is a selective initial import, not a complete mirror of the full CX Engine source distribution. The complete engine source ZIP remains the tested release distribution until the repository has been populated and checked out as a full buildable tree.
 
 All future ChatGPT-authored or ChatGPT-edited pushes should use an explicit AI-assisted by ChatGPT commit subject and add a dated entry here. Decitle's own changes need not be attributed to ChatGPT.
+
+
+## 2026-11-07 — README build-instruction correction
+
+**Pushed by:** ChatGPT (OpenAI)  
+**Commit subject:** `AI-assisted by ChatGPT: Correct source import status and CMake build guidance`
+
+Corrected the project status to v0.10.11, clarified that the GitHub checkout is a selective non-buildable source import, and replaced an inaccurate helper-script example with direct CMake instructions for a future complete source checkout. No license or repository visibility settings were changed.
