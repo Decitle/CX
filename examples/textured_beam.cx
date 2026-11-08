@@ -1,0 +1,23 @@
+# Textured beam and independent endpoint light (v0.10.11)
+# Place a tileable texture at assets/textures/beam_strip.png.
+# Create the beam after entering the room it should belong to.
+
+create beam "sun shaft" from (320, -80) to (320, 240) using {$beam_strip}
+set beam "sun shaft" width to 48
+set beam "sun shaft" opacity to 0.72
+set beam "sun shaft" tint to (255, 230, 190)
+set beam "sun shaft" texture_repeat to 64
+set beam "sun shaft" layer to "background"
+
+# This radial light is a separate contribution at the beam's endpoint.
+set beam "sun shaft" endpoint_light to true
+set beam "sun shaft" endpoint_light_radius to 180
+set beam "sun shaft" endpoint_light_intensity to 0.72
+set beam "sun shaft" endpoint_light_color to (255, 196, 132)
+
+# Move the endpoint while keeping the beam name and texture stable.
+on press key "E":
+    set beam "sun shaft" end to (360, 260)
+
+# Temporary effect example; set a positive lifetime for a short-lived beam:
+# set beam "sun shaft" lifetime to 2.5
