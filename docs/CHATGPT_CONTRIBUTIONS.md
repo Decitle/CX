@@ -28,3 +28,19 @@ All future ChatGPT-authored or ChatGPT-edited pushes should use an explicit AI-a
 **Commit subject:** `AI-assisted by ChatGPT: Correct source import status and CMake build guidance`
 
 Corrected the project status to v0.10.11, clarified that the GitHub checkout is a selective non-buildable source import, and replaced an inaccurate helper-script example with direct CMake instructions for a future complete source checkout. No license or repository visibility settings were changed.
+
+## 2026-11-08 — public-facing repository and documentation preparation
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request
+
+Changes made:
+
+- Rewrote `README.md` to present CX first as a graphical 2D game engine, with the CLI described as a separate supporting tool.
+- Separated the wider v0.10.14 development checkpoint from the actual contents and readiness of this selective GitHub repository.
+- Added `docs/index.md` as a documentation landing page and `docs/_config.yml` to prepare the folder for GitHub Pages.
+- Added public-facing project status, platform-support, release-format, and roadmap pages.
+- Explicitly recorded that the current GitHub checkout is not a complete buildable engine, that Windows and other non-Linux targets are not verified, and that no GitHub Release downloads are published yet.
+- Added the planned source ZIP/TAR.GZ and native runtime package matrix as a future release design, not as existing assets.
+- Kept the BSD 3-Clause license unchanged.
+
+No repository visibility, license, GitHub Pages deployment, or release settings were changed. No executable or release asset was uploaded to GitHub in this contribution.
