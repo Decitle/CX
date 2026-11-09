@@ -17,7 +17,7 @@ Files added or replaced in this contribution:
 - docs/TEXTURED_BEAMS-v0.10.11.md — beam API, rendering-order, endpoint-light, lifecycle, and limitation documentation.
 - examples/textured_beam.cx — example script for a textured beam and independent endpoint light.
 
-**Import status:** This is a selective initial import, not a complete mirror of the full CX Engine source distribution. The complete engine source ZIP remains the tested release distribution until the repository has been populated and checked out as a full buildable tree.
+**Import status:** This is a selective initial import, not a complete mirror of the full CX Engine source distribution. The full engine source and build files were not part of this selective repository import. The repository remains incomplete until the complete, buildable project is checked in and verified.
 
 All future ChatGPT-authored or ChatGPT-edited pushes should use an explicit AI-assisted by ChatGPT commit subject and add a dated entry here. Decitle's own changes need not be attributed to ChatGPT.
 
