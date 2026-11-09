@@ -213,9 +213,12 @@ bool parseCsv(std::string_view text, VariableStorage::VariableMap& output, std::
             output[name] = Value(lowered == "true");
         } else if (type == "number") {
             const auto numberText = trim(raw);
-            double number{};
-            const auto parsed = std::from_chars(numberText.data(), numberText.data() + numberText.size(), number);
-            if (parsed.ec != std::errc{} || parsed.ptr != numberText.data() + numberText.size() || !std::isfinite(number)) {
+            // Reuse the Value parser so persisted numeric values work on standard
+            // libraries that do not implement floating-point std::from_chars
+            // (notably the Apple libc++ shipped with current Xcode runners).
+            const Value parsed = Value::fromString(numberText);
+            const double number = parsed.numberOr();
+            if (!parsed.isNumber() || !std::isfinite(number)) {
                 noteInvalidRow(std::string(sourceName) + " line " + std::to_string(lineNumber) + " has an invalid number.");
                 continue;
             }

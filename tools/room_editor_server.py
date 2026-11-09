@@ -136,10 +136,10 @@ class Handler(BaseHTTPRequestHandler):
         # selected game folder. Keep those roots distinct when --project-root is used.
         if relative == "tools/room-editor.html":
             target = (EDITOR_ROOT / relative).resolve()
-            allowed_root = EDITOR_ROOT
+            allowed_root = EDITOR_ROOT.resolve()
         else:
             target = (ROOT / relative).resolve()
-            allowed_root = ROOT
+            allowed_root = ROOT.resolve()
         try:
             target.relative_to(allowed_root)
         except ValueError:

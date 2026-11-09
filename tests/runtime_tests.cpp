@@ -844,6 +844,7 @@ void testVariableStorageSavePreservesUnexpectedDestination() {
     std::string contents;
     std::getline(sentinel, contents);
     expect(contents == "preserve this directory", "the prior destination contents must remain intact after save failure");
+    sentinel.close(); // Windows cannot remove a directory while a child file is still open.
     expect(!std::filesystem::exists(nonemptyRoot / "variables.csv.tmp"), "failed replacement should clean up its temporary file");
     expect(!error.empty(), "failed replacement should explain the storage error");
     std::filesystem::remove_all(nonemptyRoot);

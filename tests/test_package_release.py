@@ -84,7 +84,7 @@ class PackageReleaseTests(unittest.TestCase):
                 f"SFML_DIR:PATH={sdk / 'lib' / 'cmake' / 'SFML'}\n",
                 encoding="utf-8",
             )
-            self.assertEqual(runtime_package.find_sfml_license(build), expected)
+            self.assertEqual(runtime_package.find_sfml_license(build), expected.resolve())
 
     def test_unexpected_binary_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -152,7 +152,7 @@ class PackageReleaseTests(unittest.TestCase):
                 self.assertEqual(zipped.read("bin/cx-engine.exe"), b"Windows executable fixture")
                 self.assertEqual(zipped.read("bin/cx-cli.exe"), b"Windows CLI fixture")
                 self.assertEqual(zipped.read("bin/sfml-graphics-3.dll"), b"SFML DLL fixture")
-                self.assertEqual(zipped.read("project/scripts/main.cx"), b"broadcast \"ready\"\n")
+                self.assertEqual(zipped.read("project/scripts/main.cx").replace(b"\r\n", b"\n"), b"broadcast \"ready\"\n")
                 self.assertEqual(zipped.read("third-party-licenses/SFML-LICENSE.txt"), b"SFML license fixture\n")
                 payloads = {
                     name: zipped.read(name)
