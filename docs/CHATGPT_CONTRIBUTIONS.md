@@ -83,3 +83,14 @@ Changes prepared for the follow-up review commit:
 
 Local evidence: Linux graphical build 19/19 CTest; package tests 6/6; Room Studio HTTP tests 9/9; forced portable-fallback runtime conversion tests passed. The native CI rerun is required before marking any additional architecture verified. No merge, release, tag, license change, or repository visibility change is part of this contribution.
 
+
+## 2026-11-09 — runtime package payload cleanup
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request  
+**Branch:** `complete-source-import-v0.10.14-review`  
+**Commit subject:** `AI-assisted by ChatGPT: Keep runtime packages free of SDK and Windows system files`
+
+- Replaced whole-install-prefix copying with a runtime-only stage collector. Application archives now retain executables, shared runtime libraries, and macOS Frameworks, while omitting SDK headers, static libraries, CMake metadata, and development documentation.
+- Added an explicit Windows system-DLL exclusion list plus generic API-set exclusions. Unknown application DLLs remain eligible for bundling.
+- Expanded the Windows packaging regression to verify that a future SFML runtime DLL is retained while `kernel32.dll`, SDK headers, static libraries, and SDK docs are omitted.
+- Local validation: 18/18 headless CTest targets and 6/6 packaging tests passed. A new native CI run is required before treating the newly slimmed Windows package as verified.

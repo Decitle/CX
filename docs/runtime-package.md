@@ -1,6 +1,6 @@
 # CX Engine starter runtime
 
-This folder contains a native CX Engine build and a minimal starter project. It is intended to help you begin experimenting without installing a C++ compiler or creating a project layout by hand.
+This folder contains a native CX Engine build and a minimal starter project. It is intended to help you begin experimenting without installing a C++ compiler or creating a project layout by hand. Packages contain only executables, non-system shared runtime libraries, license notices, and the starter project; SDK headers, static development libraries, CMake metadata, and operating-system DLLs are deliberately excluded.
 
 ## Requirements
 

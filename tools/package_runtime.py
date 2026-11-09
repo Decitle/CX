@@ -28,6 +28,152 @@ def copy_tree(source: Path, destination: Path) -> None:
     shutil.copytree(source, destination)
 
 
+
+# These are Windows operating-system components, not application redistributables.
+# CMake's dependency scanner can report them as resolved imports even though every
+# supported Windows installation already provides them. Keep this list conservative:
+# unknown DLLs (including a future shared SFML build) are retained for the application.
+WINDOWS_SYSTEM_DLLS = frozenset({
+    "advapi32.dll",
+    "aepic.dll",
+    "audioses.dll",
+    "avrt.dll",
+    "bcp47langs.dll",
+    "bcrypt.dll",
+    "bcryptprimitives.dll",
+    "cabinet.dll",
+    "cfgmgr32.dll",
+    "cldapi.dll",
+    "combase.dll",
+    "comppkgsup.dll",
+    "crypt32.dll",
+    "cryptbase.dll",
+    "cryptsp.dll",
+    "dbghelp.dll",
+    "devobj.dll",
+    "devrtl.dll",
+    "dhcpcsvc.dll",
+    "dhcpcsvc6.dll",
+    "dnsapi.dll",
+    "dpapi.dll",
+    "dsparse.dll",
+    "faultrep.dll",
+    "fltlib.dll",
+    "gdi32.dll",
+    "glu32.dll",
+    "httpapi.dll",
+    "icu.dll",
+    "imagehlp.dll",
+    "iphlpapi.dll",
+    "kernel32.dll",
+    "kernelbase.dll",
+    "logoncli.dll",
+    "mmdevapi.dll",
+    "mpr.dll",
+    "msasn1.dll",
+    "msimg32.dll",
+    "msvcp_win.dll",
+    "msvcrt.dll",
+    "ncrypt.dll",
+    "netapi32.dll",
+    "netutils.dll",
+    "nrtapi.dll",
+    "nsi.dll",
+    "ntasn1.dll",
+    "ntdll.dll",
+    "oleaut32.dll",
+    "opengl32.dll",
+    "profapi.dll",
+    "propsys.dll",
+    "rmclient.dll",
+    "rpcrt4.dll",
+    "samlib.dll",
+    "sechost.dll",
+    "shcore.dll",
+    "srvcli.dll",
+    "sspicli.dll",
+    "tbs.dll",
+    "tokenbinding.dll",
+    "umpdc.dll",
+    "user32.dll",
+    "userenv.dll",
+    "webio.dll",
+    "websocket.dll",
+    "wer.dll",
+    "win32u.dll",
+    "winhttp.dll",
+    "winmm.dll",
+    "winmmbase.dll",
+    "winnsi.dll",
+    "winsta.dll",
+    "wintrust.dll",
+    "wkscli.dll",
+    "wldap32.dll",
+    "ws2_32.dll",
+    "xmllite.dll",
+})
+
+
+def copy_runtime_stage(stage: Path, destination: Path, target: str) -> None:
+    """Copy only runtime payloads from CMake's install prefix.
+
+    SFML's install rules also populate headers, static libraries, CMake metadata,
+    and docs. Those are SDK/development files, not required to run CX. Keep native
+    executables and shared runtime libraries only; omit known Windows system DLLs.
+    """
+    if not stage.is_dir():
+        raise RuntimeError(f"CMake install stage is missing: {stage}")
+
+    windows = target.startswith("windows-")
+    macos = target.startswith("macos-")
+    copied = 0
+    stage_root = stage.resolve()
+    for source in sorted(stage.rglob("*")):
+        if not source.is_file():
+            continue
+        if not source.resolve().is_relative_to(stage_root):
+            raise RuntimeError(f"Runtime stage contains a symlink escaping its root: {source}")
+        relative = source.relative_to(stage)
+        parts = relative.parts
+        top = parts[0] if parts else ""
+        suffix = source.suffix.lower()
+        name = source.name.lower()
+
+        keep = False
+        if top == "bin":
+            if windows:
+                keep = suffix == ".exe" or (
+                    suffix == ".dll"
+                    and name not in WINDOWS_SYSTEM_DLLS
+                    and not name.startswith(("api-ms-", "ext-ms-"))
+                )
+            else:
+                keep = suffix in {"", ".so", ".dylib"} or ".so." in name or ".dylib." in name
+        elif top == "lib":
+            if windows:
+                keep = suffix == ".dll" and name not in WINDOWS_SYSTEM_DLLS and not name.startswith(("api-ms-", "ext-ms-"))
+            elif macos:
+                keep = ".dylib" in name
+            else:
+                keep = ".so" in name
+        elif top == "Frameworks":
+            keep = True
+
+        if not keep:
+            continue
+        output = destination / relative
+        output.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, output)
+        copied += 1
+
+    required = ("bin/cx-engine.exe", "bin/cx-cli.exe") if windows else ("bin/cx-engine", "bin/cx-cli")
+    for relative in required:
+        if not (destination / relative).is_file():
+            raise RuntimeError(f"CMake install stage did not contain required runtime file: {relative}")
+    if copied < len(required):
+        raise RuntimeError("Runtime install stage did not contain the expected executable payload")
+
+
 def collect_files(root: Path) -> list[Path]:
     files=[]
     for path in sorted(root.rglob("*")):
@@ -170,7 +316,7 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix="cx-runtime-package-") as tmp:
             root=Path(tmp)/"CXEngine"
             root.mkdir()
-            shutil.copytree(args.stage,root,dirs_exist_ok=True)
+            copy_runtime_stage(args.stage, root, args.target)
             copy_tree(args.project,root/"project")
             shutil.copy2(args.source_root/"LICENSE",root/"LICENSE")
             shutil.copy2(args.source_root/"docs"/"runtime-package.md",root/"README.md")
