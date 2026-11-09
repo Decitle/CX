@@ -3,7 +3,7 @@
 **Development checkpoint:** v0.10.14  
 **Repository branch:** `main`  
 **Repository state:** selective source import; not yet a complete standalone build  
-**Release state:** no tagged engine release or published runtime downloads
+**Release state:** no published GitHub Release or downloadable runtime packages
 
 ## Two different status views
 
