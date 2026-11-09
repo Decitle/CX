@@ -1,0 +1,26 @@
+# Projectile pattern example for CX Engine v0.9.0.
+# This example assumes assets/textures/ contains boss.png, player.png, and ember_orb.png.
+# It is a focused script example, not a complete room or game project.
+
+create entity "warden" with texture {$boss}
+set entity "warden" position to (320, 160)
+set entity "warden" health to 20
+
+create entity "player" with texture {$player}
+set entity "player" position to (160, 160)
+set entity "player" health to 5
+
+# Press 1 to make a full-circle burst. One shot is aligned toward the player's current position.
+on press key "1":
+    fire projectile pattern radial from "warden" toward "player" with texture {$ember_orb} count 8 speed 3 damage 1
+
+# Press 2 to make a five-shot fan covering a 60-degree arc.
+on press key "2":
+    fire projectile pattern fan from "warden" toward "player" with texture {$ember_orb} count 5 spread 60 speed 4 damage 1
+
+# The legacy single-shot command still works for a straightforward aimed attack.
+on press key "3":
+    fire projectile from "warden" toward "player" with texture {$ember_orb} speed 5 damage 1
+
+on projectile hit entity "player":
+    broadcast "The player was hit by a projectile."

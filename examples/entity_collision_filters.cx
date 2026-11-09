@@ -1,0 +1,29 @@
+# Reusable entity labels and collision filtering.
+# This example creates no player-facing narrative or tutorial text.
+
+create entity "warden" with texture {$boss}
+set entity "warden" position to (128, 96)
+set entity "warden" kind to "boss"
+set entity "warden" team to "hostile"
+set entity "warden" tags to "boss, armored, phase_one"
+set entity "warden" collision layer to "actors, hazards"
+set entity "warden" collision mask to "actors, projectiles, props, triggers"
+set entity "warden" collision projectile mask to "actors, props"
+
+create entity "player" with texture {$player}
+set entity "player" position to (64, 96)
+set entity "player" kind to "player"
+set entity "player" team to "friendly"
+set entity "player" tags to "controllable, living"
+set entity "player" collision layer to "actors"
+set entity "player" collision mask to "actors, projectiles, pickups, hazards, triggers"
+
+on load:
+    if entity "warden" kind is "boss" and entity "warden" team is "hostile":
+        set {boss_is_hostile} to true
+    if entity "warden" has tag "armored":
+        set {boss_is_armored} to true
+
+on projectile hit entity "warden":
+    if {entity::warden::health} <= 0:
+        delete entity "warden"

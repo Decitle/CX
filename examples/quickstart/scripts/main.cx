@@ -1,0 +1,14 @@
+# CX Engine quickstart
+# Press Space to increment the score. Press R to reset it.
+set {score} to 0
+
+on load:
+    broadcast "Welcome to CX Engine! Press SPACE to score."
+
+on press key "SPACE":
+    add 1 to {score}
+    broadcast "Score: {score}"
+
+on press key "R":
+    set {score} to 0
+    broadcast "Score reset."

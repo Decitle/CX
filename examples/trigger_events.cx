@@ -1,0 +1,21 @@
+# Named trigger enter/exit lifecycle events.
+# Put a texture such as assets/textures/zone.png in the project before running.
+
+create entity "player" with texture {$player}
+create entity "door_area" with texture {$zone}
+set entity "player" position to (96, 96)
+set entity "door_area" position to (128, 96)
+set entity "door_area" size to (80, 80)
+
+# A trigger accepts actors, and actors must accept the trigger channel too.
+set entity "door_area" collision layer to "triggers"
+set entity "door_area" collision mask to "actors"
+set entity "player" collision mask to "triggers, props, hazards"
+
+on entity "player" enter trigger "door_area":
+    set {player_in_door_area} to true
+    set {last_trigger_actor} to {_trigger_actor}
+    set {last_trigger_entity} to {_trigger_entity}
+
+on entity "player" exit trigger "door_area":
+    set {player_in_door_area} to false

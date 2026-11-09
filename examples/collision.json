@@ -1,0 +1,13 @@
+{
+  "schema": "cx-collision",
+  "version": 1,
+  "default": "none",
+  "textures": {
+    "stone_wall": "solid",
+    "stone_pillar": "solid",
+    "wood_crate": "solid",
+    "stone_floor": "none",
+    "moss": "none",
+    "grass": "none"
+  }
+}

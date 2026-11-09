@@ -1,0 +1,21 @@
+# Named audio objects can be built, modified, visualized, and reused later.
+# Run this script from the project. Output files are written under assets/audio/.
+on load:
+    create wave "soft_chime" duration 0.35 sample_rate 44100
+    add sine wave to "soft_chime" frequency 440 amplitude 0.55 phase 0
+    add sine wave to "soft_chime" frequency 660 amplitude 0.22 phase 0.2
+    add sine wave to "soft_chime" frequency 880 amplitude 0.10 phase 0.4
+    set wave "soft_chime" envelope attack 0.01 decay 0.08 sustain 0.55 release 0.18
+    normalize wave "soft_chime"
+    save wave "soft_chime" to "assets/audio/soft_chime.wav"
+    visualize wave "soft_chime" to "assets/audio/soft_chime.svg"
+    play sound "soft_chime"
+
+    # A named file created by the wave commands can be used through {@soft_chime}
+    # after it exists on disk at the start of a later launch.
+    set {world_detail} to fbm2d(18.5, 42.2, 90210, 5)
+    set {procedural_grain} to noise2d(14.2, 5.1, 77)
+    broadcast "World detail: {world_detail}; procedural grain: {procedural_grain}"
+
+on press key "T":
+    play sound "soft_chime"

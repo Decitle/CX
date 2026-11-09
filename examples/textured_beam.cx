@@ -15,9 +15,8 @@ set beam "sun shaft" endpoint_light_radius to 180
 set beam "sun shaft" endpoint_light_intensity to 0.72
 set beam "sun shaft" endpoint_light_color to (255, 196, 132)
 
-# Move the endpoint while keeping the beam name and texture stable.
 on press key "E":
     set beam "sun shaft" end to (360, 260)
 
-# Temporary effect example; set a positive lifetime for a short-lived beam:
+# Set a positive lifetime for a short-lived beam; zero is persistent.
 # set beam "sun shaft" lifetime to 2.5

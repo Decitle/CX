@@ -1,0 +1,12 @@
+# Seeded streams make procedural choices repeatable across identical runs.
+on load:
+    seed random stream "encounters" with 4815
+    seed random stream "loot" with 90210
+    seed random stream "decoration" with 22017
+    set {encounter_kind} to random_choice("encounters", "slime", "bat", "guard")
+    set {starting_loot_count} to random_int("loot", 1, 4)
+    set {decoration_offset} to random_float("decoration")
+
+on press key "L":
+    set {loot_roll} to random_int("loot", 1, 100)
+    broadcast "Loot roll: {loot_roll}"

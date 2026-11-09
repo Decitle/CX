@@ -1,0 +1,25 @@
+# Collision-aware entity tween example (v0.10.10)
+# The wall is authored as solid in assets/collision.json.
+
+load room "workshop"
+create entity "player" with texture {$player}
+create entity "crate" with texture {$crate}
+
+set entity "player" position to (48, 96)
+set entity "player" tween collision response to "slide"
+set entity "crate" position to (144, 96)
+set entity "crate" blocks movement to true
+set entity "crate" collision layer to "props"
+set entity "crate" collision mask to "actors"
+set entity "player" collision mask to "props"
+
+on load:
+    enter room "workshop" at {entrance::workshop::spawn}
+
+on press key "SPACE":
+    tween entity "player" to (240, 160) over 1 second easing ease_in_out
+
+on tween complete for entity "player":
+    # With slide response, these are the actual final coordinates.
+    set {player_tween_finished_x} to {_tween_x}
+    set {player_tween_finished_y} to {_tween_y}

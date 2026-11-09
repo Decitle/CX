@@ -1,0 +1,44 @@
+# Interaction focus chooses the nearest eligible target for each configured actor.
+# The script still owns the activation key and any displayed prompt text.
+
+on load:
+    create entity "player" with texture {$hero}
+    create entity "ancient_chest" with texture {$chest}
+    create entity "stone_altar" with texture {$altar}
+
+    set entity "player" position to (160, 240)
+    set entity "player" interaction range to 96
+
+    set entity "ancient_chest" position to (232, 240)
+    set entity "ancient_chest" interactable to true
+    set entity "ancient_chest" collision layer to "props"
+    set entity "ancient_chest" collision mask to "actors"
+
+    set entity "stone_altar" position to (160, 320)
+    set entity "stone_altar" interactable to true
+    set entity "stone_altar" collision layer to "props"
+    set entity "stone_altar" collision mask to "actors"
+
+    set entity "player" collision layer to "actors"
+    set entity "player" collision mask to "props"
+
+on entity "player" focus enter entity "ancient_chest":
+    set {interaction_hint} to "Press E to open the chest"
+
+on entity "player" focus exit entity "ancient_chest":
+    set {interaction_hint} to ""
+
+on entity "player" focus enter entity "stone_altar":
+    set {interaction_hint} to "Press E to inspect the altar"
+
+on entity "player" focus exit entity "stone_altar":
+    set {interaction_hint} to ""
+
+on press key "E":
+    if entity "player" is focused on entity "ancient_chest":
+        broadcast "You open the chest."
+        set entity "ancient_chest" interactable to false
+
+on press key "Q":
+    if entity "player" is focused on entity "stone_altar":
+        broadcast "The altar answers with a low hum."

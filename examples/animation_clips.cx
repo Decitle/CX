@@ -1,0 +1,21 @@
+# Named animation clips are advanced by the logic tick, not the render loop.
+# Configure the sheet before defining clips. Rows and frame indices are zero-based.
+on load:
+    create entity "recovering_actor" with texture {$hero}
+    set entity "recovering_actor" size to (48, 48)
+    set entity "recovering_actor" position to (320, 240)
+    set entity "recovering_actor" animation sheet to (32, 32) columns 6 rows 8
+
+    define animation "wake" for entity "recovering_actor" frames 0 to 3 row 0 at 8 fps once
+    define animation "walk" for entity "recovering_actor" frames 0 to 5 row facing at 10 fps looping
+    play animation "wake" for entity "recovering_actor"
+
+on animation complete "wake" for entity "recovering_actor":
+    broadcast "The wake animation has finished."
+    play animation "walk" for entity "recovering_actor"
+
+on press key "W":
+    play animation "wake" for entity "recovering_actor"
+
+on press key "S":
+    stop animation for entity "recovering_actor"

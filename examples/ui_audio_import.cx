@@ -1,0 +1,32 @@
+# This example keeps the existing canvas/button system unchanged.
+# Open the import panel with I, then drag a WAV/OGG/FLAC/AIFF file onto the import button.
+set {project1} to "default"
+
+if {buttonsound1::%{project1}%} is not set:
+    set {buttonsound1::%{project1}%} to none
+
+on press key "I":
+    open canvas "AudioImport"
+
+on file attach:
+    if mouse cursor is over button "sound_import_btn":
+        set {buttonsound1::%{project1}%} to {_attached_file}
+        broadcast "<#59ccff>Sound imported for profile <#ffffff>{project1}</#ffffff>!"
+    else:
+        broadcast "<#ffbd59>Drop the file directly on the Import Sound button.</#ffbd59>"
+
+on click button "play_sound_btn":
+    if {buttonsound1::%{project1}%} is set:
+        play sound {buttonsound1::%{project1}%}
+    else:
+        broadcast "<#ffbd59>Import a sound first.</#ffbd59>"
+
+on press key "ESCAPE":
+    close canvas "AudioImport"
+
+canvas "AudioImport":
+    create panel at (340, 190) size (600, 310) color (14, 23, 39, 245)
+    create text "<#59ccff>Audio Import</#59ccff>" at (375, 220) font_size 26
+    create text "Drag an audio file from your file manager onto this button." at (375, 265) font_size 16
+    create button "sound_import_btn" at (375, 310) size (520, 56) label "Drop audio file here"
+    create button "play_sound_btn" at (375, 385) size (250, 48) label "Play imported sound"

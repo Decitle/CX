@@ -1,0 +1,14 @@
+# Deterministic scripted movement for a world entity.
+# All coordinates and arc height are measured in world pixels.
+create entity "boulder" with texture {$stone}
+set entity "boulder" position to (180, 440)
+
+on press key "SPACE":
+    tween entity "boulder" to (700, 360) over 0.9 seconds easing ease_in_out with arc height 120
+
+on press key "C":
+    cancel tween for entity "boulder"
+
+on tween complete for entity "boulder":
+    set {boulder_arrived_at_x} to {_tween_x}
+    set {boulder_arrived_at_y} to {_tween_y}

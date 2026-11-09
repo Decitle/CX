@@ -7,9 +7,7 @@ namespace cx {
 bool buildBeamQuad(const BeamEffect& beam, BeamQuad& output) noexcept {
     const float values[] = {beam.start.x, beam.start.y, beam.end.x, beam.end.y,
                             beam.width, beam.textureRepeatLength};
-    for (const float value : values) {
-        if (!std::isfinite(value)) return false;
-    }
+    for (const float value : values) if (!std::isfinite(value)) return false;
     if (beam.width <= 0.0F || beam.textureRepeatLength <= 0.0F) return false;
 
     const float dx = beam.end.x - beam.start.x;
@@ -34,12 +32,8 @@ bool buildBeamQuad(const BeamEffect& beam, BeamQuad& output) noexcept {
     BeamQuad candidate;
     candidate.length = length;
     candidate.vertices = {{
-        {startLeft, 0.0F, 0.0F},
-        {endLeft, endU, 0.0F},
-        {endRight, endU, 1.0F},
-        {startLeft, 0.0F, 0.0F},
-        {endRight, endU, 1.0F},
-        {startRight, 0.0F, 1.0F}
+        {startLeft, 0.0F, 0.0F}, {endLeft, endU, 0.0F}, {endRight, endU, 1.0F},
+        {startLeft, 0.0F, 0.0F}, {endRight, endU, 1.0F}, {startRight, 0.0F, 1.0F}
     }};
     output = candidate;
     return true;

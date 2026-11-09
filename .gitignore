@@ -1,68 +1,54 @@
-# Prerequisites
-*.d
+# CMake and compiler output
+/build/
+/build-*/
+/cmake-build-*/
+/CMakeFiles/
+/CMakeCache.txt
+/Testing/
+/compile_commands.json
 
-# Compiled Object files
-*.slo
-*.lo
+# Compiled binaries and libraries
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-*.so.*
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
 *.a
 *.lib
-
-# Executables
+*.so
+*.so.*
+*.dll
+*.dylib
 *.exe
-*.out
-*.app
 
-# Build directories
-build/
-Build/
-build-*/
+# IDE/editor state
+.vscode/
+.idea/
+*.user
+*.suo
 
-# CMake generated files
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-install_manifest.txt
-compile_commands.json
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
 
-# Temporary files
+# Runtime project data
+.variables.lock
+
+# Generated per-project persistent state (never commit sample save data)
+variables.csv
+variables.csv.bak
+variables.cxv
+variables.cxv.bak
+variables.meta
 *.tmp
-*.log
-*.bak
-*.swp
 
-# vcpkg
-vcpkg_installed/
+# Generated release staging and archive manifests
+/dist/
+/dist-*/
+/stage/
+/stage-*/
+/PACKAGE-MANIFEST-v*.tsv
 
-# debug information files
-*.dwo
-
-# test output & cache
-Testing/
-.cache/
+# Desktop operating-system metadata
+.DS_Store
+Thumbs.db

@@ -1,0 +1,20 @@
+# First-class list variables and reusable functions in CX v0.6.1
+function item_label(kind, index):
+    return {_kind} + " #" + {_index}
+
+on load:
+    set {inventory::*} to "Potion", "Rusty Key", "Map"
+    set {inventory::favorite} to "Compass"
+    add "Torch" to {inventory::*}
+
+    broadcast "Inventory entries:"
+    loop {inventory::*}:
+        broadcast item_label(loop-value, loop-index)
+
+    set {score} to 21
+    set {double_score} to ({score} + 4) * 2
+    broadcast "Score result: {double_score}"
+
+    set {inventory_copy::*} to {inventory::*}
+    remove "Rusty Key" from {inventory_copy::*}
+    delete {inventory_copy::favorite}
