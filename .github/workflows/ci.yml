@@ -11,7 +11,9 @@ permissions:
 
 concurrency:
   group: cx-ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Keep a running native matrix alive while a follow-up commit queues a new run.
+  # This preserves completed platform evidence and downloadable artifacts.
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -53,7 +55,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libgl1-mesa-dev libfreetype6-dev libudev-dev libx11-dev libxrandr-dev \
+            libgl1-mesa-dev libfreetype6-dev libharfbuzz-dev libudev-dev libx11-dev libxrandr-dev \
             libxcursor-dev libxi-dev xvfb
 
       - name: Configure (Windows)

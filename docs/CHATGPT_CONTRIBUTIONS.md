@@ -76,8 +76,10 @@ Changes prepared for the follow-up review commit:
 
 - Added compile-time detection for floating-point `std::from_chars`; compilers with the overload retain that path, while Apple libc++ without it uses a classic-locale, full-token stream parser.
 - Added strict value-conversion regressions for signs, exponents, whitespace, partial tokens, out-of-range values, NaN, and infinity.
-- Added `libfreetype6-dev` to both Linux CI and release workflow dependency setup, matching SFML Graphics' source-build requirement.
-- Updated the preview changelog and platform/project status to distinguish the initial native CI failures from verified platform support.
+- Added `libfreetype6-dev` and `libharfbuzz-dev` to both Linux CI and release workflow dependency setup, matching SFML Graphics' source-build requirements revealed by sequential configure runs.
+- Added the direct `<sstream>` include to `src/diagnostics.cpp` after libc++ caught the prior reliance on a transitive include.
+- Disabled cancel-in-progress for same-branch CI runs so a newer commit does not erase useful platform build/package evidence from a still-running matrix.
+- Updated the preview changelog and platform/project status to distinguish Windows ARM64 compile evidence and partial macOS build evidence from full platform verification.
 
 Local evidence: Linux graphical build 19/19 CTest; package tests 6/6; Room Studio HTTP tests 9/9; forced portable-fallback runtime conversion tests passed. The native CI rerun is required before marking any additional architecture verified. No merge, release, tag, license change, or repository visibility change is part of this contribution.
 

@@ -85,7 +85,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libgl1-mesa-dev libfreetype6-dev libudev-dev libx11-dev libxrandr-dev \
+            libgl1-mesa-dev libfreetype6-dev libharfbuzz-dev libudev-dev libx11-dev libxrandr-dev \
             libxcursor-dev libxi-dev xvfb
       - name: Configure (Windows)
         if: runner.os == 'Windows'

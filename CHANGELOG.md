@@ -4,8 +4,10 @@
 
 - Added a portable floating-point parsing path for standard libraries that do not provide the floating-point `std::from_chars` overload. Implementations with that overload retain the original fast, locale-independent path; the fallback uses the classic locale and still requires a complete token.
 - Expanded value-conversion regressions for scientific notation, fractional values, trimming rules, leading plus signs, partial numbers, overflow, NaN, and infinity.
-- Added the missing FreeType development package to Linux CI and release-runner setup, matching SFML Graphics' source-build dependency.
-- The first native CI run exposed these portability/configuration issues on macOS and Linux; fixes are on the review branch and require a fresh CI run. Windows x64 and ARM64 jobs had reached compilation but had not yet completed when this update was prepared.
+- Added the FreeType and HarfBuzz development packages to Linux CI and release-runner setup, matching SFML Graphics' source-build dependencies. Sequential configure attempts identified both required packages; the workflow now installs both.
+- Added the missing direct `<sstream>` include to `src/diagnostics.cpp`. Apple's libc++ build exposed this header-hygiene defect after the floating-point parsing fix allowed compilation to progress further.
+- The first native CI run exposed the macOS libc++ portability issue; its next run compiled with the fallback. The same run showed Linux's font-stack dependencies were incomplete, prompting the FreeType and HarfBuzz workflow fixes.
+- Windows ARM64 completed its native compile in the first matrix run, but its CTest, graphical smoke, and packaging steps were canceled when the follow-up source commit superseded that run. Windows x64 configuration succeeded but the build did not finish before cancellation.
 - Rebuilt locally on Linux x86_64: 19/19 CTest, 6/6 package tests, and 9/9 Room Studio HTTP tests. A separate headless build forced the portable floating-point fallback and passed its runtime conversion tests.
 - No engine project format, script syntax, persistent save format, license, or repository visibility change.
 
