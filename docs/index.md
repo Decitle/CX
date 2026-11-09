@@ -12,9 +12,9 @@ CX is a graphical 2D game engine built around a C++20 runtime and a readable, Sk
 - [Projects and rooms](projects-and-rooms.md) — project structure, assets, room files, and initialization.
 - [Room Studio](room-studio.md) — use the local browser-based room editor.
 - [Engine architecture](architecture.md) — understand the core, graphical host, CLI, and extension boundaries.
-- [Platform support](platform-support.md) — what has actually been built and what still needs verification.
+- [Platform support](platform-support.md) — native CI results and platform-specific limits.
 - [Testing](testing.md) — run the automated suite and understand its coverage.
-- [Release format](release-format.md) — planned source and starter-runtime downloads.
+- [Release format](release-format.md) — automated source and native runtime release packages.
 - [Runtime package guide](runtime-package.md) — launch the included starter workspace and understand its contents.
 - [Roadmap](roadmap.md) — development priorities and v1.0 exit criteria.
 
@@ -31,4 +31,4 @@ Feature-level details live in [the feature guides](features/).
 
 ## Project status
 
-The v0.10.14 development baseline has a functioning Linux x86_64 graphical build and a clean-source test run of 19/19 CTest targets. Native Windows and additional architecture jobs are configured in the CI workflow, but no successful native results have been recorded yet. SFML's Linux window backend uses XWayland on Wayland desktops; a native Wayland backend is not currently provided. Read [Project status](project-status.md) before treating any future platform or feature as supported.
+The complete curated engine source is merged into `main`. GitHub Actions run #6 passed the six-target native CI matrix (Linux x86_64/ARM64, Windows x86_64/ARM64, macOS x86_64/ARM64). Build, CTest, and starter-project checks passed on all six targets; graphical startup smoke tests passed on Linux and Windows runners. The official pre-release tag and GitHub Release have not yet been published. Read [Project status](project-status.md) and [Platform support](platform-support.md) for evidence and limitations.

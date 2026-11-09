@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.10.14-preview.5 — complete source import and native CI (2026-11-09)
+
+- Merged the complete curated CX Engine source, CMake build, tests, examples, Room Studio tooling, licenses, and documentation into the existing `main` branch.
+- Added six native CI targets: Linux x86_64/ARM64, Windows x86_64/ARM64, and macOS x86_64/ARM64. Native CI run #6 passed the build, CTest, and starter-project check on all six targets.
+- Added native graphical startup smoke checks for Linux and Windows runners. The current automated workflow does not perform macOS graphical smoke tests.
+- Tightened runtime packaging to exclude Windows system DLLs and SDK/development files; starter save state and lock files are rejected, and graphical smoke tests use a disposable project copy.
+- Added user-facing documentation for platform support, release automation, first-use instructions, and the downloadable runtime layout.
+- Official release assets and the public GitHub Pages deployment still require the maintainer's release-tag and repository-settings steps.
+
 ## v0.10.14-preview.5 — native runtime packaging cleanup (2026-11-09)
 
 - Tightened starter runtime packaging to include only executable files and required non-system shared runtime libraries. SFML headers, static libraries, CMake package metadata, and SDK documentation are not copied into application downloads.

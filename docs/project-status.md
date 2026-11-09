@@ -1,10 +1,10 @@
 # Project status
 
-**Development checkpoint:** v0.10.14-preview.3 (pre-release candidate; not published)  
-**Source repository:** complete curated C++20 source tree, build system, regression tests, examples, tools, and public documentation  
-**Verified baseline:** Linux x86_64 SFML 3.1.0 graphical Release build, clean-source extraction build, and 19/19 CTest  
-**Native Windows status:** not yet verified; native CI is configured but has not produced a result  
-**Wayland status:** works through XWayland when available; no native Wayland backend in SFML 3.1.0
+**Development checkpoint:** v0.10.14-preview.5 (pre-release candidate; no official release tag yet)  
+**Source repository:** complete curated source tree merged into `main`  
+**Native CI baseline:** all six configured platform/architecture jobs passed build, CTest, and starter-project validation in run #6  
+**Latest source-safety verification:** follow-up run #7 validates the final disposable-smoke-project and generated-save-state safeguards  
+**Release status:** release workflow is configured; no GitHub Release or downloadable official release assets have been published yet
 
 ## Implemented foundation
 
@@ -12,31 +12,50 @@ The engine contains a C++20 core, parser and scripting runtime, local/event/tran
 
 ## Current verified checks
 
-The curated source tree for v0.10.14-preview.3 has been configured and built locally. Its graphical Linux x86_64 Release build passes 19/19 CTest targets; the package tests pass 6/6, and the Room Studio HTTP tests pass 9/9. A separate headless build forced the portable floating-point conversion fallback and passed the runtime conversion suite. The Linux starter-runtime package has an embedded manifest that verifies file sizes and hashes; it also passed a clean extraction, `ldd` dependency check, CLI project check, and six-second Xvfb graphical startup smoke. No GitHub Release has been published. The complete source import is in draft PR #1 and has not been merged to `main`.
+### Local validation
 
-The first native CI runs exposed three portability/configuration issues: Linux runners were missing the FreeType and HarfBuzz development dependencies required by the SFML source build; Apple libc++ did not provide the floating-point `std::from_chars` overload used in `src/value.cpp`; and `src/diagnostics.cpp` relied on a transitive declaration of `std::istringstream`. The review branch now installs both Linux packages, includes a tested portable conversion fallback, and directly includes `<sstream>`. The macOS compiler reached the diagnostics source before reporting the missing include; Linux dependency correction is awaiting the next matrix run. Windows ARM64 completed a native compile in the first matrix, but its tests, graphical smoke, and package steps did not complete. No non-Linux platform is yet classified as fully verified.
+- Full Linux x86_64 SFML 3.1.0 graphical Release build: **19/19 CTest targets passed**.
+- Latest headless/core regression build: **18/18 CTest targets passed**.
+- Latest package-tool regression suite: **8/8 passed**.
+- Room Studio HTTP integration suite: **9/9 passed**.
+- Clean source archive extraction, package manifests, and checksums verified.
+- Linux x86_64 starter runtime passed a clean extraction, dependency scan, CLI starter check, and virtual-display graphical startup smoke.
 
-- Clean source ZIP and TAR.GZ both pass archive manifest verification.
-- The exact source ZIP configures and builds the graphical runtime and CLI against SFML 3.1.0.
-- The clean-source graphical build passes 19/19 CTest targets.
-- The minimal Linux x86_64 starter runtime package launches under Xvfb and its CLI validates the starter project.
-- Windows, ARM64, and macOS native builds remain unverified.
+### Native platform matrix
+
+GitHub Actions run #6 completed successfully for all six configured targets:
+
+| Target | Native build | CTest | Starter CLI check | Graphical smoke in CI |
+|---|---:|---:|---:|---:|
+| Linux x86_64 | Pass | Pass | Pass | Pass (Xvfb) |
+| Linux ARM64 | Pass | Pass | Pass | Pass (Xvfb) |
+| Windows x86_64 | Pass | Pass | Pass | Pass |
+| Windows ARM64 | Pass | Pass | Pass | Pass |
+| macOS x86_64 | Pass | Pass | Pass | Not run by current workflow |
+| macOS ARM64 | Pass | Pass | Pass | Not run by current workflow |
+
+Run #7 is validating the final package/smoke safeguards on the exact merged source revision. Follow-up status is visible at [GitHub Actions](https://github.com/Decitle/CX/actions). A green CI result establishes that the configured build and tests passed on those runners; it does not replace physical-device testing on every Windows, macOS, Linux distribution, compositor, or Chromebook.
+
+### Runtime package quality
+
+The runtime packager copies executables and application runtime libraries rather than an entire SDK install tree. Windows operating-system DLLs, headers, static development libraries, CMake metadata, and SDK documentation are excluded. The packager rejects generated save/cache/lock/temp files in the starter project. Graphical smoke tests use a disposable copy so first-run scaffolding cannot pollute the tracked example.
+
+The CI workflow uploads a short-lived Windows x86_64 starter package artifact. Official versioned releases are built separately by the release workflow and include source archives plus each native runtime package whose release job succeeds.
 
 ## Important unfinished areas
 
-- Successful native Windows compilation, graphical startup, and platform-specific storage validation.
-- Linux/Windows ARM64 and macOS native builds.
-- Native Wayland support (current SFML backend relies on XWayland).
+- Native Wayland backend; the current Linux SFML window backend relies on XWayland.
 - General moving-body physics and broader collision response.
 - More complete Room Studio tools and undo/redo.
-- UI widget/menu coverage and coordinate/DPI verification.
-- Full real-time audio mixer and playback automation.
+- UI widget/menu coverage and coordinate/DPI verification across physical devices.
+- Full real-time audio mixer and playback automation. SFML Audio is disabled in the current build configuration.
 - Repeatable performance benchmarks and larger-world optimization.
-- First public release, further first-run/editor polish, and native runtime verification for Windows, ARM64, and macOS.
+- Further first-run/editor polish and the broader v1.0 feature-completion roadmap.
 
 ## Completion estimate
 
-The codebase has a substantial working foundation, but feature count is not the same as product readiness. The project is not yet v1.0-ready. Native Windows and other platform validation, editor/user-experience polish, physics, audio, and profiling remain significant work. Current estimates should be updated from actual CI and feature milestones rather than inferred from the version number.
-## Windows package delivery
+The project has a substantial usable foundation, but it is not yet v1.0 feature-complete. Native build/test coverage is now much broader; the main remaining risks are user-experience polish, moving-body physics, audio playback, performance profiling, physical-device QA, and the final release/download process. The version number is not a completion percentage.
 
-The `windows-x86_64` CI job now installs and packages the tested runtime, then uploads a 14-day GitHub Actions artifact. This makes a Windows test ZIP downloadable from a successful CI run after the complete source tree is imported. It does not replace native build/test results, and it does not publish a GitHub Release automatically.
+## Download and first use
+
+When the first versioned release is published, download the runtime matching the computer's operating system and CPU architecture from [GitHub Releases](https://github.com/Decitle/CX/releases/latest). Extract the package and run the included graphical executable with the included `project/` folder. No C++ compiler is required for a runtime package. The `cx-cli` executable is available for checking project scripts without opening a window.

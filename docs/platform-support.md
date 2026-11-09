@@ -2,18 +2,20 @@
 
 CX uses a C++20 core with a platform-specific graphical runtime. The project aims for one portable game-project format, but native binaries and native libraries must match the operating system and CPU architecture.
 
-## Current evidence
+## Current native CI evidence
 
-| Platform | State | Evidence / limitation |
+GitHub Actions run #6 completed successfully for the six configured native targets. The matrix built the graphical runtime and CLI, ran CTest, and checked the starter project on each architecture.
+
+| Platform | Native CI state | Current evidence and limits |
 |---|---|---|
-| Linux x86_64 | **Verified development baseline** | GCC 14.2 Release core/CLI and SFML 3.1.0 graphical build, exact source-archive clean extraction build, 19/19 CTest, and a minimal Linux starter runtime smoke test. Physical-device testing is still useful. The first GitHub runner attempts exposed missing FreeType and HarfBuzz dev packages in CI; both dependencies are now installed by the workflow and are awaiting rerun. |
-| Windows x86_64 | **Not yet verified** | Windows-specific persistent storage code, MSVC compile settings, Windows font paths, and a native CI job are present. The first CI job reached compilation but had not completed at the time of the latest update. Do not treat it as supported until native CI and graphical smoke tests pass. |
-| Linux ARM64 | **Not yet verified** | The first CI configure attempt lacked FreeType and HarfBuzz dev packages; workflow dependency list corrected, awaiting rerun. |
-| Windows ARM64 | **Compile passed; validation incomplete** | Native CI completed the compile on the first run, but CTest, graphical smoke, and packaging were canceled when the next source update superseded that run. |
-| macOS x86_64 | **Not yet verified** | Apple's libc++ accepted the portable floating-point fallback but compilation then found a missing direct `<sstream>` include; that header fix is on the review branch, awaiting rerun. |
-| macOS ARM64 | **Not yet verified** | Same sequence as macOS x86_64: the portable parser compiled, then the missing `<sstream>` include was reported. Header fix is awaiting rerun. |
+| Linux x86_64 | **Pass** | Native build, CTest, starter CLI check, and Xvfb graphical startup smoke passed. A Linux x86_64 starter runtime has also passed local clean-extraction, dependency, CLI, and GUI smoke checks. |
+| Linux ARM64 | **Pass** | Native build, CTest, starter CLI check, and Xvfb graphical startup smoke passed. Official runtime packaging is performed by the tagged release workflow. |
+| Windows x86_64 | **Pass** | Native MSVC build, CTest, starter CLI check, and graphical startup smoke passed. The CI job also generates a short-lived Windows x64 runtime artifact. Final clean-packaging safeguards are being checked in follow-up CI. |
+| Windows ARM64 | **Pass** | Native ARM64 build, CTest, starter CLI check, and graphical startup smoke passed. The tagged release workflow is responsible for producing the downloadable runtime package. |
+| macOS x86_64 | **Pass** | Native build, CTest, and starter CLI check passed. The current CI workflow does not run a graphical startup smoke test on macOS. |
+| macOS ARM64 | **Pass** | Native build, CTest, and starter CLI check passed. The current CI workflow does not run a graphical startup smoke test on macOS. |
 
-A six-target CI matrix is configured in `.github/workflows/ci.yml`. Native Windows, ARM64, and macOS results must still be produced and reviewed before those targets are advertised as supported. An architecture is not a supported download until the build, tests, package extraction, starter launch, and runtime dependency checks all pass on that architecture.
+The final smoke-test and generated-starter-state safeguards are being rerun on the merged source; see [GitHub Actions](https://github.com/Decitle/CX/actions) for the most recent exact result. These are native CI checks, not physical-device QA. Individual GPU drivers, display scaling, input devices, and desktop/compositor configurations can still differ.
 
 ## Wayland desktops
 

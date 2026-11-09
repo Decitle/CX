@@ -106,3 +106,15 @@ Local evidence: Linux graphical build 19/19 CTest; package tests 6/6; Room Studi
 - Added a package-time rejection guard for generated persistence files (`.variables.lock`, `variables.csv`, cache/manifest files, and temporary files) in the starter project.
 - Added regression tests proving the smoke helper leaves its source project untouched and that the packager rejects generated save state.
 - Local validation: 18/18 headless CTest targets, 8/8 packaging tests, and Python syntax compilation passed. A fresh native CI run is required before release packaging is considered verified.
+
+
+## 2026-11-09 — complete source merge, native CI and release documentation status
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request  
+**Repository:** `Decitle/CX`  
+**Merge:** pull request #1, merge commit `ca03a61252dad4755ebaccb59fbbb24e0b52d241`  
+
+- Merged the complete curated CX Engine source into `main` while preserving the existing repository history.
+- Updated the README, project status, platform support, documentation landing page, release format, and changelog to reflect the six-platform native CI baseline and the actual remaining publication steps.
+- Clarified that native CI validation is not physical-device QA, SFML's Linux window backend uses XWayland, and no official GitHub Release or Pages deployment is claimed until one is actually published/enabled.
+

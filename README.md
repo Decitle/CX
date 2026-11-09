@@ -6,7 +6,7 @@ CX is a lightweight, scriptable foundation for 2D games. Its primary application
 
 A separate command-line utility provides project validation, diagnostics, and automation. The CLI supports development; it is not a substitute for the graphical engine.
 
-> **Development status:** The complete curated v0.10.14 source tree is under review in a dedicated GitHub pull request. Linux x86_64 has a recorded clean graphical build and 19/19 CTest baseline, including a clean-source build and tested starter runtime package. The first native CI passes exposed missing Linux FreeType/HarfBuzz development dependencies, an Apple libc++ floating-point parsing portability issue, and a missing direct `<sstream>` include. The parser and header fixes are on the review branch; Linux dependencies are corrected and awaiting another run. Windows ARM64 completed a native compile, but its tests and runtime package have not yet completed. Windows x64 configuration passed, with its full build still pending. On Linux Wayland desktops, the current SFML window backend requires XWayland; CX does not yet have a native Wayland backend.
+> **Repository status:** The complete curated source tree is now merged into `main`. Native CI run #6 passed build, CTest, and starter-project validation on all six configured targets: Linux x86_64/ARM64, Windows x86_64/ARM64, and macOS x86_64/ARM64. Linux and Windows graphical startup smoke tests are part of the matrix. A follow-up run is validating the last clean-starter and packaging safeguards; check [GitHub Actions](https://github.com/Decitle/CX/actions) for its latest result. No versioned GitHub Release has been published yet. SFML's current Linux window backend requires XWayland on Wayland desktops; CX does not yet have a native Wayland backend.
 
 ## Highlights
 
@@ -76,18 +76,19 @@ Start at the [documentation home](docs/index.md). The [interactive language and 
 
 ## Platform notes
 
-- **Linux x86_64:** current verified development baseline.
-- **Windows x86_64:** not yet verified; native build and runtime testing are required before a support claim.
-- **Linux/Windows ARM64 and macOS:** native CI targets are configured; no successful native results have been recorded yet.
-- **Wayland:** SFML 3.1.0 currently opens its Linux windows through XWayland. Install/enable XWayland on the compositor. Native Wayland support is not available in this SFML backend.
+- **Linux x86_64 and ARM64:** native CI build, CTest, starter-project validation, and virtual-display startup smoke passed.
+- **Windows x86_64 and ARM64:** native CI build, CTest, starter-project validation, and graphical startup smoke passed in the six-target matrix. The Windows x86_64 job also builds a downloadable CI runtime artifact.
+- **macOS x86_64 and ARM64:** native CI build, CTest, and starter-project validation passed. The current workflow does not run the graphical smoke test on macOS.
+- These are native CI results, not a substitute for user testing on every physical device or display configuration.
+- **Wayland:** SFML 3.1.0 opens Linux windows through XWayland. Install/enable XWayland on the compositor; native Wayland support is not available in this backend.
 
 See [Platform support](docs/platform-support.md) for the evidence and limitations.
 
-## Releases
+## Downloads
 
-Versioned releases are intended to include source ZIP and TAR.GZ archives plus native starter-runtime packages for every platform that passes CI. Each runtime package will contain the graphical engine, CLI, a minimal starter project (`config.json` and `scripts/main.cx`), required redistributable libraries, license notices, and checksums. No unsupported target will be published as though it were verified.
+The official download location will be [GitHub Releases](https://github.com/Decitle/CX/releases/latest). A release is not published yet. The release workflow is configured to build source ZIP/TAR.GZ archives and matching native starter-runtime packages for each of the six CI architectures after a version tag is pushed. Use the package matching the computer's operating system and CPU architecture; the included project files are portable, but the native executable is not.
 
-See [Release format](docs/release-format.md).
+See [Release format](docs/release-format.md) for package names, contents, and validation rules.
 
 ## License
 

@@ -1,17 +1,23 @@
 # Release format
 
-The project intends to publish two source archives and native starter-runtime packages from each validated version. This page describes the planned structure; only the platform assets produced successfully by CI should be attached to a release.
+The release workflow is implemented in `.github/workflows/release.yml`. Pushing a version tag beginning with `v` triggers source and native runtime builds. After the source package and every runtime job in the release matrix succeed, the workflow publishes a GitHub Release and attaches the verified assets. Tags containing a hyphen are marked as pre-releases.
+
+No official versioned release has been published yet.
 
 ## Source distributions
+
+Each release provides:
 
 - `CXEngine-vX.Y.Z-source.zip`
 - `CXEngine-vX.Y.Z-source.tar.gz`
 
-Both contain the same source commit, public documentation, examples, tests, build configuration, tools, and license. They exclude build trees, compiled binaries, internal development records, handoff documents, logs, and complete showcase games.
+Both contain the same tagged source commit, public documentation, examples, tests, build configuration, tools, and license. They exclude build trees, compiled binaries, internal development records, handoff documents, logs, and complete showcase games.
 
 ## Native runtime packages
 
-| Platform | Planned package |
+The release matrix is configured for:
+
+| Platform | Package |
 |---|---|
 | Windows x86_64 | `CXEngine-vX.Y.Z-windows-x86_64.zip` |
 | Windows ARM64 | `CXEngine-vX.Y.Z-windows-arm64.zip` |
@@ -20,16 +26,16 @@ Both contain the same source commit, public documentation, examples, tests, buil
 | macOS x86_64 | `CXEngine-vX.Y.Z-macos-x86_64.zip` |
 | macOS ARM64 | `CXEngine-vX.Y.Z-macos-arm64.zip` |
 
-A runtime package should contain the graphical executable, the separate CLI, a basic `config.json`, a minimal `scripts/main.cx`, required redistributable third-party runtime libraries, the corresponding notices/licenses, a first-run README, and a build manifest/checksum. It must not contain a complete game.
+A runtime package contains the graphical executable, separate CLI, a basic `config.json`, a minimal `scripts/main.cx`, required application runtime libraries, license notices, a first-run README, and a file-size/SHA-256 manifest. It does not contain a full game or development SDK.
 
-## Dependency expectations
-
-Windows packages should include SFML DLLs and identify any required Microsoft runtime components. Linux packages should include the allowed application libraries but document a minimum system-library baseline; they cannot bundle the kernel, graphics drivers, or every distribution's system ABI. macOS packages should use the correct architecture and application resource layout.
+The Windows runtime filter excludes operating-system DLLs and development-only headers, static libraries, CMake metadata, and SDK documentation. The Linux package bundles allowed application libraries but documents system-library expectations; it cannot bundle the kernel, GPU drivers, or every distribution's system ABI. macOS packages are architecture-specific.
 
 ## One project, multiple runtimes
 
-Scripts, room JSON, configuration, and game assets should remain the same across platforms. Players need the runtime matching their operating system and CPU architecture; native executables themselves are not interchangeable.
+Scripts, room JSON, configuration, and game assets remain the same across platforms. Players download the runtime matching their operating system and CPU architecture; native executables themselves are not interchangeable.
 
 ## Release validation
 
-A package is publishable only after a native build, CTest, CLI check, clean extraction, dependency scan, starter launch, and checksum verification succeed for that exact target. An untested platform is omitted or clearly marked experimental; it is never presented as supported.
+The release workflow performs a native build and CTest run for each matrix target, validates the starter project, installs runtime dependencies, packages the starter project, and attaches the generated manifests and checksums. A package is published only if its release job succeeds. The CI workflow additionally performs graphical startup smoke tests on Linux and Windows. macOS graphical startup is not currently covered by an automated smoke step.
+
+Follow the [getting-started guide](getting-started.md) after extracting a runtime package. The latest published version will appear at [GitHub Releases](https://github.com/Decitle/CX/releases).
