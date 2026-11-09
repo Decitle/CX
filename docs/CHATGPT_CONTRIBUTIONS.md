@@ -44,3 +44,10 @@ Changes made:
 - Kept the BSD 3-Clause license unchanged.
 
 No repository visibility, license, GitHub Pages deployment, or release settings were changed. No executable or release asset was uploaded to GitHub in this contribution.
+
+
+### Follow-up accuracy corrections
+
+- Corrected the README's license link to the actual root-level `LICENSE` file.
+- Changed the project status wording to refer only to the verified absence of published GitHub Releases; no claim is made about tag state.
+- Removed an outdated sentence that referred to an external source ZIP as though it were part of the GitHub repository.
