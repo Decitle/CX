@@ -36,9 +36,6 @@ struct BeamEffect {
     std::uint8_t red{255};
     std::uint8_t green{255};
     std::uint8_t blue{255};
-
-    // The endpoint light is independent of the visible textured quad. A frontend
-    // can render it through its normal light pass without changing the light map.
     bool endpointLightEnabled{false};
     float endpointLightRadius{144.0F};
     float endpointLightIntensity{0.65F};
@@ -49,7 +46,7 @@ struct BeamEffect {
 
 struct BeamVertex {
     EffectPoint position{};
-    float u{0.0F}; // Normalized texture coordinates; frontend scales by texture dimensions.
+    float u{0.0F};
     float v{0.0F};
 };
 

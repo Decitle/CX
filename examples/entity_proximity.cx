@@ -1,0 +1,19 @@
+# Distance-based interaction checks.
+# Put player.png and altar.png in assets/textures/ before running.
+
+create entity "player" with texture {$player}
+create entity "altar" with texture {$altar}
+set entity "player" position to (120, 120)
+set entity "altar" position to (180, 120)
+set {interaction_range} to 72
+
+on tick:
+    # This is a center-to-center radius query, not AABB overlap.
+    if entity "player" is within {interaction_range} pixels of entity "altar":
+        set {altar_in_reach} to true
+    else:
+        set {altar_in_reach} to false
+
+    # The project owns the interaction action and all player-facing text.
+    if key "E" is down and {altar_in_reach}:
+        set {altar_interacted} to true

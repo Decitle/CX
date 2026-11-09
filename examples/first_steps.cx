@@ -1,0 +1,20 @@
+# Your first CX script. Run it with the engine or check it with the CLI.
+# A line starting with # is a comment for people; the engine ignores it.
+
+# Curly-brace variables store values that commands can use later.
+set {player_name} to "Adventurer"
+set {score} to 0
+
+# `on load:` runs once after the project scripts have loaded successfully.
+on load:
+    broadcast "Welcome, {player_name}!"
+    broadcast "Press SPACE to earn a point."
+
+# This handler runs whenever SPACE is pressed (not continuously while held).
+on press key "SPACE":
+    add 1 to {score}
+    broadcast "{player_name}, your score is now {score}."
+
+    # A nested block runs only when its condition is true.
+    if {score} >= 5:
+        broadcast "Five points! You found your first milestone."

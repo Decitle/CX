@@ -2,69 +2,97 @@
 
 **A graphical 2D game engine built in C++20, with a readable, Skript-inspired scripting language.**
 
-CX is being developed as a lightweight, scriptable foundation for 2D games. Its primary application is a graphical desktop runtime: the current frontend uses SFML 3 for windowing, drawing, and input, while the game rules and scripting runtime live in a renderer-neutral C++ core.
+CX is a lightweight, scriptable foundation for 2D games. Its primary application is a native graphical runtime for drawing, input, rooms, game objects, user interfaces, and visual effects. Game behavior is written in CX Script, an approachable event-and-action language inspired by Minecraft Skript.
 
-A separate command-line tool supports project checks, diagnostics, and automated workflows. It complements the graphical engine; it is not the product's primary interface.
+A separate command-line utility provides project validation, diagnostics, and automation. The CLI supports development; it is not a substitute for the graphical engine.
 
-## What CX is designed to provide
+> **Development status:** The complete curated v0.10.14 source tree is being integrated on a dedicated review branch. Linux x86_64 has a recorded clean graphical build and 19/19 CTest baseline, including a clean-source build and tested starter runtime package. Native Windows, ARM64, and macOS build jobs are configured, but no successful native result is recorded yet. On Linux Wayland desktops, the current SFML window backend requires XWayland; CX does not yet have a native Wayland backend.
 
-- **Graphical 2D runtime** — windows, rooms, tile and sprite rendering, input, camera behavior, UI canvases, lighting, and visual effects.
-- **Readable game scripting** — a custom language inspired by the approachable event-and-action style of Skript, with variables, functions, loops, events, and diagnostics.
-- **Reusable gameplay systems** — entities, hitboxes, collision channels, triggers, interaction focus, projectiles, deterministic random streams, tweens, and animation clips.
-- **Room and project workflows** — data-driven room files, asset discovery, project initialization, and the Room Studio editor.
-- **Developer CLI** — project validation and non-graphical checks for testing and automation.
+## Highlights
 
-These are project goals and current development areas, not a claim that every planned editor, physics, UI, audio, or portability feature is complete. See [Project status](docs/PROJECT_STATUS.md) and the [roadmap](docs/ROADMAP.md).
+- **Graphical 2D runtime:** rooms, tile and sprite rendering, keyboard/mouse input, a camera, canvas UI, lighting meshes, and visual effects.
+- **Readable scripting:** events, variables with different lifetimes, conditions, loops, functions, delayed tasks, and actionable diagnostics.
+- **Gameplay foundations:** entities, hitboxes, collision channels, triggers, proximity/interaction focus, projectiles, animation clips, tweens, and seeded random streams.
+- **Project workflows:** data-driven rooms, asset discovery, safe first-run project scaffolding, and a browser-based Room Studio helper.
+- **Developer CLI:** script checking and non-graphical workflows for testing and automation.
 
-## Architecture
+CX is still under active development. Audio mixing, general-purpose moving-body physics, editor depth, profiling, and full cross-platform packaging remain in progress. See the [project status](docs/project-status.md) and [roadmap](docs/roadmap.md).
 
-CX separates three responsibilities:
+## Quick start
 
-1. **Engine core:** C++20 scripting, project data, simulation, persistence, and renderer-independent gameplay/effect contracts.
-2. **Graphical runtime:** the desktop application, currently implemented with SFML 3.
-3. **Command-line tools:** project checking and headless workflows for development and automation.
+### Build the graphical engine
 
-The graphical runtime is the main way to use CX. The CLI is a separate supporting tool. Keeping the core independent from SFML makes it easier to test game logic and to maintain platform-specific graphical builds without tying gameplay APIs to a particular renderer.
+Requirements: CMake 3.24+, a C++20 compiler, Git, and the platform development tools needed by SFML 3.1.0. By default, CMake downloads the pinned SFML version if it is not already installed.
 
-## Current development and repository status
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release --parallel
+ctest --test-dir build -C Release --output-on-failure
+```
 
-The wider engine has reached an internal **v0.10.14 development checkpoint**. On Linux x86_64, that checkpoint passed 17 CTest targets in headless and SFML-enabled Release configurations, plus a clean-source extraction build. The graphical runtime also passed a short headless-window smoke test. These checks are not a substitute for testing on every supported operating system or on a physical display.
+The graphical executable is `build/cx-engine` on Linux/macOS and `build/Release/cx-engine.exe` on a typical multi-configuration Windows generator. The CLI executable is `cx-cli` / `cx-cli.exe`.
 
-**This GitHub repository is not yet a complete, standalone checkout of that engine.** The current `main` branch is a selective source import focused on the renderer-neutral textured-beam feature. It contains:
+### Run a project
 
-- `include/cx/effects.hpp` and `src/effects.cpp`
-- `tests/beam_effect_tests.cpp`
-- `examples/textured_beam.cx`
-- The beam behavior documentation and AI-assisted contribution log in `docs/`
+```sh
+./build/cx-engine examples/quickstart
+```
 
-The complete engine build files and the rest of the implementation have not yet been imported here. As a result, this checkout cannot currently build the full graphical engine by itself. There are no published GitHub Release or downloadable runtime packages from this repository yet.
+On Windows, run the corresponding `cx-engine.exe` and pass the same project directory. See [Getting started](docs/getting-started.md) for IDE and Windows-specific notes.
 
-The development checkpoint and the contents of this GitHub repository are deliberately described separately so that readers can see exactly what is available here.
+### Check scripts without opening a window
 
-## Platform support
+```sh
+./build/cx-cli --check examples/quickstart
+```
 
-Linux x86_64 is the only platform with a recorded full-engine build and test result at the current development checkpoint. Windows support is a target, not a verified claim: the development code contains Windows-specific paths and MSVC configuration, but a native Windows build and runtime test are still required. Linux ARM64 and macOS builds also need validation.
+### Build only the core and CLI
 
-See [Platform support](docs/PLATFORM_SUPPORT.md) for the evidence and target matrix.
+The normal build requires the graphical runtime. A headless core/CLI build is an explicit developer option:
+
+```sh
+cmake -S . -B build-headless -DCX_BUILD_GRAPHICAL_RUNTIME=OFF
+cmake --build build-headless --parallel
+ctest --test-dir build-headless --output-on-failure
+```
+
+## Repository layout
+
+```text
+include/cx/        Public engine headers
+src/               Engine core, graphical host, and CLI implementation
+tests/             Automated C++ and Python regression tests
+examples/          Small script and project examples
+tools/             Local Room Studio server and release tooling
+docs/              User guide, language reference, and feature notes
+.github/workflows/ Native CI and release automation
+```
+
+The repository intentionally excludes internal development journals, prompt logs, handoff bundles, old validation dumps, compiled binaries, build directories, and complete showcase games. Example scripts are included because they are useful to learn and test the engine; larger sample games are distributed separately.
 
 ## Documentation
 
-The [documentation home](docs/index.md) is the starting point for the project overview, status, platform support, release format, and roadmap.
+Start at the [documentation home](docs/index.md). The [interactive language and runtime reference](docs/reference.html) is a self-contained HTML page with inline CSS and JavaScript. The Markdown pages cover setup, scripting, projects, architecture, platform behavior, and contribution workflows.
+
+## Platform notes
+
+- **Linux x86_64:** current verified development baseline.
+- **Windows x86_64:** not yet verified; native build and runtime testing are required before a support claim.
+- **Linux/Windows ARM64 and macOS:** native CI targets are configured; no successful native results have been recorded yet.
+- **Wayland:** SFML 3.1.0 currently opens its Linux windows through XWayland. Install/enable XWayland on the compositor. Native Wayland support is not available in this SFML backend.
+
+See [Platform support](docs/platform-support.md) for the evidence and limitations.
 
 ## Releases
 
-When the repository contains the complete buildable engine and platform CI has passed, versioned GitHub Releases are intended to provide:
+Versioned releases are intended to include source ZIP and TAR.GZ archives plus native starter-runtime packages for every platform that passes CI. Each runtime package will contain the graphical engine, CLI, a minimal starter project (`config.json` and `scripts/main.cx`), required redistributable libraries, license notices, and checksums. No unsupported target will be published as though it were verified.
 
-- Source code in both ZIP and TAR.GZ formats.
-- Self-contained starter runtime packages for each validated operating-system/architecture combination.
-- Checksums, build metadata, and dependency/license notices.
-
-No such multi-platform release is published yet. Planned package contents and naming are described in [Release format](docs/RELEASE_FORMAT.md).
+See [Release format](docs/release-format.md).
 
 ## License
 
-CX currently uses the **BSD 3-Clause License**. The license is included in [LICENSE](LICENSE). The license may be reconsidered before a public release, but no license change has been made.
+CX Engine is currently distributed under the [BSD 3-Clause License](LICENSE).
 
 ## Contributions and attribution
 
-Project direction and release decisions belong to the maintainer. AI-assisted repository contributions are recorded in [the contribution log](CHATGPT_CONTRIBUTIONS.md).
+AI-assisted repository changes are listed in [the contribution log](docs/CHATGPT_CONTRIBUTIONS.md). Project direction and release decisions remain with the project maintainer.

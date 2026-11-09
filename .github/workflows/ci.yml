@@ -1,0 +1,150 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cx-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x86_64
+            runner: ubuntu-24.04
+            architecture: x64
+          - target: linux-arm64
+            runner: ubuntu-24.04-arm
+            architecture: arm64
+          - target: windows-x86_64
+            runner: windows-2022
+            architecture: x64
+          - target: windows-arm64
+            runner: windows-11-arm
+            architecture: ARM64
+          - target: macos-x86_64
+            runner: macos-15-intel
+            architecture: x86_64
+          - target: macos-arm64
+            runner: macos-15
+            architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Linux graphical build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev libudev-dev libx11-dev libxrandr-dev \
+            libxcursor-dev libxi-dev xvfb
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >-
+          cmake -S . -B build -A ${{ matrix.architecture }}
+          -DCMAKE_BUILD_TYPE=Release
+          -DCX_FETCH_SFML=ON
+          -DCX_ENABLE_SFML_AUDIO=OFF
+          -DCX_BUILD_TESTS=ON
+
+      - name: Configure (Linux)
+        if: runner.os == 'Linux'
+        run: >-
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCX_FETCH_SFML=ON
+          -DCX_ENABLE_SFML_AUDIO=OFF
+          -DCX_BUILD_TESTS=ON
+
+      - name: Configure (macOS)
+        if: runner.os == 'macOS'
+        run: >-
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_OSX_ARCHITECTURES=${{ matrix.architecture }}
+          -DCX_FETCH_SFML=ON
+          -DCX_ENABLE_SFML_AUDIO=OFF
+          -DCX_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Run CTest
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      - name: Check quickstart scripts (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./build/Release/cx-cli.exe --check examples/quickstart
+
+      - name: Check quickstart scripts (Linux and macOS)
+        if: runner.os != 'Windows'
+        run: ./build/cx-cli --check examples/quickstart
+
+      - name: Graphical startup smoke test (Windows)
+        if: runner.os == 'Windows'
+        run: python tools/smoke_graphical.py --engine ./build/Release/cx-engine.exe --project examples/quickstart --seconds 6
+
+      - name: Graphical startup smoke test (Linux)
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: xvfb-run -a python tools/smoke_graphical.py --engine ./build/cx-engine --project examples/quickstart --seconds 6
+
+      # Keep a downloadable Windows x64 starter package on successful CI runs.
+      # This is a short-lived Actions artifact, not a published GitHub Release.
+      - name: Set package version (Windows x64)
+        if: matrix.target == 'windows-x86_64'
+        shell: pwsh
+        run: |
+          $match = [regex]::Match((Get-Content CMakeLists.txt -Raw), 'project\(CXEngine VERSION ([0-9]+\.[0-9]+\.[0-9]+)')
+          if (-not $match.Success) { throw 'Could not read CXEngine project version from CMakeLists.txt' }
+          "CX_VERSION=$($match.Groups[1].Value)" >> $env:GITHUB_ENV
+
+      - name: Install Windows x64 runtime (Windows x64)
+        if: matrix.target == 'windows-x86_64'
+        shell: pwsh
+        run: cmake --install build --config Release --prefix stage
+
+      - name: Package Windows x64 starter runtime
+        if: matrix.target == 'windows-x86_64'
+        shell: bash
+        run: >-
+          python tools/package_runtime.py
+          --stage stage
+          --project examples/quickstart
+          --build-dir build
+          --source-root .
+          --target windows-x86_64
+          --version "$CX_VERSION"
+          --output-dir dist
+
+      - name: Upload Windows x64 runtime artifact
+        if: matrix.target == 'windows-x86_64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CXEngine-Windows-x86_64-${{ github.run_number }}-${{ github.sha }}
+          path: |
+            dist/CXEngine-v*-windows-x86_64.zip
+            dist/CXEngine-v*-windows-x86_64.zip.sha256
+          if-no-files-found: error
+          retention-days: 14

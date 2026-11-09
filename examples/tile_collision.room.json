@@ -1,0 +1,24 @@
+{
+  "schema": "cx-room",
+  "version": 1,
+  "name": "tile_collision_example",
+  "width": 5,
+  "height": 3,
+  "tileSize": 32,
+  "projection": "orthogonal",
+  "tiles": [
+    ["stone_floor", "stone_floor", "stone_floor", "stone_floor", "stone_floor"],
+    ["stone_wall", "stone_floor", "stone_floor", "stone_floor", "stone_wall"],
+    ["stone_floor", "stone_floor", "stone_floor", "stone_floor", "stone_floor"]
+  ],
+  "tileCollision": [
+    ["inherit", "inherit", "inherit", "inherit", "inherit"],
+    ["inherit", "inherit", "solid", "inherit", "inherit"],
+    ["inherit", "inherit", "inherit", "inherit", "inherit"]
+  ],
+  "tileScales": [],
+  "overlays": [],
+  "entrances": {
+    "start": {"x": 1, "y": 1}
+  }
+}

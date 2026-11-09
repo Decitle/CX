@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CX Room Studio</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1018;--panel:#111a27;--panel2:#162234;--line:#27364a;--muted:#8ba0ba;--text:#e6edf6;--blue:#55a7ff;--blue2:#1d4f88;--green:#5bd6a0;--orange:#ffbd69;--red:#ff7d86;--shadow:0 18px 55px #0005}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -20%,#172b43 0,#0b1018 47rem);color:var(--text);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}button{border:1px solid var(--line);border-radius:9px;background:#182539;color:var(--text);padding:8px 12px;cursor:pointer;transition:.15s ease;white-space:nowrap}button:hover{border-color:#4775a8;background:#20344c}button:disabled{opacity:.4;cursor:default}.primary{background:linear-gradient(135deg,#2483e8,#1760bb);border-color:#3f9bff;color:white;font-weight:700}.primary:hover{background:linear-gradient(135deg,#3695fa,#1d6dcb)}.quiet{background:transparent}.danger{color:#ffb3b8}.tiny{padding:5px 8px;font-size:12px}.field{display:flex;flex-direction:column;gap:5px;min-width:0}.field label,.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:800}.field input,.field select{width:100%;border:1px solid var(--line);background:#0b1320;color:var(--text);border-radius:8px;padding:8px 9px;outline:none}.field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #55a7ff1c}.field input[type=number]{min-width:0}.topbar{height:76px;display:flex;align-items:center;gap:17px;padding:0 24px;border-bottom:1px solid #26364b;background:#0b121dd9;backdrop-filter:blur(18px);position:sticky;top:0;z-index:5}.logo{display:flex;align-items:center;gap:11px;min-width:225px}.logo-mark{height:39px;width:39px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(150deg,#66bcff,#2766dc);box-shadow:0 6px 22px #1b75e833;color:white;font-size:21px;font-weight:900}.logo strong{display:block;font-size:15px;letter-spacing:.01em}.logo span{display:block;color:var(--muted);font-size:11px}.top-spacer{flex:1}.status{color:var(--muted);font-size:12px;min-width:130px;text-align:right}.status.good{color:var(--green)}.status.bad{color:var(--red)}.workspace{padding:18px 20px 22px;max-width:1900px;margin:auto}.toolbar{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:15px;background:#111a27d9;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:15px}.toolbar .field{width:115px}.toolbar .name-field{width:190px}.toolbar .room-select{width:180px}.toolbar .divider{height:37px;width:1px;background:var(--line);margin:0 3px}.hintline{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:8px 2px 14px}.key{display:inline-block;border:1px solid #3a4c63;background:#151f2e;border-radius:5px;padding:1px 5px;color:#cbd8e8;font-size:11px}.layout{display:grid;grid-template-columns:285px minmax(360px,1fr) 275px;gap:15px;align-items:stretch}.panel{border:1px solid var(--line);border-radius:14px;background:#111a27eF;box-shadow:var(--shadow);min-width:0;overflow:hidden}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:15px 15px 12px;border-bottom:1px solid var(--line)}.panel-head h2{font-size:13px;margin:0;font-weight:800;letter-spacing:.02em}.subtext{color:var(--muted);font-size:11px}.palette-body{padding:12px}.search{width:100%;padding:10px 11px;border:1px solid var(--line);background:#0a121e;border-radius:9px;color:var(--text);outline:none;margin-bottom:11px}.palette-meta{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-bottom:9px}.palette-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-height:calc(100vh - 275px);min-height:230px;overflow:auto;padding:2px 3px 3px}.texture-card{border:1px solid #29384b;border-radius:9px;background:#0c1420;min-width:0;padding:6px;cursor:pointer;text-align:left;color:var(--text);display:flex;flex-direction:column;gap:5px;align-items:center}.texture-card:hover{border-color:#4e8ecc;background:#112037}.texture-card.selected{border-color:var(--blue);box-shadow:0 0 0 2px #55a7ff25;background:#142b45}.texture-card img{width:100%;aspect-ratio:1;object-fit:contain;image-rendering:pixelated;background:repeating-conic-gradient(#1e2a3a 0% 25%,#121b29 0% 50%) 0/12px 12px;border-radius:5px}.texture-name{font-size:11px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.texture-var{font:10px ui-monospace,SFMono-Regular,monospace;color:#7baee6;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.empty-palette{grid-column:1/-1;text-align:center;color:var(--muted);padding:30px 10px}.center{display:flex;flex-direction:column;min-height:610px}.map-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:11px 14px;border-bottom:1px solid var(--line)}.toolgroup{display:flex;gap:5px;background:#09111c;padding:4px;border:1px solid #26364b;border-radius:10px}.tool{padding:6px 11px;background:transparent;border-color:transparent;color:#9eb0c7;font-size:12px}.tool.active{background:#203c5c;border-color:#3d78b6;color:#fff}.zoom{display:flex;align-items:center;gap:7px;margin-left:auto;color:var(--muted);font-size:12px}.zoom input{width:95px;accent-color:var(--blue)}.map-surface{flex:1;min-height:500px;overflow:auto;padding:28px;background-color:#0b131f;background-image:radial-gradient(#29394c 1px,transparent 1px);background-size:17px 17px;position:relative}.canvas-wrap{width:max-content;height:max-content;margin:auto;border:1px solid #3c516c;box-shadow:0 16px 40px #0008;line-height:0;position:relative}.map-canvas{display:block;image-rendering:pixelated;cursor:crosshair;max-width:none}.map-empty{display:none;text-align:center;color:var(--muted);padding:90px 20px}.bottom-status{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}.bottom-status b{color:#c7d6e8}.right-body{padding:14px;display:flex;flex-direction:column;gap:15px}.section{display:flex;flex-direction:column;gap:10px}.section-title{font-weight:800;font-size:12px;display:flex;justify-content:space-between;align-items:center}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}.info-card{border:1px solid #28384c;border-radius:10px;padding:10px;background:#0d1623}.info-card span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:block}.info-card strong{display:block;font-size:18px;margin-top:3px}.entrance-add{display:grid;grid-template-columns:1fr auto;gap:6px}.entrance-add input{min-width:0;background:#0b1320;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px}.entrance-list{display:flex;flex-direction:column;gap:6px}.entrance-row{display:flex;align-items:center;gap:7px;padding:8px 9px;border:1px solid #2a3a4e;border-radius:8px;background:#0b1420}.entrance-row .pin{width:8px;height:8px;border-radius:50%;background:var(--orange);flex-shrink:0;box-shadow:0 0 0 3px #ffbd691c}.entrance-info{flex:1;min-width:0}.entrance-info b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.entrance-info small{display:block;color:var(--muted);font-size:10px}.empty-entrances{color:var(--muted);font-size:12px;padding:13px;border:1px dashed #304158;border-radius:9px;text-align:center}.tip{padding:10px 11px;background:#10253a;border:1px solid #244563;border-radius:9px;color:#afcee9;font-size:11px}.danger-tip{background:#291a21;border-color:#55303b;color:#f5c3c6}.hidden{display:none!important}.footer{display:flex;justify-content:space-between;gap:10px;padding:16px 2px 0;font-size:11px;color:#788da7}.toast{position:fixed;right:22px;bottom:22px;max-width:390px;padding:13px 15px;border:1px solid #35516c;background:#142338;border-radius:11px;box-shadow:var(--shadow);z-index:10;animation:in .18s ease}.toast.error{border-color:#7c3c4b;background:#2c1720}.toast.success{border-color:#2d765c;background:#10271f}@keyframes in{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+@media(max-width:1300px){.layout{grid-template-columns:240px minmax(340px,1fr)}.right-panel{grid-column:1/-1}.right-body{display:grid;grid-template-columns:1fr 1fr}.palette-grid{grid-template-columns:repeat(4,minmax(0,1fr));max-height:500px}}
+@media(max-width:850px){.topbar{padding:0 12px}.logo{min-width:0}.status{min-width:0}.workspace{padding:10px}.layout{grid-template-columns:1fr}.center{grid-row:1;min-height:500px}.palette-panel{grid-row:2}.right-panel{grid-row:3;grid-column:auto}.right-body{display:flex}.palette-grid{grid-template-columns:repeat(5,minmax(0,1fr));max-height:380px}.toolbar .divider{display:none}.map-surface{min-height:420px}.logo span{display:none}.logo-mark{width:34px;height:34px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo"><div class="logo-mark">CX</div><div><strong>Room Studio</strong><span>CX Engine · visual room editor</span></div></div>
+  <div class="top-spacer"></div>
+  <div id="globalStatus" class="status">Connecting to project…</div>
+  <button class="quiet" id="refreshTextures">↻ Refresh assets</button>
+  <button class="primary" id="saveTop">Save room</button>
+</header>
+<main class="workspace">
+  <section class="toolbar">
+    <div class="field name-field"><label for="roomName">Room name</label><input id="roomName" value="new_room" maxlength="64" spellcheck="false"></div>
+    <div class="field"><label for="roomWidth">Width · tiles</label><input id="roomWidth" type="number" min="1" max="512" value="24"></div>
+    <div class="field"><label for="roomHeight">Height · tiles</label><input id="roomHeight" type="number" min="1" max="512" value="14"></div>
+    <div class="field"><label for="tileSize">World tile · px</label><input id="tileSize" type="number" min="1" max="256" value="16"></div>
+    <div class="field" style="width:130px"><label for="projection">Projection</label><select id="projection"><option value="orthogonal">Orthogonal</option><option value="oblique">Oblique / isometric</option></select></div>
+    <div class="field" style="width:170px"><label for="textureScale">Texture zoom · <span id="textureScaleValue">1.00×</span></label><input id="textureScale" type="range" min="0.25" max="4" step="0.25" value="1"></div>
+    <button id="resizeRoom">Resize grid</button>
+    <div class="divider"></div>
+    <button id="newRoom">＋ New</button>
+    <div class="field room-select"><label for="roomSelect">Open saved room</label><select id="roomSelect"><option value="">Choose a room…</option></select></div>
+    <button id="loadRoom">Load</button>
+    <div class="top-spacer"></div>
+    <button id="exportRoom">Export JSON</button>
+  </section>
+  <div class="hintline"><span><span class="key">Click / drag</span> paint, overlay, or collision overrides</span><span><span class="key">Scale tool</span> apply texture zoom</span><span><span class="key">Right click</span> erase / restore inherited collision</span><span><span class="key">Ctrl Z</span> undo</span><span><span class="key">Ctrl S</span> save</span><span>Coordinates start at <b>(0, 0)</b>.</span></div>
+  <section class="layout">
+    <aside class="panel palette-panel">
+      <div class="panel-head"><div><h2>Texture palette</h2><div class="subtext">Images become {$texture_id}</div></div><span id="textureCount" class="eyebrow">0 assets</span></div>
+      <div class="palette-body">
+        <input id="textureSearch" class="search" type="search" placeholder="Search textures…" autocomplete="off">
+        <div class="palette-meta"><span id="paletteMessage">Loading from assets/textures/</span><span>Click to select</span></div>
+        <div id="paletteGrid" class="palette-grid"><div class="empty-palette">Loading texture images…</div></div>
+      </div>
+    </aside>
+
+    <section class="panel center">
+      <div class="panel-head"><div><h2 id="mapTitle">Untitled room</h2><div id="mapSubtitle" class="subtext">24 × 14 tiles · 16 px world tiles</div></div><div class="subtext" id="selectedInfo">Selected: grass</div></div>
+      <div class="map-toolbar">
+        <div class="toolgroup"><button class="tool active" data-tool="paint">▧ Paint</button><button class="tool" data-tool="overlay">◩ Overlay</button><button class="tool" data-tool="scale">↕ Scale</button><button class="tool" data-tool="collision">⬡ Collision</button><button class="tool" data-tool="erase">⌫ Erase</button><button class="tool" data-tool="entrance">⚑ Entrance</button></div>
+        <div class="field" style="width:150px"><label for="overlayLayer">Overlay layer</label><select id="overlayLayer"><option value="background">Terrain overlay (over tiles)</option><option value="foreground" selected>Depth-sorted with entities</option><option value="above_entities">Above entities</option></select></div>
+        <div class="field hidden" id="collisionModeField" style="width:155px"><label for="collisionMode">Tile collision</label><select id="collisionMode"><option value="inherit">Use asset default</option><option value="solid">Force solid</option><option value="none">Force non-solid</option></select></div>
+        <button id="undoButton" class="tiny" title="Undo (Ctrl+Z)" disabled>↶ Undo</button>
+        <button id="clearButton" class="tiny danger" title="Clear all tiles">Clear map</button>
+        <div class="zoom"><span>Zoom</span><input id="zoomSlider" type="range" min="16" max="64" value="32"><b id="zoomValue">32 px</b></div>
+      </div>
+      <div class="map-surface" id="mapSurface"><div class="canvas-wrap"><canvas id="mapCanvas" class="map-canvas" width="768" height="448" aria-label="Room tile editor"></canvas></div><div id="mapEmpty" class="map-empty">Your map will appear here.</div></div>
+      <div class="bottom-status"><span id="cursorStatus">Tile: —</span><span>Mode: <b id="toolStatus">Paint</b></span><span id="roomStatus">Unsaved changes</span></div>
+    </section>
+
+    <aside class="panel right-panel">
+      <div class="panel-head"><div><h2>Room properties</h2><div class="subtext">Dimensions and entrances</div></div><span class="eyebrow">CX ROOM</span></div>
+      <div class="right-body">
+        <section class="section">
+          <div class="section-title">Overview <span class="subtext">live</span></div>
+          <div class="grid2"><div class="info-card"><span>Map area</span><strong id="areaInfo">336</strong></div><div class="info-card"><span>Painted tiles</span><strong id="paintedInfo">0</strong></div></div>
+          <div class="info-card"><span>Room file</span><strong id="fileInfo" style="font-size:13px;overflow-wrap:anywhere">rooms/new_room.room.json</strong></div>
+          <div class="tip">The editor places tiles for you—no manual tile-coordinate counting. Texture images are loaded once, and cells store only a texture ID plus a small zoom value (not image copies).</div>
+          <div class="tip">Texture zoom: 1× is normal. Below 1× repeats the pixel texture more tightly; above 1× zooms into the center of the texture. Use the Scale tool to apply the current zoom to existing tiles.</div>
+          <div class="tip">Projection: Orthogonal uses square top-down cells. Oblique / isometric maps the same logical tile grid onto 2:1 diamonds; entrances and collision coordinates remain the same. Overlay mode adds transparent art without replacing the ground underneath.</div>
+          <div class="tip">Collision tool: blue cells are solid; amber cells are explicitly non-solid. Unmarked cells inherit the texture default from <code>assets/collision.json</code> (or the legacy filename rule when that file is absent). Visual overlays never add collision.</div>
+        </section>
+        <section class="section">
+          <div class="section-title">Entrance points <span id="entranceCount" class="subtext">0 defined</span></div>
+          <div class="subtext">Select the entrance tool, enter a name, then click a tile. Entrances save into the room file and are made available as global variables by the engine.</div>
+          <div class="entrance-add"><input id="entranceName" placeholder="e.g. spawn" value="spawn" maxlength="64"><button id="placeEntrance" class="tiny">Place on map</button></div>
+          <div id="entranceList" class="entrance-list"><div class="empty-entrances">No entrance points yet.</div></div>
+        </section>
+        <section class="section">
+          <div class="section-title">Skript-style example</div>
+          <div class="info-card" style="font:11px/1.7 ui-monospace,SFMono-Regular,monospace;color:#bdd5ec;white-space:pre-wrap">load room "<span id="exampleRoom">start</span>"
+enter room "<span id="exampleRoom2">start</span>" at {entrance::<span id="exampleRoom3">start</span>::spawn}</div>
+          <div class="tip">Manual points work too:<br><code>set {entrance1::room1} to an entrance point at (0, 0)</code></div>
+        </section>
+      </div>
+    </aside>
+  </section>
+  <div class="footer"><span>CX Room Studio · local project tool, no external services</span><span>Rooms are saved to <code>./rooms/</code> · textures are discovered in <code>./assets/textures/</code></span></div>
+</main>
+<div id="toast" class="toast hidden"></div>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const els = {
+    status:$('globalStatus'), roomName:$('roomName'), width:$('roomWidth'), height:$('roomHeight'), tileSize:$('tileSize'), projection:$('projection'), overlayLayer:$('overlayLayer'),
+    roomSelect:$('roomSelect'), palette:$('paletteGrid'), search:$('textureSearch'), textureCount:$('textureCount'), paletteMessage:$('paletteMessage'),
+    collisionMode:$('collisionMode'), collisionModeField:$('collisionModeField'),
+    textureScale:$('textureScale'), textureScaleValue:$('textureScaleValue'),
+    canvas:$('mapCanvas'), surface:$('mapSurface'), cursor:$('cursorStatus'), toolStatus:$('toolStatus'), roomStatus:$('roomStatus'),
+    selectedInfo:$('selectedInfo'), zoom:$('zoomSlider'), zoomValue:$('zoomValue'), undo:$('undoButton'), entranceName:$('entranceName'),
+    entranceList:$('entranceList'), entranceCount:$('entranceCount'), toast:$('toast')
+  };
+  const ctx = els.canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  let textures = [], textureImages = new Map(), textureCollisionDefaults = new Map(), selectedTexture = 'grass', tool = 'paint', drawing = false, dirty = false, placingEntrance = false, gestureSnapshot = false, rightErase = false, toolBeforeRightErase = 'paint';
+  let room = {schema:'cx-room',version:1,name:'new_room',width:24,height:14,tileSize:16,projection:'orthogonal',tiles:[],tileScales:[],tileCollision:[],overlays:[],entrances:{}};
+  let undoStack = [], hoverCell = null, toastTimer = null;
+  const MAX_UNDO = 60;
+  const key = id => String(id || '').toLowerCase();
+  const clampInt = (value,min,max,fallback) => { const n = Number.parseInt(value,10); return Number.isFinite(n) ? Math.max(min,Math.min(max,n)) : fallback; };
+  const validRoomName = name => /^[A-Za-z0-9_-]{1,64}$/.test(name);
+  function notify(message,type='') {
+    els.toast.textContent = message; els.toast.className = 'toast ' + type; clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => els.toast.classList.add('hidden'), 3600);
+  }
+  function setStatus(text,type='') { els.status.textContent = text; els.status.className = 'status ' + type; }
+  function setDirty(value=true) { dirty = value; els.roomStatus.textContent = dirty ? 'Unsaved changes' : 'Saved'; els.roomStatus.style.color = dirty ? 'var(--orange)' : 'var(--green)'; }
+  async function api(url, options={}) {
+    const response = await fetch(url, options);
+    let body; try { body = await response.json(); } catch { body = {}; }
+    if (!response.ok) throw new Error(body.error || `Request failed (${response.status})`);
+    return body;
+  }
+  function blankTiles(width,height) { return Array.from({length:height},()=>Array(width).fill(null)); }
+  function blankScales(width,height) { return Array.from({length:height},()=>Array(width).fill(1)); }
+  function blankCollision(width,height) { return Array.from({length:height},()=>Array(width).fill('inherit')); }
+  function selectedScale() { const n=Number(els.textureScale.value); return Number.isFinite(n)?Math.max(.25,Math.min(4,n)):1; }
+  function snapshot() {
+    undoStack.push(JSON.stringify({name:room.name,width:room.width,height:room.height,tileSize:room.tileSize,projection:room.projection,tiles:room.tiles,tileScales:room.tileScales,tileCollision:room.tileCollision,overlays:room.overlays,entrances:room.entrances}));
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    els.undo.disabled = false;
+  }
+  function ensureGestureSnapshot() { if (!gestureSnapshot) { snapshot(); gestureSnapshot = true; } }
+  function undo() {
+    if (!undoStack.length) return;
+    const last = JSON.parse(undoStack.pop()); room = {...room,...last};
+    els.roomName.value=room.name; els.width.value=room.width; els.height.value=room.height; els.tileSize.value=room.tileSize; els.projection.value=room.projection||'orthogonal';
+    els.undo.disabled = !undoStack.length; gestureSnapshot=false; setDirty(); render();
+  }
+  function applyDimensions(width,height) {
+    const fresh = blankTiles(width,height), freshScales = blankScales(width,height), freshCollision = blankCollision(width,height);
+    for (let y=0;y<Math.min(room.height,height);y++) for (let x=0;x<Math.min(room.width,width);x++) {
+      fresh[y][x]=room.tiles[y][x];
+      freshScales[y][x]=room.tileScales?.[y]?.[x] ?? 1;
+      freshCollision[y][x]=room.tileCollision?.[y]?.[x] ?? 'inherit';
+    }
+    room.tiles=fresh; room.tileScales=freshScales; room.tileCollision=freshCollision; room.width=width; room.height=height;
+    room.overlays=(room.overlays||[]).filter(overlay=>overlay.x>=0&&overlay.y>=0&&overlay.x<width&&overlay.y<height);
+    for (const [name,pos] of Object.entries(room.entrances)) if(pos.x>=width||pos.y>=height) delete room.entrances[name];
+    els.width.value=width; els.height.value=height; setDirty(); render();
+  }
+  function setRoomData(data) {
+    const width = clampInt(data.width,1,512,24), height = clampInt(data.height,1,512,14);
+    const projection = String(data.projection||'orthogonal').toLowerCase()==='isometric'?'oblique':(String(data.projection||'orthogonal').toLowerCase()==='oblique'?'oblique':'orthogonal');
+    room = {schema:'cx-room',version:1,name:String(data.name||'new_room'),width,height,tileSize:clampInt(data.tileSize,1,256,16),projection,tiles:blankTiles(width,height),tileScales:blankScales(width,height),tileCollision:blankCollision(width,height),overlays:[],entrances:{}};
+    if (Array.isArray(data.tiles)) for(let y=0;y<height;y++) for(let x=0;x<width;x++) {
+      const tile = Array.isArray(data.tiles[y]) ? data.tiles[y][x] : null;
+      room.tiles[y][x] = typeof tile==='string' && textures.some(t=>t.id===tile.toLowerCase()) ? tile.toLowerCase() : null;
+      const scale = Array.isArray(data.tileScales?.[y]) ? Number(data.tileScales[y][x]) : 1;
+      room.tileScales[y][x] = Number.isFinite(scale) ? Math.max(.25,Math.min(4,scale)) : 1;
+      const collision = Array.isArray(data.tileCollision?.[y]) ? data.tileCollision[y][x] : 'inherit';
+      room.tileCollision[y][x] = ['inherit','solid','none'].includes(collision) ? collision : 'inherit';
+    }
+    if (Array.isArray(data.overlays)) for(const item of data.overlays) {
+      const x=Number(item?.x), y=Number(item?.y), texture=String(item?.texture||'').toLowerCase();
+      const layer=String(item?.layer||'foreground').toLowerCase();
+      if(Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<width&&y<height&&textures.some(t=>t.id===texture)&&['background','foreground','above_entities'].includes(layer)) {
+        if(!room.overlays.some(o=>o.x===x&&o.y===y&&o.texture===texture&&o.layer===layer)) room.overlays.push({x,y,texture,layer});
+      }
+    }
+    if (data.entrances && typeof data.entrances==='object') for(const [name,pos] of Object.entries(data.entrances)) {
+      const x=Number(pos?.x), y=Number(pos?.y);
+      if(/^[A-Za-z0-9_-]{1,64}$/.test(name)&&Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<width&&y<height) room.entrances[name]={x,y};
+    }
+    els.roomName.value=room.name; els.width.value=room.width; els.height.value=room.height; els.tileSize.value=room.tileSize; els.projection.value=room.projection;
+    undoStack=[]; els.undo.disabled=true; setDirty(false); updateHeader(); render();
+  }
+  function updateHeader() {
+    $('mapTitle').textContent=room.name || 'Untitled room'; $('mapSubtitle').textContent=`${room.width} × ${room.height} tiles · ${room.tileSize} px · ${room.projection==='oblique'?'oblique diamonds':'orthogonal squares'}`;
+    $('areaInfo').textContent=(room.width*room.height).toLocaleString();
+    $('fileInfo').textContent=`rooms/${room.name}.room.json`;
+    $('exampleRoom').textContent=room.name; $('exampleRoom2').textContent=room.name; $('exampleRoom3').textContent=room.name;
+    renderEntrances();
+  }
+  function isOblique() { return room.projection === 'oblique' || room.projection === 'isometric'; }
+  function currentCell(event) {
+    const rect=els.canvas.getBoundingClientRect();
+    const px=(event.clientX-rect.left)*(els.canvas.width/rect.width);
+    const py=(event.clientY-rect.top)*(els.canvas.height/rect.height);
+    const size=cellSize();
+    if(!isOblique()) return {x:Math.floor(px/size),y:Math.floor(py/size)};
+    const dx=px/size-room.height, dy=2*py/size;
+    return {x:Math.floor((dx+dy)/2),y:Math.floor((dy-dx)/2)};
+  }
+  function cellSize() { return clampInt(els.zoom.value,16,64,32); }
+  function cellOrigin(x,y,size) {
+    return isOblique() ? {x:(x-y+room.height-1)*size,y:(x+y)*size/2} : {x:x*size,y:y*size};
+  }
+  function cellPath(x,y,size) {
+    const o=cellOrigin(x,y,size);ctx.beginPath();
+    if(isOblique()) {ctx.moveTo(o.x+size,o.y);ctx.lineTo(o.x+2*size,o.y+size/2);ctx.lineTo(o.x+size,o.y+size);ctx.lineTo(o.x,o.y+size/2);}
+    else {ctx.rect(o.x,o.y,size,size);}
+    ctx.closePath();return o;
+  }
+  function drawTexture(id,x,y,size,scale=1,oblique=false) {
+    const img=textureImages.get(id); scale=Number.isFinite(scale)?Math.max(.25,Math.min(4,scale)):1;
+    const w=oblique?2*size:size,h=size;
+    ctx.save();
+    if(oblique) {ctx.beginPath();ctx.moveTo(x+size,y);ctx.lineTo(x+2*size,y+size/2);ctx.lineTo(x+size,y+size);ctx.lineTo(x,y+size/2);ctx.closePath();ctx.clip();}
+    else {ctx.beginPath();ctx.rect(x,y,size,size);ctx.clip();}
+    if(img?.complete&&img.naturalWidth>0) {
+      if(scale>1) {
+        const sw=img.naturalWidth/scale,sh=img.naturalHeight/scale;
+        ctx.drawImage(img,(img.naturalWidth-sw)/2,(img.naturalHeight-sh)/2,sw,sh,x,y,w,h);
+      } else {
+        const partW=Math.max(1,w*scale),partH=Math.max(1,h*scale);
+        for(let oy=0;oy<h;oy+=partH) for(let ox=0;ox<w;ox+=partW) ctx.drawImage(img,x+ox,y+oy,Math.min(partW,w-ox),Math.min(partH,h-oy));
+      }
+    } else {ctx.fillStyle='#26364a';ctx.fillRect(x,y,w,h);}
+    ctx.restore();
+  }
+  function drawCellTexture(id,x,y,size,scale=1) {
+    const o=cellOrigin(x,y,size);drawTexture(id,o.x,o.y,size,scale,isOblique());
+  }
+  function render() {
+    const size=cellSize(), oblique=isOblique();
+    els.canvas.width=oblique?(room.width+room.height)*size:room.width*size;
+    els.canvas.height=oblique?Math.ceil((room.width+room.height)*size/2):room.height*size;
+    els.canvas.style.width=els.canvas.width+'px'; els.canvas.style.height=els.canvas.height+'px'; ctx.imageSmoothingEnabled=false;
+    ctx.fillStyle='#121c29';ctx.fillRect(0,0,els.canvas.width,els.canvas.height);
+    let count=0;
+    for(let y=0;y<room.height;y++) for(let x=0;x<room.width;x++) {
+      const id=room.tiles[y][x],o=cellOrigin(x,y,size);
+      if(id) {drawTexture(id,o.x,o.y,size,room.tileScales?.[y]?.[x]??1,oblique);count++;}
+      else {
+        cellPath(x,y,size);ctx.fillStyle=((x+y)&1)?'#182434':'#1d2a3a';ctx.fill();
+      }
+      cellPath(x,y,size);ctx.strokeStyle='#08111c8c';ctx.lineWidth=1;ctx.stroke();
+    }
+    const layerOrder={background:0,foreground:1,above_entities:2}; // Preview order; runtime depth-sorts foreground overlays with entities.
+    for(const overlay of [...(room.overlays||[])].sort((a,b)=>(layerOrder[a.layer]??1)-(layerOrder[b.layer]??1)))
+      drawCellTexture(overlay.texture,overlay.x,overlay.y,size,1);
+    if(tool==='collision') {
+      for(let y=0;y<room.height;y++) for(let x=0;x<room.width;x++) {
+        const mode=room.tileCollision?.[y]?.[x]??'inherit';
+        const inheritedSolid=mode==='inherit'&&room.tiles[y][x]&&textureCollisionDefaults.get(room.tiles[y][x])==='solid';
+        const solid=mode==='solid'||inheritedSolid;
+        if(!solid&&mode!=='none')continue;
+        const o=cellPath(x,y,size);
+        ctx.fillStyle=solid?'rgba(45,145,255,.30)':'rgba(255,173,93,.22)';ctx.fill();
+        ctx.strokeStyle=solid?'#79c5ff':'#ffc27d';ctx.lineWidth=2;ctx.stroke();
+        ctx.fillStyle=solid?'#e5f5ff':'#fff0d8';ctx.font=`bold ${Math.max(10,Math.min(14,size*.38))}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(solid?'S':'–',o.x+size,o.y+size/2);
+      }
+    }
+    for(const [name,pos] of Object.entries(room.entrances)) {
+      const o=cellOrigin(pos.x,pos.y,size);
+      if(oblique) {cellPath(pos.x,pos.y,size);ctx.fillStyle='#ffbd6948';ctx.fill();ctx.strokeStyle='#fff0d3';ctx.lineWidth=2;ctx.stroke();}
+      else {ctx.fillStyle='#ffbd69cc';ctx.fillRect(o.x+2,o.y+2,size-4,size-4);ctx.strokeStyle='#fff0d3';ctx.lineWidth=2;ctx.strokeRect(o.x+2.5,o.y+2.5,size-5,size-5);}
+      ctx.fillStyle='#fff0d3';ctx.font=`bold ${Math.max(9,Math.min(12,size*.31))}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(name.slice(0,Math.max(2,Math.floor(size/5))),o.x+size,o.y+size/2);
+    }
+    if(hoverCell&&hoverCell.x>=0&&hoverCell.y>=0&&hoverCell.x<room.width&&hoverCell.y<room.height) {
+      cellPath(hoverCell.x,hoverCell.y,size);ctx.strokeStyle=tool==='entrance'?'#ffbd69':tool==='overlay'?'#c4a7ff':'#8bc8ff';ctx.lineWidth=2;ctx.stroke();
+    }
+    $('paintedInfo').textContent=`${count.toLocaleString()} base · ${(room.overlays||[]).length} overlays`;els.zoomValue.textContent=size+' px';updateHeader();
+  }
+  function renderPalette() {
+    const query=key(els.search.value).trim();
+    const visible=textures.filter(t=>t.id.includes(query)||('$'+t.id).includes(query));
+    els.palette.innerHTML='';
+    if(!visible.length) { els.palette.innerHTML='<div class="empty-palette">No textures match this search.</div>'; return; }
+    for(const tex of visible) {
+      const card=document.createElement('button'); card.className='texture-card'+(selectedTexture===tex.id?' selected':''); card.type='button'; card.title=`Select {$${tex.id}}`;
+      const image=document.createElement('img'); image.src=tex.url; image.alt=''; image.loading='lazy';
+      const name=document.createElement('span'); name.className='texture-name'; name.textContent=tex.id;
+      const variable=document.createElement('span'); variable.className='texture-var'; variable.textContent='{$'+tex.id+'}';
+      card.append(image,name,variable);card.addEventListener('click',()=>{selectedTexture=tex.id;if(tool!=='overlay')tool='paint';placingEntrance=false;syncTools();renderPalette();els.selectedInfo.textContent='Selected: '+tex.id;});
+      els.palette.append(card);
+    }
+  }
+  function renderEntrances() {
+    const entries=Object.entries(room.entrances).sort((a,b)=>a[0].localeCompare(b[0]));
+    els.entranceCount.textContent=`${entries.length} defined`;els.entranceList.innerHTML='';
+    if(!entries.length) {els.entranceList.innerHTML='<div class="empty-entrances">No entrance points yet. Add a name above, then click a tile in Entrance mode.</div>';return;}
+    for(const [name,pos] of entries) {
+      const row=document.createElement('div');row.className='entrance-row';
+      const pin=document.createElement('span');pin.className='pin';const info=document.createElement('div');info.className='entrance-info';
+      const title=document.createElement('b');title.textContent=name;const detail=document.createElement('small');detail.textContent=`Tile (${pos.x}, ${pos.y}) · {$entrance::${room.name}::${name}}`;
+      info.append(title,detail);const focus=document.createElement('button');focus.className='tiny';focus.textContent='Go';focus.title='Focus entrance';focus.addEventListener('click',()=>{els.surface.scrollTo({left:Math.max(0,pos.x*cellSize()-els.surface.clientWidth/2),top:Math.max(0,pos.y*cellSize()-els.surface.clientHeight/2),behavior:'smooth'});});
+      const del=document.createElement('button');del.className='tiny danger';del.textContent='×';del.title='Remove entrance';del.addEventListener('click',()=>{snapshot();delete room.entrances[name];setDirty();render();});
+      row.append(pin,info,focus,del);els.entranceList.append(row);
+    }
+  }
+  function syncTools() {
+    document.querySelectorAll('[data-tool]').forEach(btn=>btn.classList.toggle('active',btn.dataset.tool===tool));
+    els.toolStatus.textContent=tool==='paint'?'Paint base tiles':tool==='overlay'?'Transparent overlay':tool==='scale'?'Scale':tool==='collision'?'Edit tile collision':tool==='erase'?'Erase':'Place entrance';
+    els.collisionModeField.classList.toggle('hidden',tool!=='collision');
+    if(tool==='collision') els.selectedInfo.textContent='Collision: '+({inherit:'asset default',solid:'forced solid',none:'forced non-solid'}[els.collisionMode.value]||'asset default');
+    else if(tool==='entrance') els.selectedInfo.textContent='Entrance: '+(els.entranceName.value.trim()||'unnamed');
+    else if(tool==='erase') els.selectedInfo.textContent='Erase tiles and overlays';
+    else if(tool==='scale') els.selectedInfo.textContent='Apply zoom: '+selectedScale().toFixed(2)+'×';
+    else if(tool==='overlay') els.selectedInfo.textContent='Overlay: '+selectedTexture+' · '+({background:'over base tiles, under entities',foreground:'depth-sorted with entities',above_entities:'always over entities'}[els.overlayLayer.value]||els.overlayLayer.value);
+    else els.selectedInfo.textContent='Selected: '+selectedTexture+' · '+selectedScale().toFixed(2)+'×';
+  }
+  function paintAt(event) {
+    const pos=currentCell(event); if(pos.x<0||pos.y<0||pos.x>=room.width||pos.y>=room.height)return;
+    els.cursor.textContent=`Tile: (${pos.x}, ${pos.y})`;
+    if(tool==='entrance') {
+      const name=els.entranceName.value.trim();if(!/^[A-Za-z0-9_-]{1,64}$/.test(name)){notify('Entrance names can use letters, numbers, underscores and hyphens.','error');return;}
+      if(!placingEntrance&&!drawing)return;
+      ensureGestureSnapshot();room.entrances[name]={x:pos.x,y:pos.y};placingEntrance=false;setDirty();render();renderEntrances();notify(`Entrance '${name}' placed at (${pos.x}, ${pos.y}).`,'success');return;
+    }
+    if(tool==='collision') {
+      const mode=event.buttons===2?'inherit':els.collisionMode.value;
+      if(room.tileCollision[pos.y][pos.x]===mode)return;
+      ensureGestureSnapshot();room.tileCollision[pos.y][pos.x]=mode;setDirty();render();return;
+    }
+    if(tool==='overlay') {
+      const layer=els.overlayLayer.value;
+      const exists=room.overlays.some(o=>o.x===pos.x&&o.y===pos.y&&o.texture===selectedTexture&&o.layer===layer);
+      if(event.buttons===2||tool==='erase') {
+        const before=room.overlays.length;ensureGestureSnapshot();room.overlays=room.overlays.filter(o=>!(o.x===pos.x&&o.y===pos.y&&o.layer===layer));
+        if(before!==room.overlays.length){setDirty();render();}return;
+      }
+      if(exists)return;
+      ensureGestureSnapshot();room.overlays.push({x:pos.x,y:pos.y,texture:selectedTexture,layer});setDirty();render();return;
+    }
+    if(tool==='scale') {
+      if(!room.tiles[pos.y][pos.x]) return;
+      const newScale=selectedScale(); if(Math.abs((room.tileScales?.[pos.y]?.[pos.x]??1)-newScale)<.001)return;
+      ensureGestureSnapshot(); room.tileScales[pos.y][pos.x]=newScale;setDirty();render();return;
+    }
+    if(tool==='erase'||event.buttons===2) room.overlays=room.overlays.filter(o=>!(o.x===pos.x&&o.y===pos.y));
+    const newValue=tool==='erase'||event.buttons===2?null:selectedTexture;
+    const newScale=newValue?selectedScale():1;
+    if(room.tiles[pos.y][pos.x]===newValue && Math.abs((room.tileScales?.[pos.y]?.[pos.x]??1)-newScale)<.001)return;
+    ensureGestureSnapshot();
+    if(room.tiles[pos.y][pos.x]!==newValue) room.tileCollision[pos.y][pos.x]='inherit';
+    room.tiles[pos.y][pos.x]=newValue; room.tileScales[pos.y][pos.x]=newScale; setDirty();render();
+  }
+  async function refreshTextureList() {
+    setStatus('Scanning textures…');
+    try {
+      const payload=await api('/api/textures');textures=payload.textures||[];textureImages.clear();textureCollisionDefaults.clear();
+      for(const tex of textures){textureCollisionDefaults.set(tex.id,tex.collision==='solid'?'solid':'none');const image=new Image();image.src=tex.url;image.onload=()=>{textureImages.set(tex.id,image);render();};image.onerror=()=>{textureImages.delete(tex.id);};textureImages.set(tex.id,image);}
+      if(!textures.some(t=>t.id===selectedTexture))selectedTexture=textures[0]?.id||'';
+      els.textureCount.textContent=`${textures.length} assets`;els.paletteMessage.textContent=textures.length?'From assets/textures/':'Add PNG/JPG images to assets/textures/';
+      renderPalette();render();setStatus('Project connected','good');
+      if(payload.warnings?.length) notify(payload.warnings.join(' '),'error');
+    } catch(err) {setStatus('Server unavailable','bad');notify('Start the editor with: python3 tools/room_editor_server.py\n'+err.message,'error');throw err;}
+  }
+  async function refreshRoomList(selected='') {
+    const payload=await api('/api/rooms');els.roomSelect.innerHTML='<option value="">Choose a room…</option>';
+    for(const name of payload.rooms){const option=document.createElement('option');option.value=name;option.textContent=name;els.roomSelect.append(option);}
+    if(selected)els.roomSelect.value=selected;
+  }
+  async function loadRoom(name) {
+    if(!name)return;
+    if(dirty&&!confirm('Discard unsaved room changes and load another room?'))return;
+    try {const data=await api('/api/room/'+encodeURIComponent(name));setRoomData(data);await refreshRoomList(name);notify(`Loaded ${name}.room.json`,'success');}
+    catch(err){notify(err.message,'error');}
+  }
+  function buildRoomData() {
+    room.name=els.roomName.value.trim();room.width=clampInt(els.width.value,1,512,room.width);room.height=clampInt(els.height.value,1,512,room.height);room.tileSize=clampInt(els.tileSize.value,1,256,room.tileSize);
+    return {schema:'cx-room',version:1,name:room.name,width:room.width,height:room.height,tileSize:room.tileSize,projection:room.projection,tiles:room.tiles,tileScales:room.tileScales,tileCollision:room.tileCollision,overlays:room.overlays||[],entrances:room.entrances};
+  }
+  async function saveRoom() {
+    const desiredWidth=clampInt(els.width.value,1,512,room.width),desiredHeight=clampInt(els.height.value,1,512,room.height);
+    if(desiredWidth!==room.width||desiredHeight!==room.height){notify('Click “Resize grid” before saving changed dimensions.','error');return;}
+    const data=buildRoomData();if(!validRoomName(data.name)){notify('Room names can use letters, numbers, underscores and hyphens (up to 64 characters).','error');return;}
+    try {const result=await api('/api/room',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});setDirty(false);await refreshRoomList(result.name);els.roomSelect.value=result.name;updateHeader();notify(`Saved ${result.path}`,'success');}
+    catch(err){notify(err.message,'error');}
+  }
+  function exportRoom() {
+    const data=buildRoomData();if(!validRoomName(data.name)){notify('Choose a valid room name before exporting.','error');return;}
+    const blob=new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=data.name+'.room.json';a.click();URL.revokeObjectURL(url);notify('Exported room JSON.','success');
+  }
+  function newRoom() {
+    if(dirty&&!confirm('Discard unsaved changes and create a new room?'))return;
+    const width=clampInt(els.width.value,1,512,24),height=clampInt(els.height.value,1,512,14),tileSize=clampInt(els.tileSize.value,1,256,16);
+    setRoomData({name:'new_room',width,height,tileSize,projection:els.projection.value,tiles:blankTiles(width,height),tileCollision:blankCollision(width,height),overlays:[],entrances:{}});selectedTexture=textures.some(t=>t.id==='grass')?'grass':textures[0]?.id||'';renderPalette();setDirty();
+  }
+  document.querySelectorAll('[data-tool]').forEach(btn=>btn.addEventListener('click',()=>{tool=btn.dataset.tool;placingEntrance=false;syncTools();}));
+  els.canvas.addEventListener('contextmenu',event=>event.preventDefault());
+  els.canvas.addEventListener('pointerdown',event=>{event.preventDefault();els.canvas.setPointerCapture(event.pointerId);drawing=true;gestureSnapshot=false; if(event.button===2&&(tool==='overlay'||tool==='collision')){toolBeforeRightErase=tool;rightErase=true;paintAt(event);} else if(event.button===2){toolBeforeRightErase=tool;rightErase=true;tool='erase';syncTools();paintAt(event);} else if(tool==='entrance'){placingEntrance=true;ensureGestureSnapshot();paintAt(event);} else paintAt(event);});
+  els.canvas.addEventListener('pointermove',event=>{hoverCell=currentCell(event);els.cursor.textContent=`Tile: (${hoverCell.x}, ${hoverCell.y})`;if(drawing&&tool!=='entrance')paintAt(event);else render();});
+  function endDrawGesture(){drawing=false;gestureSnapshot=false;if(rightErase){tool=toolBeforeRightErase;rightErase=false;syncTools();}}
+  els.canvas.addEventListener('pointerup',endDrawGesture);els.canvas.addEventListener('pointercancel',endDrawGesture);els.canvas.addEventListener('pointerleave',()=>{if(!drawing){hoverCell=null;render();}});
+  $('resizeRoom').addEventListener('click',()=>{const width=clampInt(els.width.value,1,512,room.width),height=clampInt(els.height.value,1,512,room.height);snapshot();applyDimensions(width,height);});
+  $('newRoom').addEventListener('click',newRoom);$('saveTop').addEventListener('click',saveRoom);$('exportRoom').addEventListener('click',exportRoom);$('loadRoom').addEventListener('click',()=>loadRoom(els.roomSelect.value));
+  $('refreshTextures').addEventListener('click',()=>refreshTextureList().catch(()=>{}));$('placeEntrance').addEventListener('click',()=>{tool='entrance';placingEntrance=true;syncTools();notify('Click the tile where this entrance should be.');});
+  $('clearButton').addEventListener('click',()=>{if(!confirm('Clear all base tiles, collision overrides and overlays in this room? Entrance points will stay.'))return;snapshot();room.tiles=blankTiles(room.width,room.height);room.tileScales=blankScales(room.width,room.height);room.tileCollision=blankCollision(room.width,room.height);room.overlays=[];setDirty();render();});
+  els.search.addEventListener('input',renderPalette);els.zoom.addEventListener('input',render);els.textureScale.addEventListener('input',()=>{els.textureScaleValue.textContent=selectedScale().toFixed(2)+'×';syncTools();render();});els.roomName.addEventListener('input',()=>{room.name=els.roomName.value.trim();updateHeader();setDirty();});els.tileSize.addEventListener('change',()=>{room.tileSize=clampInt(els.tileSize.value,1,256,16);updateHeader();setDirty();});
+  els.projection.addEventListener('change',()=>{snapshot();room.projection=els.projection.value;setDirty();render();notify('Projection changed. Tile coordinates and collision grid are unchanged.');});
+  els.overlayLayer.addEventListener('change',()=>syncTools());
+  els.collisionMode.addEventListener('change',()=>{if(tool==='collision')syncTools();});
+  els.entranceName.addEventListener('input',()=>{if(tool==='entrance')syncTools();});
+  document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'){event.preventDefault();undo();}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();saveRoom();}});
+  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
+  async function init(){
+    await refreshTextureList();await refreshRoomList();
+    const names=Array.from(els.roomSelect.options).map(o=>o.value).filter(Boolean);
+    if(names.includes('start')) await loadRoom('start'); else if(names.length) await loadRoom(names[0]); else {setRoomData(room);setDirty(false);}
+    setStatus('Project connected','good');
+  }
+  init().catch(err=>{setStatus('Could not initialize','bad');console.error(err);});
+})();
+</script>
+</body>
+</html>

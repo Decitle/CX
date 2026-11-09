@@ -1,0 +1,18 @@
+# Responsive UI: 0,0 is top-left; 128,128 is bottom-right.
+set engine::ui_scale to 1.0
+set engine::ui_reference_width to 1280
+set engine::ui_reference_height to 720
+set engine::resolution_mode to "responsive"
+
+canvas "HUD":
+    create panel "minimap_panel" at grid (127, 1) anchor top_right size (230, 155) color (12, 20, 32, 228)
+    create button "map_btn" at grid (127, 1) anchor top_right size (206, 42) label "Map"
+    create panel "map_glow" to the left of button "map_btn" gap 12 size (160, 42) color (36, 50, 70, 220)
+    create button "hotbar" at grid (64, 127) anchor bottom_center size (560, 58) label "Hotbar"
+    create button "inventory_btn" above button "hotbar" gap 10 size (180, 42) label "Inventory"
+
+on load:
+    open canvas "HUD"
+
+on click button "inventory_btn":
+    broadcast "Inventory clicked."

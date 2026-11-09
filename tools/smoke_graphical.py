@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""Confirm that the graphical engine stays alive while opening a starter project."""
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import subprocess
+import sys
+import time
+
+
+def main() -> int:
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--engine",type=Path,required=True)
+    parser.add_argument("--project",type=Path,required=True)
+    parser.add_argument("--seconds",type=float,default=6.0)
+    args=parser.parse_args()
+    if not args.engine.is_file(): parser.error(f"Graphical executable does not exist: {args.engine}")
+    if not (args.project/"config.json").is_file(): parser.error(f"Starter project is invalid: {args.project}")
+    process=subprocess.Popen([str(args.engine.resolve()),str(args.project.resolve())],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    try:
+        time.sleep(max(1.0,args.seconds))
+        code=process.poll()
+        if code is not None:
+            stdout,stderr=process.communicate()
+            print("Graphical engine exited before the smoke interval.",file=sys.stderr)
+            if stdout: print(stdout,file=sys.stderr)
+            if stderr: print(stderr,file=sys.stderr)
+            return code or 1
+        print(f"Graphical engine remained running for {args.seconds:.1f} seconds with {args.project}.")
+        return 0
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            try: process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                process.kill(); process.wait(timeout=3)
+
+if __name__=="__main__":
+    raise SystemExit(main())

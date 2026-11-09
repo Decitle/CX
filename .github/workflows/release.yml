@@ -1,0 +1,176 @@
+name: Build release packages
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to build and publish
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+
+jobs:
+  source:
+    name: Source ZIP and TAR.GZ
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Set release version
+        run: echo "CX_VERSION=$(echo '${{ github.event.inputs.tag || github.ref_name }}' | sed 's/^v//')" >> "$GITHUB_ENV"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Create and verify source distributions
+        run: |
+          python tools/package_release.py source --format all --output-dir dist
+          python tools/package_release.py verify --archive dist/CXEngine-v${CX_VERSION}-source.zip
+          python tools/package_release.py verify --archive dist/CXEngine-v${CX_VERSION}-source.tar.gz
+      - name: Upload source assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-distributions
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  runtime:
+    name: ${{ matrix.target }} runtime
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows-x86_64
+            runner: windows-2022
+            architecture: x64
+          - target: windows-arm64
+            runner: windows-11-arm
+            architecture: ARM64
+          - target: linux-x86_64
+            runner: ubuntu-24.04
+            architecture: x64
+          - target: linux-arm64
+            runner: ubuntu-24.04-arm
+            architecture: arm64
+          - target: macos-x86_64
+            runner: macos-15-intel
+            architecture: x86_64
+          - target: macos-arm64
+            runner: macos-15
+            architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Set release version
+        shell: bash
+        run: echo "CX_VERSION=$(echo '${{ github.event.inputs.tag || github.ref_name }}' | sed 's/^v//')" >> "$GITHUB_ENV"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Linux graphical build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev libudev-dev libx11-dev libxrandr-dev \
+            libxcursor-dev libxi-dev xvfb
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >-
+          cmake -S . -B build -A ${{ matrix.architecture }}
+          -DCMAKE_BUILD_TYPE=Release
+          -DCX_FETCH_SFML=ON
+          -DCX_ENABLE_SFML_AUDIO=OFF
+          -DCX_BUILD_TESTS=ON
+      - name: Configure (Linux)
+        if: runner.os == 'Linux'
+        run: >-
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCX_FETCH_SFML=ON
+          -DCX_ENABLE_SFML_AUDIO=OFF
+          -DCX_BUILD_TESTS=ON
+      - name: Configure (macOS)
+        if: runner.os == 'macOS'
+        run: >-
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_OSX_ARCHITECTURES=${{ matrix.architecture }}
+          -DCX_FETCH_SFML=ON
+          -DCX_ENABLE_SFML_AUDIO=OFF
+          -DCX_BUILD_TESTS=ON
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+      - name: Check starter project (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./build/Release/cx-cli.exe --check examples/quickstart
+      - name: Check starter project (Linux and macOS)
+        if: runner.os != 'Windows'
+        run: ./build/cx-cli --check examples/quickstart
+      - name: Install runtime and shared dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: cmake --install build --config Release --prefix stage
+      - name: Install runtime and shared dependencies (Linux and macOS)
+        if: runner.os != 'Windows'
+        run: cmake --install build --prefix stage
+      - name: Graphical smoke test (Linux)
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: xvfb-run -a python tools/smoke_graphical.py --engine ./build/cx-engine --project examples/quickstart --seconds 6
+      - name: Package the starter runtime
+        shell: bash
+        run: >-
+          python tools/package_runtime.py
+          --stage stage
+          --project examples/quickstart
+          --build-dir build
+          --source-root .
+          --target ${{ matrix.target }}
+          --version "$CX_VERSION"
+          --output-dir dist
+      - name: Upload runtime assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish GitHub Release
+    needs: [source, runtime]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download all verified assets
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*"
+          path: release-assets
+          merge-multiple: true
+      - name: Publish release and attach verified packages
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: CX Engine ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ contains(github.event.inputs.tag || github.ref_name, '-') }}
+          files: release-assets/*
