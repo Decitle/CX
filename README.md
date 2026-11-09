@@ -63,7 +63,7 @@ No such multi-platform release is published yet. Planned package contents and na
 
 ## License
 
-CX currently uses the **BSD 3-Clause License**. The license is included in [LICENSE](../LICENSE). The license may be reconsidered before a public release, but no license change has been made.
+CX currently uses the **BSD 3-Clause License**. The license is included in [LICENSE](LICENSE). The license may be reconsidered before a public release, but no license change has been made.
 
 ## Contributions and attribution
 
