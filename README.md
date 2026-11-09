@@ -14,7 +14,7 @@ A separate command-line tool supports project checks, diagnostics, and automated
 - **Room and project workflows** — data-driven room files, asset discovery, project initialization, and the Room Studio editor.
 - **Developer CLI** — project validation and non-graphical checks for testing and automation.
 
-These are project goals and current development areas, not a claim that every planned editor, physics, UI, audio, or portability feature is complete. See [Project status](PROJECT_STATUS.md) and the [roadmap](ROADMAP.md).
+These are project goals and current development areas, not a claim that every planned editor, physics, UI, audio, or portability feature is complete. See [Project status](docs/PROJECT_STATUS.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Architecture
 
@@ -37,7 +37,7 @@ The wider engine has reached an internal **v0.10.14 development checkpoint**. On
 - `examples/textured_beam.cx`
 - The beam behavior documentation and AI-assisted contribution log in `docs/`
 
-The complete engine build files and the rest of the implementation have not yet been imported here. As a result, this checkout cannot currently build the full graphical engine by itself. There are no tagged engine releases or downloadable runtime packages published from this repository yet.
+The complete engine build files and the rest of the implementation have not yet been imported here. As a result, this checkout cannot currently build the full graphical engine by itself. There are no published GitHub Release or downloadable runtime packages from this repository yet.
 
 The development checkpoint and the contents of this GitHub repository are deliberately described separately so that readers can see exactly what is available here.
 
@@ -45,11 +45,11 @@ The development checkpoint and the contents of this GitHub repository are delibe
 
 Linux x86_64 is the only platform with a recorded full-engine build and test result at the current development checkpoint. Windows support is a target, not a verified claim: the development code contains Windows-specific paths and MSVC configuration, but a native Windows build and runtime test are still required. Linux ARM64 and macOS builds also need validation.
 
-See [Platform support](PLATFORM_SUPPORT.md) for the evidence and target matrix.
+See [Platform support](docs/PLATFORM_SUPPORT.md) for the evidence and target matrix.
 
 ## Documentation
 
-The [documentation home](index.md) is the starting point for the project overview, status, platform support, release format, and roadmap.
+The [documentation home](docs/index.md) is the starting point for the project overview, status, platform support, release format, and roadmap.
 
 ## Releases
 
@@ -59,7 +59,7 @@ When the repository contains the complete buildable engine and platform CI has p
 - Self-contained starter runtime packages for each validated operating-system/architecture combination.
 - Checksums, build metadata, and dependency/license notices.
 
-No such multi-platform release is published yet. Planned package contents and naming are described in [Release format](RELEASE_FORMAT.md).
+No such multi-platform release is published yet. Planned package contents and naming are described in [Release format](docs/RELEASE_FORMAT.md).
 
 ## License
 
