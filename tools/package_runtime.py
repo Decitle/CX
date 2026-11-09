@@ -174,6 +174,30 @@ def copy_runtime_stage(stage: Path, destination: Path, target: str) -> None:
         raise RuntimeError("Runtime install stage did not contain the expected executable payload")
 
 
+GENERATED_PROJECT_STATE_NAMES = frozenset({
+    ".variables.lock",
+    "variables.csv",
+    "variables.csv.bak",
+    "variables.cxv",
+    "variables.cxv.bak",
+    "variables.meta",
+})
+
+
+def validate_starter_project(project: Path) -> None:
+    """Reject generated persistence state from starter-project templates."""
+    if not project.is_dir():
+        raise RuntimeError(f"Starter project directory is missing: {project}")
+    for path in project.rglob("*"):
+        if not path.is_file():
+            continue
+        name = path.name.lower()
+        if name in GENERATED_PROJECT_STATE_NAMES or name.endswith(".tmp"):
+            raise RuntimeError(
+                f"Starter project contains generated persistent state: {path.relative_to(project)}"
+            )
+
+
 def collect_files(root: Path) -> list[Path]:
     files=[]
     for path in sorted(root.rglob("*")):
@@ -317,6 +341,7 @@ def main() -> int:
             root=Path(tmp)/"CXEngine"
             root.mkdir()
             copy_runtime_stage(args.stage, root, args.target)
+            validate_starter_project(args.project)
             copy_tree(args.project,root/"project")
             shutil.copy2(args.source_root/"LICENSE",root/"LICENSE")
             shutil.copy2(args.source_root/"docs"/"runtime-package.md",root/"README.md")

@@ -94,3 +94,15 @@ Local evidence: Linux graphical build 19/19 CTest; package tests 6/6; Room Studi
 - Added an explicit Windows system-DLL exclusion list plus generic API-set exclusions. Unknown application DLLs remain eligible for bundling.
 - Expanded the Windows packaging regression to verify that a future SFML runtime DLL is retained while `kernel32.dll`, SDK headers, static libraries, and SDK docs are omitted.
 - Local validation: 18/18 headless CTest targets and 6/6 packaging tests passed. A new native CI run is required before treating the newly slimmed Windows package as verified.
+
+
+## 2026-11-09 — isolate graphical smoke project and reject generated starter state
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request  
+**Branch:** `complete-source-import-v0.10.14-review`  
+**Commit subject:** `AI-assisted by ChatGPT: Isolate smoke-test project and clean starter packages`
+
+- Changed `tools/smoke_graphical.py` to launch a disposable copy of the supplied project so first-run scaffolding never writes into tracked examples.
+- Added a package-time rejection guard for generated persistence files (`.variables.lock`, `variables.csv`, cache/manifest files, and temporary files) in the starter project.
+- Added regression tests proving the smoke helper leaves its source project untouched and that the packager rejects generated save state.
+- Local validation: 18/18 headless CTest targets, 8/8 packaging tests, and Python syntax compilation passed. A fresh native CI run is required before release packaging is considered verified.

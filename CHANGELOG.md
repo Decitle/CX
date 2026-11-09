@@ -5,6 +5,8 @@
 - Tightened starter runtime packaging to include only executable files and required non-system shared runtime libraries. SFML headers, static libraries, CMake package metadata, and SDK documentation are not copied into application downloads.
 - Excluded known Windows operating-system DLLs from runtime archives. Windows provides these components; redistributing them beside the application is unnecessary and can be inappropriate.
 - Added regression coverage proving Windows runtime ZIPs retain an application SFML DLL if present while excluding Windows system DLLs and development-only files.
+- Changed graphical smoke tests to launch a disposable copy of the starter project, preventing generated save/lock files from contaminating the tracked example and release package.
+- Added a packaging guard that refuses starter projects containing generated persistent state or temporary files.
 - Local validation: 18/18 headless CTest targets and 6/6 packaging tests passed. The native Windows x64 build, CTest, starter-project check, and graphical startup smoke passed in GitHub Actions; its first package artifact was inspected and exposed the over-broad stage copy corrected here.
 - The new runtime-package cleanup requires a fresh native CI run before any new runtime ZIP is treated as release-ready.
 

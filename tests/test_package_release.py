@@ -22,6 +22,12 @@ assert RUNTIME_SPEC and RUNTIME_SPEC.loader
 runtime_package = importlib.util.module_from_spec(RUNTIME_SPEC)
 RUNTIME_SPEC.loader.exec_module(runtime_package)
 
+SMOKE_MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "smoke_graphical.py"
+SMOKE_SPEC = importlib.util.spec_from_file_location("cx_smoke_graphical", SMOKE_MODULE_PATH)
+assert SMOKE_SPEC and SMOKE_SPEC.loader
+smoke_graphical = importlib.util.module_from_spec(SMOKE_SPEC)
+SMOKE_SPEC.loader.exec_module(smoke_graphical)
+
 
 class PackageReleaseTests(unittest.TestCase):
     def make_repo(self, root: Path) -> None:
@@ -93,6 +99,28 @@ class PackageReleaseTests(unittest.TestCase):
             (root / "src" / "bad.exe").write_bytes(b"not source")
             with self.assertRaisesRegex(RuntimeError, "compiled artifact, cache, or nested archive"):
                 package.collect_source(root)
+
+    def test_runtime_packager_rejects_generated_starter_save_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary) / "quickstart"
+            (project / "scripts").mkdir(parents=True)
+            (project / "config.json").write_text("{}\n", encoding="utf-8")
+            (project / "scripts" / "main.cx").write_text("broadcast \"hello\"\n", encoding="utf-8")
+            (project / "variables.csv").write_text("score,0\n", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "generated persistent state"):
+                runtime_package.validate_starter_project(project)
+
+    def test_graphical_smoke_copies_project_before_startup(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "source"
+            (source / "scripts").mkdir(parents=True)
+            (source / "config.json").write_text("{}\n", encoding="utf-8")
+            (source / "scripts" / "main.cx").write_text("broadcast \"hello\"\n", encoding="utf-8")
+            copied = smoke_graphical.prepare_smoke_project(source, root / "smoke-copy")
+            (copied / "variables.csv").write_text("score,1\n", encoding="utf-8")
+            self.assertFalse((source / "variables.csv").exists())
+            self.assertTrue((copied / "variables.csv").is_file())
 
     def test_windows_runtime_zip_contains_executables_dependencies_and_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

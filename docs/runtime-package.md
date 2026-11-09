@@ -13,7 +13,7 @@ The package includes the application libraries that can be redistributed with th
 - Windows: run `bin/cx-engine.exe project` from PowerShell or Command Prompt.
 - Linux/macOS: run `./bin/cx-engine ./project` from a terminal.
 
-The included `project/` folder is a minimal editable starter, not a sample game.
+The included `project/` folder is a minimal editable starter, not a sample game. It is packaged without generated save files or lock files; the first launch creates project state locally.
 
 ## Check the project
 
