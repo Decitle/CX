@@ -652,6 +652,7 @@ void testRuntimeDoesNotImmediatelyOverwriteMalformedCsv() {
     expect(after.str() == damagedCsv,
            "a warning-only load must not immediately serialize partial data over the malformed authoritative CSV");
     expect(std::filesystem::exists(root / "variables.cxv"), "the previous cache should remain available until a deliberate save");
+    csvAfter.close(); // Windows does not permit deleting the project directory while CSV remains open.
     std::filesystem::remove_all(root);
 }
 

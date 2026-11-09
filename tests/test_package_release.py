@@ -153,7 +153,7 @@ class PackageReleaseTests(unittest.TestCase):
                 self.assertEqual(zipped.read("bin/cx-cli.exe"), b"Windows CLI fixture")
                 self.assertEqual(zipped.read("bin/sfml-graphics-3.dll"), b"SFML DLL fixture")
                 self.assertEqual(zipped.read("project/scripts/main.cx").replace(b"\r\n", b"\n"), b"broadcast \"ready\"\n")
-                self.assertEqual(zipped.read("third-party-licenses/SFML-LICENSE.txt"), b"SFML license fixture\n")
+                self.assertEqual(zipped.read("third-party-licenses/SFML-LICENSE.txt").replace(b"\r\n", b"\n"), b"SFML license fixture\n")
                 payloads = {
                     name: zipped.read(name)
                     for name in ("bin/cx-engine.exe", "bin/cx-cli.exe", "bin/sfml-graphics-3.dll")
