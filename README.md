@@ -6,7 +6,7 @@ CX is a lightweight, scriptable foundation for 2D games. Its primary application
 
 A separate command-line utility provides project validation, diagnostics, and automation. The CLI supports development; it is not a substitute for the graphical engine.
 
-> **Repository status:** The complete curated source tree is now merged into `main`. Native CI run #6 passed build, CTest, and starter-project validation on all six configured targets: Linux x86_64/ARM64, Windows x86_64/ARM64, and macOS x86_64/ARM64. Linux and Windows graphical startup smoke tests are part of the matrix. A follow-up run is validating the last clean-starter and packaging safeguards; check [GitHub Actions](https://github.com/Decitle/CX/actions) for its latest result. No versioned GitHub Release has been published yet. SFML's current Linux window backend requires XWayland on Wayland desktops; CX does not yet have a native Wayland backend.
+> **Repository status:** The complete curated source tree is merged into `main`. Native CI run #6 passed build, CTest, and starter-project validation on all six configured targets. Final follow-up run #7 also passed all six, including the clean starter-project, graphical smoke, and runtime-packaging safeguards. No versioned GitHub Release has been published yet. SFML's current Linux window backend requires XWayland on Wayland desktops; CX does not yet have a native Wayland backend.
 
 ## Highlights
 

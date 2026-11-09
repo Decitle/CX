@@ -118,3 +118,11 @@ Local evidence: Linux graphical build 19/19 CTest; package tests 6/6; Room Studi
 - Updated the README, project status, platform support, documentation landing page, release format, and changelog to reflect the six-platform native CI baseline and the actual remaining publication steps.
 - Clarified that native CI validation is not physical-device QA, SFML's Linux window backend uses XWayland, and no official GitHub Release or Pages deployment is claimed until one is actually published/enabled.
 
+
+## 2026-11-09 — final native CI verification status correction
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request  
+**Commit subject:** `AI-assisted by ChatGPT: Record final six-platform CI pass`
+
+- Updated the README, project status, platform support, and changelog to record that follow-up GitHub Actions run #7 passed all six native targets, including the final disposable smoke-project and generated-save-state protections.
+- The successful Windows x86_64 job uploaded a clean runtime artifact; its inner ZIP was downloaded and inspected, its manifest hashes verified, and the package was confirmed free of system DLLs, SDK payload, and generated save state.

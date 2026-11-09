@@ -3,7 +3,7 @@
 **Development checkpoint:** v0.10.14-preview.5 (pre-release candidate; no official release tag yet)  
 **Source repository:** complete curated source tree merged into `main`  
 **Native CI baseline:** all six configured platform/architecture jobs passed build, CTest, and starter-project validation in run #6  
-**Latest source-safety verification:** follow-up run #7 validates the final disposable-smoke-project and generated-save-state safeguards  
+**Latest source-safety verification:** follow-up CI run #7 passed all six targets, including the final disposable-smoke-project and generated-save-state safeguards  
 **Release status:** release workflow is configured; no GitHub Release or downloadable official release assets have been published yet
 
 ## Implemented foundation
@@ -34,7 +34,7 @@ GitHub Actions run #6 completed successfully for all six configured targets:
 | macOS x86_64 | Pass | Pass | Pass | Not run by current workflow |
 | macOS ARM64 | Pass | Pass | Pass | Not run by current workflow |
 
-Run #7 is validating the final package/smoke safeguards on the exact merged source revision. Follow-up status is visible at [GitHub Actions](https://github.com/Decitle/CX/actions). A green CI result establishes that the configured build and tests passed on those runners; it does not replace physical-device testing on every Windows, macOS, Linux distribution, compositor, or Chromebook.
+Run #7 passed the exact merged source revision across all six native targets, including the final package/smoke safeguards. See [GitHub Actions](https://github.com/Decitle/CX/actions) for the recorded jobs and future changes. A green CI result establishes that the configured build and tests passed on those runners; it does not replace physical-device testing on every Windows, macOS, Linux distribution, compositor, or Chromebook.
 
 ### Runtime package quality
 

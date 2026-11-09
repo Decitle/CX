@@ -15,7 +15,7 @@ GitHub Actions run #6 completed successfully for the six configured native targe
 | macOS x86_64 | **Pass** | Native build, CTest, and starter CLI check passed. The current CI workflow does not run a graphical startup smoke test on macOS. |
 | macOS ARM64 | **Pass** | Native build, CTest, and starter CLI check passed. The current CI workflow does not run a graphical startup smoke test on macOS. |
 
-The final smoke-test and generated-starter-state safeguards are being rerun on the merged source; see [GitHub Actions](https://github.com/Decitle/CX/actions) for the most recent exact result. These are native CI checks, not physical-device QA. Individual GPU drivers, display scaling, input devices, and desktop/compositor configurations can still differ.
+The final smoke-test and generated-starter-state safeguards passed on run #7 of the merged source. See [GitHub Actions](https://github.com/Decitle/CX/actions) for the exact jobs and future results. These are native CI checks, not physical-device QA. Individual GPU drivers, display scaling, input devices, and desktop/compositor configurations can still differ.
 
 ## Wayland desktops
 

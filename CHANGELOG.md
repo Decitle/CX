@@ -7,6 +7,7 @@
 - Added native graphical startup smoke checks for Linux and Windows runners. The current automated workflow does not perform macOS graphical smoke tests.
 - Tightened runtime packaging to exclude Windows system DLLs and SDK/development files; starter save state and lock files are rejected, and graphical smoke tests use a disposable project copy.
 - Added user-facing documentation for platform support, release automation, first-use instructions, and the downloadable runtime layout.
+- Final follow-up CI run #7 passed all six native targets, including smoke-test project isolation, clean-starter-state validation, and the Windows x64 runtime package upload.
 - Official release assets and the public GitHub Pages deployment still require the maintainer's release-tag and repository-settings steps.
 
 ## v0.10.14-preview.5 — native runtime packaging cleanup (2026-11-09)
