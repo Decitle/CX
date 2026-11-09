@@ -65,3 +65,19 @@ Changes made:
 - Verified Linux x86_64 with GCC 14.2.0 and SFML 3.1.0: 19/19 CTest; verified source package checks, the starter project's CLI validation, runtime dependency closure, and a six-second Xvfb startup smoke.
 
 The branch is submitted for review and native CI. It is not merged into `main`, no tag or GitHub Release is created, the repository remains private, and the BSD 3-Clause license is unchanged.
+
+## 2026-11-08 — native CI portability fixes
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request  
+**Branch:** `complete-source-import-v0.10.14-review`  
+**Commit subject:** `AI-assisted by ChatGPT: Fix portable floating parsing and Linux CI dependencies`
+
+Changes prepared for the follow-up review commit:
+
+- Added compile-time detection for floating-point `std::from_chars`; compilers with the overload retain that path, while Apple libc++ without it uses a classic-locale, full-token stream parser.
+- Added strict value-conversion regressions for signs, exponents, whitespace, partial tokens, out-of-range values, NaN, and infinity.
+- Added `libfreetype6-dev` to both Linux CI and release workflow dependency setup, matching SFML Graphics' source-build requirement.
+- Updated the preview changelog and platform/project status to distinguish the initial native CI failures from verified platform support.
+
+Local evidence: Linux graphical build 19/19 CTest; package tests 6/6; Room Studio HTTP tests 9/9; forced portable-fallback runtime conversion tests passed. The native CI rerun is required before marking any additional architecture verified. No merge, release, tag, license change, or repository visibility change is part of this contribution.
+

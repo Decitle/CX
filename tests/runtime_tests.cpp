@@ -29,6 +29,28 @@ void testValueConversions() {
     expect(cx::Value::fromString("true").truthy(), "true should parse as bool");
     expect(!cx::Value::fromString("false").truthy(), "false should parse as bool");
     expect(cx::Value::fromString("42").numberOr() == 42.0, "42 should parse as number");
+    expect(cx::Value::fromString("-1.25e2").numberOr() == -125.0,
+           "signed scientific notation should parse as number");
+    expect(cx::Value::fromString(".5").numberOr() == 0.5,
+           "fractional values without a leading zero should parse as number");
+    expect(cx::Value::fromString(" 42 ").numberOr() == 42.0,
+           "fromString should trim surrounding whitespace before numeric conversion");
+    expect(cx::Value(" 42 ").numberOr(9.0) == 9.0,
+           "numberOr should not silently trim whitespace from an existing string value");
+    expect(cx::Value::fromString("+42").isString(),
+           "a leading plus should remain text to match from_chars numeric syntax");
+    expect(cx::Value::fromString("42tail").isString(),
+           "a numeric prefix followed by text should remain a string");
+    expect(cx::Value("42tail").numberOr(9.0) == 9.0,
+           "numberOr should reject partial numeric prefixes");
+    expect(cx::Value::fromString("1e9999").isString(),
+           "an out-of-range exponent should not be converted to a number");
+    expect(cx::Value::fromString("nan").isNumber() && std::isnan(cx::Value::fromString("nan").numberOr()),
+           "NaN should retain the existing floating from_chars behavior");
+    expect(cx::Value::fromString("-infinity").isNumber() &&
+               std::isinf(cx::Value::fromString("-infinity").numberOr()) &&
+               cx::Value::fromString("-infinity").numberOr() < 0.0,
+           "infinity should retain the existing floating from_chars behavior");
     expect(cx::Value(5).toString() == "5", "integer values should not print a decimal");
 }
 

@@ -6,12 +6,12 @@ CX uses a C++20 core with a platform-specific graphical runtime. The project aim
 
 | Platform | State | Evidence / limitation |
 |---|---|---|
-| Linux x86_64 | **Verified development baseline** | GCC 14.2 Release core/CLI and SFML 3.1.0 graphical build, exact source-archive clean extraction build, 19/19 CTest, and a minimal Linux starter runtime smoke test. Physical-device testing is still useful. |
-| Windows x86_64 | **Not yet verified** | Windows-specific persistent storage code, MSVC compile settings, Windows font paths, and a native CI job are present, but no native compile or runtime result has been recorded. Do not treat it as supported until native CI and graphical smoke tests pass. |
-| Linux ARM64 | Planned / unverified | No completed native runtime validation yet. |
-| Windows ARM64 | Planned / unverified | No completed native runtime validation yet. |
-| macOS x86_64 | Planned / unverified | No completed native runtime validation yet. |
-| macOS ARM64 | Planned / unverified | No completed native runtime validation yet. |
+| Linux x86_64 | **Verified development baseline** | GCC 14.2 Release core/CLI and SFML 3.1.0 graphical build, exact source-archive clean extraction build, 19/19 CTest, and a minimal Linux starter runtime smoke test. Physical-device testing is still useful. The first GitHub runner attempt exposed a missing FreeType dev package in CI; the workflow dependency has been corrected and is awaiting rerun. |
+| Windows x86_64 | **Not yet verified** | Windows-specific persistent storage code, MSVC compile settings, Windows font paths, and a native CI job are present. The first CI job reached compilation but had not completed at the time of the latest update. Do not treat it as supported until native CI and graphical smoke tests pass. |
+| Linux ARM64 | **Not yet verified** | The first CI configure attempt lacked the FreeType dev package; workflow dependency corrected, awaiting rerun. |
+| Windows ARM64 | **Not yet verified** | Native CI reached compilation; no completed test or runtime result recorded yet. |
+| macOS x86_64 | **Not yet verified** | First CI build exposed Apple's missing floating-point `std::from_chars` overload; portable fallback added and awaiting rerun. |
+| macOS ARM64 | **Not yet verified** | First CI build exposed Apple's missing floating-point `std::from_chars` overload; portable fallback added and awaiting rerun. |
 
 A six-target CI matrix is configured in `.github/workflows/ci.yml`. Native Windows, ARM64, and macOS results must still be produced and reviewed before those targets are advertised as supported. An architecture is not a supported download until the build, tests, package extraction, starter launch, and runtime dependency checks all pass on that architecture.
 

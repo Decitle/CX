@@ -2,11 +2,94 @@
 
 #include <algorithm>
 #include <charconv>
+#include <cctype>
 #include <cmath>
 #include <iomanip>
+#include <limits>
+#include <locale>
 #include <sstream>
+#include <type_traits>
+#include <utility>
 
 namespace cx {
+namespace {
+
+// Some standard-library implementations provide floating-point std::from_chars and
+// others (notably older Apple libc++ releases) only provide the integral overloads.
+// Detect the floating overload at compile time so the fast, locale-independent path
+// remains available where it exists.
+template <typename T, typename = void>
+struct HasFloatingFromChars : std::false_type {};
+
+#if !defined(CX_FORCE_PORTABLE_FLOAT_PARSER)
+template <typename T>
+struct HasFloatingFromChars<T, std::void_t<decltype(std::from_chars(
+    static_cast<const char*>(nullptr), static_cast<const char*>(nullptr), std::declval<T&>()))>>
+    : std::true_type {};
+#endif
+
+bool equalsAsciiCaseInsensitive(std::string_view value, std::string_view expected) noexcept {
+    if (value.size() != expected.size()) return false;
+    for (std::size_t i = 0; i < value.size(); ++i) {
+        const auto a = static_cast<unsigned char>(value[i]);
+        const auto b = static_cast<unsigned char>(expected[i]);
+        if (std::tolower(a) != std::tolower(b)) return false;
+    }
+    return true;
+}
+
+// Portable fallback for libraries without floating-point from_chars. The classic
+// locale prevents the user's decimal separator from changing script parsing. noskipws
+// plus an EOF check preserve the important full-token/no-whitespace requirement.
+[[maybe_unused]] bool parseFloatingFallback(const char* begin, const char* end, double& value) noexcept {
+    if (begin == end || *begin == '+') return false; // from_chars does not accept a leading plus.
+
+    std::string_view token(begin, static_cast<std::size_t>(end - begin));
+    const bool negative = !token.empty() && token.front() == '-';
+    const std::string_view unsignedToken = negative ? token.substr(1) : token;
+
+    if (equalsAsciiCaseInsensitive(unsignedToken, "inf") ||
+        equalsAsciiCaseInsensitive(unsignedToken, "infinity")) {
+        value = negative ? -std::numeric_limits<double>::infinity()
+                         : std::numeric_limits<double>::infinity();
+        return true;
+    }
+    if (equalsAsciiCaseInsensitive(unsignedToken, "nan")) {
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        value = negative ? -nan : nan;
+        return true;
+    }
+
+    try {
+        std::istringstream input{std::string(token)};
+        input.imbue(std::locale::classic());
+        input >> std::noskipws;
+        double parsed{};
+        input >> parsed;
+        if (input.fail() || !input.eof()) return false;
+        value = parsed;
+        return true;
+    } catch (...) {
+        // Value::numberOr is noexcept. Allocation/locale failures must not escape it.
+        return false;
+    }
+}
+
+template <typename T>
+bool parseFloatingImpl(const char* begin, const char* end, T& value) noexcept {
+    if constexpr (HasFloatingFromChars<T>::value) {
+        const auto result = std::from_chars(begin, end, value);
+        return result.ec == std::errc{} && result.ptr == end;
+    } else {
+        return parseFloatingFallback(begin, end, value);
+    }
+}
+
+bool parseFloating(const char* begin, const char* end, double& value) noexcept {
+    return parseFloatingImpl(begin, end, value);
+}
+
+} // namespace
 
 bool Value::isNull() const noexcept { return std::holds_alternative<std::monostate>(value_); }
 bool Value::isBool() const noexcept { return std::holds_alternative<bool>(value_); }
@@ -33,8 +116,7 @@ double Value::numberOr(double fallback) const noexcept {
         double parsed{};
         const char* begin = s->data();
         const char* end = begin + s->size();
-        const auto result = std::from_chars(begin, end, parsed);
-        if (result.ec == std::errc{} && result.ptr == end) return parsed;
+        if (parseFloating(begin, end, parsed)) return parsed;
     }
     return fallback;
 }
@@ -66,8 +148,7 @@ Value Value::fromString(std::string_view input) {
     double parsed{};
     const char* begin = cleaned.data();
     const char* end = begin + cleaned.size();
-    const auto result = std::from_chars(begin, end, parsed);
-    if (!cleaned.empty() && result.ec == std::errc{} && result.ptr == end) return Value(parsed);
+    if (!cleaned.empty() && parseFloating(begin, end, parsed)) return Value(parsed);
     return Value(cleaned);
 }
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.10.14-preview.3 — native CI portability corrections (2026-11-08)
+
+- Added a portable floating-point parsing path for standard libraries that do not provide the floating-point `std::from_chars` overload. Implementations with that overload retain the original fast, locale-independent path; the fallback uses the classic locale and still requires a complete token.
+- Expanded value-conversion regressions for scientific notation, fractional values, trimming rules, leading plus signs, partial numbers, overflow, NaN, and infinity.
+- Added the missing FreeType development package to Linux CI and release-runner setup, matching SFML Graphics' source-build dependency.
+- The first native CI run exposed these portability/configuration issues on macOS and Linux; fixes are on the review branch and require a fresh CI run. Windows x64 and ARM64 jobs had reached compilation but had not yet completed when this update was prepared.
+- Rebuilt locally on Linux x86_64: 19/19 CTest, 6/6 package tests, and 9/9 Room Studio HTTP tests. A separate headless build forced the portable floating-point fallback and passed its runtime conversion tests.
+- No engine project format, script syntax, persistent save format, license, or repository visibility change.
+
 ## v0.10.14-preview.2 — repository integration and first-run polish (2026-11-08)
 
 - Consolidated the complete curated v0.10.14 engine source, examples, tools, tests, and public documentation for a dedicated GitHub source-import review branch.

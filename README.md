@@ -6,7 +6,7 @@ CX is a lightweight, scriptable foundation for 2D games. Its primary application
 
 A separate command-line utility provides project validation, diagnostics, and automation. The CLI supports development; it is not a substitute for the graphical engine.
 
-> **Development status:** The complete curated v0.10.14 source tree is being integrated on a dedicated review branch. Linux x86_64 has a recorded clean graphical build and 19/19 CTest baseline, including a clean-source build and tested starter runtime package. Native Windows, ARM64, and macOS build jobs are configured, but no successful native result is recorded yet. On Linux Wayland desktops, the current SFML window backend requires XWayland; CX does not yet have a native Wayland backend.
+> **Development status:** The complete curated v0.10.14 source tree is under review in a dedicated GitHub pull request. Linux x86_64 has a recorded clean graphical build and 19/19 CTest baseline, including a clean-source build and tested starter runtime package. The first native CI pass exposed missing Linux FreeType development dependencies and an Apple libc++ floating-point parsing portability issue; fixes are now on the review branch awaiting revalidation. Windows x64 and ARM64 have reached native compilation, but no successful Windows runtime package is recorded yet. On Linux Wayland desktops, the current SFML window backend requires XWayland; CX does not yet have a native Wayland backend.
 
 ## Highlights
 
