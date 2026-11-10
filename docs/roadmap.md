@@ -4,12 +4,12 @@ This roadmap describes the work needed to make CX a dependable general-purpose g
 
 ## 1. Repository and reproducible builds — baseline complete
 
-- The complete curated engine source, build configuration, tests, focused examples, and public documentation are merged into `main`.
+- The complete curated engine source, build configuration, tests, focused examples, and public documentation are merged into main.
 - A clean checkout is configured to build the graphical application and CLI.
 - SFML 3.1.0 is pinned and fetched by CMake when no suitable installed package is found.
-- Source packaging has an allowlist and guards against binaries, build output, caches, generated save state, and internal development records.
+- Source packaging uses an allowlist and guards against binaries, build output, caches, generated save state, and internal development records.
 
-**Baseline evidence:** native CI run #10 passed build, CTest, and starter-project checks on all six configured targets. Ongoing changes still require normal review and CI.
+**Baseline evidence:** native CI run #13 passed build, CTest, and starter-project checks on all six configured targets before the latest release-packaging fix. Ongoing changes still require normal review and CI.
 
 ## 2. Platform portability — native CI baseline complete
 
@@ -19,12 +19,15 @@ This roadmap describes the work needed to make CX a dependable general-purpose g
 
 **Remaining work:** physical-device and display/DPI testing, real-world driver/compositor coverage, additional Windows process-recovery testing, and macOS graphical smoke coverage. No 32-bit target is currently planned or advertised; add one only if a real compatibility requirement justifies a separately tested build.
 
-## 3. First-run workflow and structured releases — release validation pending
+## 3. First-run workflow and native runtime releases — packaging fix under validation
 
-- Publish curated source ZIP/TAR.GZ and per-platform starter runtime packages.
-- Include the graphical runtime, CLI, config, main script, dependency notices, and checksums.
-- Keep full sample games separate from the engine runtime.
-- Verify the first tag-triggered release matrix, including clean extraction and the attached assets.
+- Publish one self-contained starter-runtime package for each of the six configured native targets.
+- Include the graphical runtime, CLI, config, starter script, dependency notices, manifest, and checksum.
+- Use GitHub's automatic Source code (zip) and Source code (tar.gz) snapshots for tagged source downloads; do not upload a duplicate curated source-archive pair.
+- Attach a version-matched standalone HTML reference to each release, with its detailed guide links pinned to the same tag.
+- Verify clean extraction and runtime startup on supported native targets.
+
+**Current blocker:** the first preview.5 release attempt passed build/tests on all six targets but failed during Windows ARM64 dependency installation because five Windows system DLL names were unresolved on the runner. The publish gate correctly withheld the entire release asset set. A name-specific exclusion and regression coverage are now in main; the next preview tag must verify the fix.
 
 **Exit:** a new user can download a matching runtime, open the starter project, edit a script, check it, and run it without installing a compiler.
 

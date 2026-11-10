@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-09 — release packaging repair and documentation refresh
+
+- Corrected the Windows ARM64 runtime dependency-install failure with name-specific exclusions for five operating-system components; added Windows runtime archive regression fixtures for the same exclusions.
+- Simplified tagged release automation to attach six native starter-runtime packages and a matching standalone HTML reference. GitHub's automatic source-code ZIP and TAR.GZ snapshots remain the source downloads.
+- Added a responsive GitHub Pages documentation homepage and direct README links to the docs site and interactive reference.
+- Preserved the preview.5 reference and improved the current searchable catalogue's version framing, guide navigation, event coverage, and duplicate/label accuracy.
+- Updated release, testing, platform-support, status, and roadmap notes to describe the incomplete preview.5 publication accurately.
+
 ## v0.10.14-preview.5 — complete source import and native CI (2026-11-09)
 
 - Merged the complete curated CX Engine source, CMake build, tests, examples, Room Studio tooling, licenses, and documentation into the existing `main` branch.
