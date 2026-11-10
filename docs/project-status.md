@@ -1,9 +1,9 @@
 # Project status
 
-**Development checkpoint:** v0.10.14-preview.5 source line  
+**Development checkpoint:** v0.10.14-preview.6 source line  
 **Source repository:** complete curated source tree merged into main  
-**Latest completed full native CI baseline:** [run #13](https://github.com/Decitle/CX/actions/runs/42743276494), all six configured targets passed on commit 6d0509131f13f41ba485328fe092366ddc4888ea  
-**Release state:** the first preview.5 attempt built and tested all six targets but failed during Windows ARM64 dependency installation; the publish job was skipped and no runtime assets were attached. A targeted fix and regression tests are now in main; the next preview tag is required to validate the corrected workflow.
+**Latest completed native build/test baseline:** [CI run #20](https://github.com/Decitle/CX/actions/runs/42756628417), all six configured targets passed builds, CTest, and starter-project CLI checks. This run predates the new all-target package-install checks.  
+**Release state:** preview.5 and preview.6 have no uploaded runtime assets. Both release attempts passed native compilation and tests but failed in Windows ARM64 at CMake's install-time runtime-dependency scan. The first exclusion patch was incomplete because CMake lowercases Windows DLL names before applying PRE_EXCLUDE_REGEXES; the filter was written with mixed-case names.
 
 ## Implemented foundation
 
@@ -11,41 +11,30 @@ The engine contains a C++20 core, parser and scripting runtime, local/event/tran
 
 ## Current verified checks
 
-### Local validation
+### Native build and test baseline
 
-- Full Linux x86_64 SFML 3.1.0 graphical Release build: 19/19 CTest targets passed.
-- Latest headless/core regression build: 18/18 CTest targets passed.
-- Latest package-tool regression suite before the new Windows component fixtures and reference-packaging test: 8/8 passed.
-- Room Studio HTTP integration suite: 9/9 passed.
-- Clean source archive extraction, package manifests, and checksums have been verified.
-- Linux x86_64 starter runtime passed clean extraction, dependency scan, CLI starter check, and virtual-display graphical startup smoke.
+The latest completed six-target build/test run is [run #20](https://github.com/Decitle/CX/actions/runs/42756628417). Linux x86_64/ARM64, Windows x86_64/ARM64, and macOS x86_64/ARM64 all passed native compilation, CTest, and starter-project CLI validation. Graphical startup smoke testing is present on Linux and Windows, not macOS.
 
-### Native platform matrix
+This run did not exercise runtime installation/package creation on every target. The expanded CI workflow now adds those exact release steps to all six native jobs; the expanded matrix must pass before preview.7 is tagged.
 
-The latest completed full CI matrix before this packaging fix was run #13:
+### Release attempt history
 
-| Target | Native build | CTest | Starter CLI check | Graphical startup smoke |
-|---|---:|---:|---:|---:|
-| Linux x86_64 | Pass | Pass | Pass | Pass (Xvfb) |
-| Linux ARM64 | Pass | Pass | Pass | Pass (Xvfb) |
-| Windows x86_64 | Pass | Pass | Pass | Pass |
-| Windows ARM64 | Pass | Pass | Pass | Pass |
-| macOS x86_64 | Pass | Pass | Pass | Not run by current workflow |
-| macOS ARM64 | Pass | Pass | Pass | Not run by current workflow |
+- **v0.10.14-preview.5:** all six native builds and tests passed; Windows ARM64 failed at CMake install with unresolved Windows system DLL names, so publication was skipped.
+- **v0.10.14-preview.6:** the same Windows ARM64 install stage failed again. Four DLL names remained unresolved: `AzureAttestManager.dll`, `AzureAttestNormal.dll`, `HvsiFileTrust.dll`, and `PdmUtilities.dll`. The version-matched HTML reference and the other five runtime jobs succeeded, but the all-or-nothing publish job was skipped.
 
-These are native CI results, not comprehensive physical-device QA. GPU drivers, display scaling, input devices, OS versions, and desktop/compositor configurations still need broader testing.
+CMake's Windows runtime-dependency scanner lowercases DLL names before matching `PRE_EXCLUDE_REGEXES`. The earlier filter used mixed-case names, so it did not match reliably. The corrected filter uses lowercase exact names. The runtime packager independently filters these five operating-system components from the final Windows package while preserving unknown application DLL dependencies.
 
-### First release attempt
+### CI and publication safeguards
 
-The release workflow for v0.10.14-preview.5 passed the native build, CTest, and quickstart CLI check on all six platforms. Five runtime jobs completed their install/package steps. The Windows ARM64 job failed only during CMake's install-time runtime-dependency scan: it reported five unresolved Windows system DLL names (AzureAttestManager.dll, AzureAttestNormal.dll, HvsiFileTrust.dll, PdmUtilities.dll, and wpaxholder.dll). The publish job depends on all runtime jobs, so GitHub correctly skipped publication rather than attaching a partial set.
+Ordinary CI previously packaged only Windows x86_64. It now exercises CMake installation and `tools/package_runtime.py` on every configured target: Windows, Linux, and macOS, each x86_64 and ARM64. The release publish job additionally verifies the complete assembled set of six runtime archives, six checksum sidecars, and one release-matched HTML reference. It checks archive integrity, internal manifests and hashes, required executables and starter-project files, and pinned documentation links before publishing.
 
-The fix uses exact-name pre-exclusions for those five system components and adds regression fixtures proving they are not copied into Windows runtime archives. It does not turn off dependency scanning or broadly ignore unknown DLLs. A new preview tag from the updated main is required; the existing preview.5 tag still points to the failing source revision.
+The expanded six-target CI matrix must complete successfully before preview.7 is created. A successful ordinary build alone is no longer sufficient evidence for publishing runtime downloads.
 
 ## Runtime package quality
 
-Runtime packages contain the graphical application, CLI, starter project, required application libraries, third-party notices, and manifest/checksum. They exclude the full SDK, static development libraries, headers, CMake metadata, and operating-system DLLs. The source repository remains the authoritative full buildable source.
+Runtime packages contain the graphical application, CLI, starter project, required application runtime libraries, third-party notices, and manifest/checksum. They exclude the full SDK: static development libraries, headers, CMake metadata, and SDK documentation. Operating-system DLLs are not redistributed. The source repository remains the authoritative full buildable source.
 
-GitHub automatically supplies the generic Source code (zip) and Source code (tar.gz) snapshots for every tag. The release workflow uploads only the six native runtime packages and a version-matched standalone HTML reference.
+GitHub automatically supplies the generic Source code (zip) and Source code (tar.gz) snapshots for each tag. The CX release workflow uploads six native runtime packages and a version-matched standalone HTML reference; it does not upload duplicate curated source archives.
 
 ## Important unfinished areas
 
@@ -59,8 +48,8 @@ GitHub automatically supplies the generic Source code (zip) and Source code (tar
 
 ## Completion estimate
 
-CX has a substantial usable foundation but is not yet v1.0 feature-complete. The main remaining risks are first-use/editor polish, moving-body physics, audio playback, performance profiling, physical-device QA, and proving that all six runtime packages can be built, extracted, and launched from the first successful tagged release. A version number is not a completion percentage.
+CX has a substantial usable foundation but is not yet v1.0 feature-complete. The main remaining risks are first-use/editor polish, moving-body physics, audio playback, performance profiling, physical-device QA, and proving that every runtime package can be built, extracted, and launched from a clean environment. A version number is not a completion percentage.
 
 ## Download and first use
 
-Use GitHub Releases for native runtime packages when the corrected release workflow has succeeded. Extract the package matching the computer's operating system and CPU architecture, then run its graphical executable with the included project folder. No C++ compiler is required for a runtime package. The cx-cli executable checks project scripts without opening a window.
+The preview.5 and preview.6 release pages currently contain only GitHub's automatic source snapshots; neither has verified executable downloads. Do not treat those source snapshots as ready-to-run packages. Use the next preview's native runtime assets only after the release workflow completes successfully.

@@ -169,6 +169,15 @@ jobs:
           pattern: "*"
           path: release-assets
           merge-multiple: true
+      - name: Verify complete release asset set and package contents
+        shell: bash
+        run: |
+          TAG='${{ github.event.inputs.tag || github.ref_name }}'
+          VERSION="${TAG#v}"
+          python tools/verify_release_assets.py \
+            --directory release-assets \
+            --version "$VERSION" \
+            --repository "$GITHUB_REPOSITORY"
       - name: Publish release and attach verified packages
         uses: softprops/action-gh-release@v2
         with:

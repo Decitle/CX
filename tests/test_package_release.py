@@ -127,7 +127,7 @@ class PackageReleaseTests(unittest.TestCase):
     def test_windows_system_dependency_filter_matches_cmake_lowercase_names(self) -> None:
         cmake_text = (MODULE_PATH.parents[1] / "CMakeLists.txt").read_text(encoding="utf-8")
         block = re.search(
-            r"PRE_EXCLUDE_REGEXES\\s+(.*?)\\s+POST_EXCLUDE_REGEXES",
+            r"PRE_EXCLUDE_REGEXES\s+(.*?)\s+POST_EXCLUDE_REGEXES",
             cmake_text,
             flags=re.DOTALL,
         )

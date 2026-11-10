@@ -45,3 +45,15 @@
 - Organized the feature overview, build instructions, starter project, CLI checks, examples, platform matrix, known limitations, and release download behavior for prospective users.
 - Clarified that the current examples are feature demonstrations rather than complete showcase games, and avoided claiming general-purpose physics, full editor functionality, or unverified runtime compatibility.
 - Added natural project-specific terminology for discoverability without keyword stuffing. The GitHub repository About description and topic tags still require a manual edit because the connected GitHub actions do not expose repository metadata updates.
+
+
+## 2026-11-09 — repair Windows ARM64 release dependency filtering
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request
+
+- Investigated the failed v0.10.14-preview.6 release run. Five runtime targets and the version-matched HTML reference completed; Windows ARM64 alone failed at CMake's install-time runtime-dependency scan, which caused the release publication job to be skipped.
+- Identified the root cause in CMake's documented Windows behavior: DLL dependency names are lowercased before matching PRE_EXCLUDE_REGEXES. The first fix used mixed-case regular-expression alternatives, so the intended Windows system DLL exclusions did not reliably match.
+- Changed the CMake patterns to lowercase exact-name alternatives and added regression coverage for the matching behavior.
+- Expanded ordinary native CI to install and package the starter runtime on all six platform/architecture targets, rather than packaging Windows x86_64 only.
+- Added a final release-asset verifier requiring all six runtime archives, matching SHA-256 sidecars, and the release-specific HTML reference. It checks archive integrity, internal manifests and file hashes, required executables/project files, and version-pinned guide links before publication.
+- Updated the public status and release documentation to distinguish the two failed preview attempts from the new packaging validation required before preview.7.
