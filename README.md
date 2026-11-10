@@ -6,7 +6,7 @@ CX is a lightweight, scriptable foundation for 2D games. Its primary application
 
 A separate command-line utility provides project validation, diagnostics, and automation. The CLI supports development; it is not a substitute for the graphical engine.
 
-> **Repository status:** The complete curated source tree is merged into `main`. GitHub Actions run #10 passed the native build, CTest, and starter-project checks on all six configured targets for commit `a690dc023a072c6d5de797e276128491505a1d2b`. Graphical startup smoke tests passed on Linux and Windows; the current workflow does not run that smoke test on macOS. These are CI results, not comprehensive physical-device QA. The release workflow is configured to build source archives and six native runtime packages from a version tag.
+> **Repository status:** The complete curated source tree is merged into `main`. GitHub Actions run #11 passed the native build, CTest, and starter-project checks on all six configured targets for the current documentation commit `eabe34eb63da586f42a29f2da8861b1c50dfdd81`. Graphical startup smoke tests passed on Linux and Windows; the current workflow does not run that smoke test on macOS. These are CI results, not comprehensive physical-device QA. The release workflow is configured to build source archives and six native runtime packages from a version tag.
 
 ## Highlights
 
@@ -55,17 +55,6 @@ cmake -S . -B build-headless -DCX_BUILD_GRAPHICAL_RUNTIME=OFF
 cmake --build build-headless --parallel
 ctest --test-dir build-headless --output-on-failure
 ```
-
-## Clone the source
-
-The public repository can be cloned with Git:
-
-```sh
-git clone https://github.com/Decitle/CX.git
-cd CX
-```
-
-A clone contains source code, tests, examples, build configuration, and documentation. It does **not** contain the precompiled runtime executables. To build from a clone, follow the build instructions above. If you only want to run CX without installing a C++ toolchain, use the native runtime package for your OS and CPU architecture from [GitHub Releases](https://github.com/Decitle/CX/releases).
 
 ## Repository layout
 
