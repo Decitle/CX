@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Official CX Engine documentation: start building 2D games with CX Script, browse the interactive reference, and learn the runtime.">
+<meta name="theme-color" content="#101722">
+<title>CX Engine Documentation</title>
+<style>
+:root{color-scheme:dark;--bg:#0d121b;--line:#2d3c50;--text:#edf3fc;--muted:#a9b7ca;--blue:#87a7ff;--mint:#66e3bd}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse at 8% 0%,#17345a 0,transparent 37%),radial-gradient(ellipse at 100% 18%,#104d4b 0,transparent 34%),var(--bg);color:var(--text);font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+a:focus-visible{outline:2px solid var(--mint);outline-offset:4px;border-radius:7px}
+.wrap{width:min(1120px,calc(100% - 40px));margin:0 auto}
+header{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff16}
+.brand{display:flex;align-items:center;gap:12px;color:var(--text);font-weight:800;letter-spacing:.01em}
+.mark{width:39px;height:39px;border-radius:12px;display:grid;place-items:center;color:#09131d;font-size:15px;font-weight:950;background:linear-gradient(135deg,#91b0ff,#62e6c0);box-shadow:0 8px 24px #69cbbb30}
+.brand small{display:block;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.17em}
+nav{display:flex;align-items:center;gap:22px;font-size:13px;color:var(--muted)}nav a{color:var(--muted)}
+.hero{padding:76px 0 62px;max-width:930px}
+.eyebrow{color:var(--mint);font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+h1{font-size:clamp(40px,7vw,72px);line-height:1.04;letter-spacing:-.055em;margin:18px 0 20px;max-width:850px}
+.lead{max-width:760px;color:#c0cbd9;font-size:clamp(17px,2vw,20px);line-height:1.65;margin:0}
+.actions{display:flex;flex-wrap:wrap;gap:13px;margin-top:33px}
+.button{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 22px;border-radius:12px;border:1px solid #4b607b;background:#172334;color:#eaf2ff;font-weight:750;font-size:15px;box-shadow:0 8px 24px #0002;transition:transform .15s,border-color .15s,filter .15s}
+.button:hover{text-decoration:none;transform:translateY(-2px);border-color:#8ba9ff;filter:brightness(1.08)}
+.button.primary{background:linear-gradient(115deg,#7898ff,#60dcbf);border-color:transparent;color:#08151d;box-shadow:0 15px 38px #4abfae30}
+.button .arrow{font-size:19px;line-height:1}
+.note{margin-top:17px;color:#8496ad;font-size:13px}
+section{padding:36px 0 25px}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:20px}
+h2{font-size:27px;letter-spacing:-.03em;margin:0}
+.section-head p{color:var(--muted);margin:6px 0 0;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.card{border:1px solid var(--line);border-radius:16px;padding:22px;background:linear-gradient(150deg,#192535,#121a26);min-height:180px;box-shadow:0 12px 40px #0002}
+.card .number{color:var(--mint);font-size:11px;font-weight:850;letter-spacing:.13em}
+.card h3{font-size:17px;margin:10px 0 7px}.card p{font-size:14px;color:var(--muted);margin:0 0 14px}.card a{font-size:13px;font-weight:750}
+.link-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.link-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 17px;border:1px solid var(--line);border-radius:11px;background:#121b27;color:var(--text)}
+.link-row span{color:var(--muted);font-size:13px}
+.download{display:flex;align-items:center;justify-content:space-between;gap:24px;border:1px solid #3d615d;background:linear-gradient(120deg,#142b35,#14252a);border-radius:17px;padding:24px;margin:24px 0 52px}
+.download p{margin:5px 0 0;color:var(--muted);font-size:14px}
+.archive{margin:0 0 50px;padding:18px 20px;border:1px solid var(--line);border-radius:13px;background:#121b27}
+.archive p{margin:4px 0 0;color:var(--muted);font-size:13px}
+footer{padding:24px 0 38px;border-top:1px solid #ffffff16;color:#8292a7;font-size:12px}
+@media(max-width:760px){.wrap{width:min(100% - 30px,650px)}header{height:66px}nav{gap:12px}nav a:nth-child(2){display:none}.hero{padding:58px 0 44px}.grid{grid-template-columns:1fr}.card{min-height:0}.link-grid{grid-template-columns:1fr}.download{align-items:flex-start;flex-direction:column}}
+@media(max-width:420px){nav{font-size:12px}.brand small{display:none}.button{width:100%}.actions{width:100%}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="brand" href="index.html" aria-label="CX Engine documentation home"><span class="mark">CX</span><span>CX Engine<small>Documentation</small></span></a>
+  <nav aria-label="Main navigation"><a href="reference.html">Reference</a><a href="getting-started.html">Get started</a><a href="https://github.com/Decitle/CX">GitHub</a></nav>
+</header>
+<main>
+  <div class="hero">
+    <div class="eyebrow">C++20 · graphical 2D engine · CX Script</div>
+    <h1>Build 2D games with readable scripts.</h1>
+    <p class="lead">CX is a lightweight, scriptable foundation for 2D games. Start with the searchable language and runtime reference, learn the project workflow, and follow the detailed guides as your game grows.</p>
+    <div class="actions">
+      <a class="button primary" href="reference.html">Open the interactive reference <span class="arrow" aria-hidden="true">→</span></a>
+      <a class="button" href="getting-started.html">Getting started</a>
+    </div>
+    <p class="note">New to CX? Start with the reference to find a command, event, setting, or engine feature. Detailed Markdown guides define full behavior and limitations.</p>
+  </div>
+  <section aria-labelledby="start-heading">
+    <div class="section-head"><div><h2 id="start-heading">Start building</h2><p>A simple route from a first script to a working project.</p></div></div>
+    <div class="grid">
+      <article class="card"><div class="number">01 · EXPLORE</div><h3>Learn CX Script</h3><p>Understand events, variables, conditions, loops, functions, and scheduled work with small examples.</p><a href="learn-cx-script.html">Read the learning guide →</a></article>
+      <article class="card"><div class="number">02 · CREATE</div><h3>Set up a project</h3><p>Open the quickstart, organize scripts and assets, and learn how rooms and configuration work.</p><a href="projects-and-rooms.html">Projects and rooms →</a></article>
+      <article class="card"><div class="number">03 · BUILD</div><h3>Run the engine</h3><p>Download a native runtime or configure a C++20 build with CMake and SFML.</p><a href="building.html">Build from source →</a></article>
+    </div>
+  </section>
+  <section aria-labelledby="guides-heading">
+    <div class="section-head"><div><h2 id="guides-heading">Detailed documentation</h2><p>Use these guides when you need exact syntax, settings, or system behavior.</p></div></div>
+    <div class="link-grid">
+      <a class="link-row" href="syntax.html"><strong>Full CX Script syntax</strong><span>Language rules →</span></a>
+      <a class="link-row" href="engine-settings.html"><strong>Engine settings</strong><span>Defaults and effects →</span></a>
+      <a class="link-row" href="world-and-entities.html"><strong>World and entities</strong><span>Gameplay systems →</span></a>
+      <a class="link-row" href="architecture.html"><strong>Engine architecture</strong><span>Core and hosts →</span></a>
+      <a class="link-row" href="room-studio.html"><strong>Room Studio</strong><span>Room editing →</span></a>
+      <a class="link-row" href="platform-support.html"><strong>Platform support</strong><span>Native build matrix →</span></a>
+      <a class="link-row" href="testing.html"><strong>Testing and validation</strong><span>Coverage and evidence →</span></a>
+      <a class="link-row" href="roadmap.html"><strong>Roadmap</strong><span>Current priorities →</span></a>
+    </div>
+  </section>
+  <div class="archive">
+    <h2>Older version references</h2>
+    <p>Keep documentation matched to an existing project. The archived <a href="versions/v0.10.14-preview.5/reference.html">v0.10.14-preview.5 HTML reference</a> is preserved here; future releases include a matching reference in their GitHub release assets.</p>
+  </div>
+  <div class="download">
+    <div><h2>Get the engine</h2><p>Versioned runtime downloads are published after all six native package jobs and the versioned-reference job pass. GitHub also provides automatic source-code ZIP and TAR.GZ snapshots.</p></div>
+    <a class="button primary" href="https://github.com/Decitle/CX/releases">View releases <span class="arrow" aria-hidden="true">↗</span></a>
+  </div>
+</main>
+<footer>CX Engine documentation · Current source line v0.10.14 · <a href="https://github.com/Decitle/CX">Source repository</a> · <a href="project-status.html">Project status</a></footer>
+</div>
+</body>
+</html>

@@ -6,7 +6,9 @@ CX is a lightweight, scriptable foundation for 2D games. Its primary application
 
 A separate command-line utility provides project validation, diagnostics, and automation. The CLI supports development; it is not a substitute for the graphical engine.
 
-> **Repository status:** The complete curated source tree is merged into `main`. GitHub Actions run #11 passed the native build, CTest, and starter-project checks on all six configured targets for the current documentation commit `eabe34eb63da586f42a29f2da8861b1c50dfdd81`. Graphical startup smoke tests passed on Linux and Windows; the current workflow does not run that smoke test on macOS. These are CI results, not comprehensive physical-device QA. The release workflow is configured to build source archives and six native runtime packages from a version tag.
+> **Repository status:** The complete curated source tree is merged into `main`. The latest completed six-target CI baseline is [run #13](https://github.com/Decitle/CX/actions/runs/42743276494); all six targets passed native builds, CTest, and starter-project validation. The first v0.10.14-preview.5 release attempt passed those checks on all six targets but failed during the Windows ARM64 install-time dependency scan, so the all-or-nothing publication job was skipped. A narrowly scoped fix and regression coverage are now in `main`; the next preview tag is required to validate the corrected packaging workflow.
+
+> **Documentation:** [Open the CX Engine documentation site](https://decitle.github.io/CX/) · [Open the interactive language & runtime reference](https://decitle.github.io/CX/reference.html) · [Getting started](docs/getting-started.md)
 
 ## Highlights
 
@@ -72,7 +74,9 @@ The repository intentionally excludes internal development journals, prompt logs
 
 ## Documentation
 
-Start at the [documentation home](docs/index.md). The [interactive language and runtime reference](docs/reference.html) is a self-contained HTML page with inline CSS and JavaScript. The Markdown pages cover setup, scripting, projects, architecture, platform behavior, and contribution workflows.
+**[Open CX Engine Documentation](https://decitle.github.io/CX/)** · **[Open the interactive language and runtime reference](https://decitle.github.io/CX/reference.html)**
+
+New to CX? Start with [Getting started](docs/getting-started.md) and the [CX Script learning guide](docs/learn-cx-script.md). The detailed [syntax reference](docs/syntax.md), [engine settings](docs/engine-settings.md), [world/entity guide](docs/world-and-entities.md), and focused feature guides document the exact behavior and limitations.
 
 ## Platform notes
 
@@ -86,7 +90,7 @@ See [Platform support](docs/platform-support.md) for the evidence and limitation
 
 ## Downloads
 
-Use [GitHub Releases](https://github.com/Decitle/CX/releases) for versioned downloads. The tag-triggered release workflow is configured to attach two curated source archives (ZIP and TAR.GZ) and six native starter-runtime packages. The release is published only after the source job and every runtime-matrix job succeeds. GitHub also provides its usual automatic source-code ZIP/TAR.GZ links for a tag. Choose the runtime matching the computer's operating system and CPU architecture; project files are portable, but native executables and libraries are not interchangeable.
+Use [GitHub Releases](https://github.com/Decitle/CX/releases) for versioned downloads. GitHub already provides automatic source-code ZIP and TAR.GZ snapshots for every tag, so the CX workflow does not upload a duplicate curated source pair. After all six native runtime jobs and the versioned-documentation job pass, the release workflow attaches six starter-runtime packages and a standalone HTML reference for that exact release. Choose the runtime matching the computer's operating system and CPU architecture; project files are portable, but native executables and libraries are not interchangeable.
 
 See [Release format](docs/release-format.md) for exact package names, contents, and validation rules.
 
