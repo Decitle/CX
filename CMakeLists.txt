@@ -279,6 +279,7 @@ install(RUNTIME_DEPENDENCY_SET cx_runtime_dependencies
     PRE_EXCLUDE_REGEXES
         "^api-ms-.*"
         "^ext-ms-.*"
+        "^(AzureAttestManager|AzureAttestNormal|HvsiFileTrust|PdmUtilities|wpaxholder)\\.dll$"
         "^/lib/.*"
         "^/usr/lib/.*"
         "^[A-Za-z]:[/\\\\]Windows[/\\\\]System32[/\\\\].*"

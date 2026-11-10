@@ -143,6 +143,8 @@ class PackageReleaseTests(unittest.TestCase):
             (stage / "bin" / "cx-cli.exe").write_bytes(b"Windows CLI fixture")
             (stage / "bin" / "sfml-graphics-3.dll").write_bytes(b"SFML DLL fixture")
             (stage / "bin" / "kernel32.dll").write_bytes(b"Windows system DLL must not be redistributed")
+            for name in ("AzureAttestManager.dll", "AzureAttestNormal.dll", "HvsiFileTrust.dll", "PdmUtilities.dll", "wpaxholder.dll"):
+                (stage / "bin" / name).write_bytes(b"Windows system component must not be bundled")
             (stage / "include" / "SFML").mkdir(parents=True)
             (stage / "include" / "SFML" / "Graphics.hpp").write_text("development header\\n", encoding="utf-8")
             (stage / "lib").mkdir(parents=True)
@@ -189,6 +191,8 @@ class PackageReleaseTests(unittest.TestCase):
                 self.assertEqual(zipped.read("bin/sfml-graphics-3.dll"), b"SFML DLL fixture")
                 names = set(zipped.namelist())
                 self.assertNotIn("bin/kernel32.dll", names, "Windows system DLLs must not be bundled")
+                for name in ("AzureAttestManager.dll", "AzureAttestNormal.dll", "HvsiFileTrust.dll", "PdmUtilities.dll", "wpaxholder.dll"):
+                    self.assertNotIn(f"bin/{name}", names, f"{name} is a Windows system component and must not be bundled")
                 self.assertFalse(any(name.startswith("include/") for name in names), "development headers must not be bundled")
                 self.assertFalse(any(name.startswith("lib/") for name in names), "static libraries and SDK metadata must not be bundled")
                 self.assertFalse(any(name.startswith("share/") for name in names), "SDK documentation must not be bundled")
