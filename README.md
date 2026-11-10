@@ -1,30 +1,38 @@
 # CX Engine
 
-**A graphical 2D game engine built in C++20, with a readable, Skript-inspired scripting language.**
+**An open-source C++20 2D game engine with a readable, Skript-inspired scripting language.**
 
-CX is a lightweight, scriptable foundation for 2D games. Its primary application is a native graphical runtime for drawing, input, rooms, game objects, user interfaces, and visual effects. Game behavior is written in CX Script, an approachable event-and-action language inspired by Minecraft Skript.
+CX Engine is a cross-platform engine for building sprite-based 2D games. It combines a native desktop runtime with **CX Script**, an approachable, event-driven language inspired by Minecraft Skript. Game logic can be written in scripts while the engine's core, parser, and runtime are implemented in modern C++.
 
-A separate command-line utility provides project validation, diagnostics, and automation. The CLI supports development; it is not a substitute for the graphical engine.
+[![Build and test](https://github.com/Decitle/CX/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Decitle/CX/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/documentation-online-5277c3)](https://decitle.github.io/CX/)
+[![License: BSD 3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-> **Repository status:** The complete curated source tree is merged into `main`. The latest completed six-target CI baseline is [run #13](https://github.com/Decitle/CX/actions/runs/42743276494); all six targets passed native builds, CTest, and starter-project validation. The first v0.10.14-preview.5 release attempt passed those checks on all six targets but failed during the Windows ARM64 install-time dependency scan, so the all-or-nothing publication job was skipped. A narrowly scoped fix and regression coverage are now in `main`; the next preview tag is required to validate the corrected packaging workflow.
+**[Documentation](https://decitle.github.io/CX/)** · **[Interactive language and runtime reference](https://decitle.github.io/CX/reference.html)** · **[Getting started](docs/getting-started.md)** · **[GitHub Releases](https://github.com/Decitle/CX/releases)**
 
-> **Documentation:** [Open the CX Engine documentation site](https://decitle.github.io/CX/) · [Open the interactive language & runtime reference](https://decitle.github.io/CX/reference.html) · [Getting started](docs/getting-started.md)
+> **Project status:** CX is an experimental pre-release and remains under active development. The current native CI matrix covers Windows, Linux, and macOS on x86_64 and ARM64. Versioned runtime packages are published through GitHub Releases after every required release job succeeds.
 
-## Highlights
+## What CX provides
 
-- **Graphical 2D runtime:** rooms, tile and sprite rendering, keyboard/mouse input, a camera, canvas UI, lighting meshes, and visual effects.
-- **Readable scripting:** events, variables with different lifetimes, conditions, loops, functions, delayed tasks, and actionable diagnostics.
-- **Gameplay foundations:** entities, hitboxes, collision channels, triggers, proximity/interaction focus, projectiles, animation clips, tweens, and seeded random streams.
-- **Project workflows:** data-driven rooms, asset discovery, safe first-run project scaffolding, and a browser-based Room Studio helper.
-- **Developer CLI:** script checking and non-graphical workflows for testing and automation.
+- **Native 2D runtime:** desktop windowing, sprite and tile rendering, keyboard and mouse input, camera movement, and a project-based game workflow.
+- **CX Script:** event handlers, variables with distinct lifetimes, conditions, loops, functions, scheduled tasks, and source-aware diagnostics.
+- **Gameplay systems:** rooms, sprites and entities, hitboxes, collision channels, tile avoidance, triggers, interaction focus, projectiles, tweens, and named animation clips.
+- **UI and visual effects:** screen-space canvas elements, lighting, textured beams, and renderer-backed effects.
+- **Project tools:** automatic asset discovery, project scaffolding, a separate command-line validator, and an optional local browser-based Room Studio helper.
 
-CX is still under active development and is not a v1.0-complete engine. General moving-body physics, richer editor workflows, audio playback, profiling, and physical-device compatibility testing remain areas for improvement. SFML Audio playback is disabled by default in the current build configuration. See the [project status](docs/project-status.md) and [roadmap](docs/roadmap.md).
+CX is intended to make common 2D gameplay logic approachable without hiding the underlying engine. C++ remains available for engine development and future extensions.
 
 ## Quick start
 
-### Build the graphical engine
+### Get a runtime
 
-Requirements: CMake 3.24+, a C++20 compiler, Git, and the platform development tools needed by SFML 3.1.0. By default, CMake downloads the pinned SFML version if it is not already installed.
+Open [GitHub Releases](https://github.com/Decitle/CX/releases) and choose a published package for the computer's operating system and CPU architecture. A runtime package contains the graphical engine, the separate CLI, required application libraries, notices, and a minimal editable starter project. The release page also provides the version-matched HTML reference when the release workflow completes.
+
+A source checkout is not a precompiled application. To build CX yourself, use the steps below or follow the [full build guide](docs/building.md).
+
+### Build from source
+
+Requirements: CMake 3.24 or newer, a C++20 compiler, Git, and the platform development tools required by SFML 3.1.0. By default, CMake fetches the pinned SFML version when a suitable installation is not already available.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -32,25 +40,27 @@ cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-The graphical executable is `build/cx-engine` on Linux/macOS and `build/Release/cx-engine.exe` on a typical multi-configuration Windows generator. The CLI executable is `cx-cli` / `cx-cli.exe`.
+The graphical executable is `build/cx-engine` on Linux/macOS and commonly `build/Release/cx-engine.exe` on Windows. The separate CLI executable is `cx-cli` or `cx-cli.exe`.
 
-### Run a project
+### Run the starter project
 
 ```sh
 ./build/cx-engine examples/quickstart
 ```
 
-On Windows, run the corresponding `cx-engine.exe` and pass the same project directory. See [Getting started](docs/getting-started.md) for IDE and Windows-specific notes.
+The starter project demonstrates a simple event-driven script. Press Space to increment its score and R to reset it. On Windows, run the corresponding `cx-engine.exe` and pass the same project directory.
 
-### Check scripts without opening a window
+### Validate scripts from the command line
 
 ```sh
 ./build/cx-cli --check examples/quickstart
 ```
 
+The CLI checks project scripts and reports syntax or project diagnostics without opening a graphics window. It uses the same core runtime as the graphical application.
+
 ### Build only the core and CLI
 
-The normal build requires the graphical runtime. A headless core/CLI build is an explicit developer option:
+A headless build is available for server-side development and script validation. It is an explicit option; the normal build includes the graphical runtime.
 
 ```sh
 cmake -S . -B build-headless -DCX_BUILD_GRAPHICAL_RUNTIME=OFF
@@ -58,46 +68,56 @@ cmake --build build-headless --parallel
 ctest --test-dir build-headless --output-on-failure
 ```
 
-## Repository layout
+## Examples
 
-```text
-include/cx/        Public engine headers
-src/               Engine core, graphical host, and CLI implementation
-tests/             Automated C++ and Python regression tests
-examples/          Small script and project examples
-tools/             Local Room Studio server and release tooling
-docs/              User guide, language reference, and feature notes
-.github/workflows/ Native CI and release automation
-```
+The `examples/` directory contains a runnable quickstart project and focused demonstrations of CX Script, lists and functions, timing, entities, collision filters, triggers, interaction focus, projectiles, animation, tweens, UI layout, lighting effects, and procedural audio.
 
-The repository intentionally excludes internal development journals, prompt logs, handoff bundles, old validation dumps, compiled binaries, build directories, and complete showcase games. Example scripts are included because they are useful to learn and test the engine; larger sample games are distributed separately.
+These examples are intentionally small and feature-focused. Complete showcase games are a separate planned addition.
 
 ## Documentation
 
-**[Open CX Engine Documentation](https://decitle.github.io/CX/)** · **[Open the interactive language and runtime reference](https://decitle.github.io/CX/reference.html)**
+The documentation site is the main learning path:
 
-New to CX? Start with [Getting started](docs/getting-started.md) and the [CX Script learning guide](docs/learn-cx-script.md). The detailed [syntax reference](docs/syntax.md), [engine settings](docs/engine-settings.md), [world/entity guide](docs/world-and-entities.md), and focused feature guides document the exact behavior and limitations.
+- **[Interactive reference](https://decitle.github.io/CX/reference.html):** searchable catalogue of language events, variables, expressions, statements, engine APIs, settings, and limitations.
+- **[Getting started](https://decitle.github.io/CX/getting-started.html):** install or build the engine, launch a project, and write a first script.
+- **[Learn CX Script](https://decitle.github.io/CX/learn-cx-script.html):** a guided introduction to the scripting language.
+- **[Full syntax guide](https://decitle.github.io/CX/syntax.html):** language syntax, execution behavior, variable lifetimes, and error handling.
+- **[World and entity systems](https://decitle.github.io/CX/world-and-entities.html):** rooms, sprites, entities, movement, collision, triggers, projectiles, and animation.
+- **[Engine settings](https://decitle.github.io/CX/engine-settings.html):** supported settings, defaults, accepted values, and when they take effect.
+- **[Roadmap and project status](https://decitle.github.io/CX/roadmap.html):** current development priorities and known gaps.
 
-## Platform notes
+Each tagged release also includes a standalone HTML reference generated from that exact version. Its links to the detailed guides are pinned to the same tag, making it possible to consult the documentation that matches an older engine release.
 
-- **Linux x86_64 and ARM64:** native CI build, CTest, starter-project validation, and virtual-display startup smoke passed.
-- **Windows x86_64 and ARM64:** native CI build, CTest, starter-project validation, and graphical startup smoke passed.
-- **macOS x86_64 and ARM64:** native CI build, CTest, and starter-project validation passed. The current workflow does not run the graphical smoke test on macOS.
-- These are six 64-bit/ARM64 CI targets. No 32-bit Windows or Linux runtime is currently built or advertised.
-- **Wayland:** SFML 3.1.0 opens Linux windows through XWayland. Install/enable XWayland on the compositor; native Wayland support is not available in this backend.
+## Platform support and current limitations
 
-See [Platform support](docs/platform-support.md) for the evidence and limitations.
+Native CI targets are configured for:
+
+| Operating system | x86_64 | ARM64 |
+|---|---:|---:|
+| Windows | Yes | Yes |
+| Linux | Yes | Yes |
+| macOS | Yes | Yes |
+
+The six targets are built and tested on native CI runners. Linux graphical startup is smoke-tested under a virtual display. CI results are useful compatibility evidence, but they are not a substitute for testing on physical computers, graphics drivers, and desktop configurations.
+
+Current limitations include:
+
+- The Linux SFML window backend uses XWayland; a Wayland desktop needs an available XWayland server.
+- SFML audio playback is disabled by default in the current build configuration.
+- General-purpose moving-body physics and broad collision response are still under development; existing collision, trigger, and projectile systems have defined, narrower contracts.
+- Room Studio is an optional local authoring helper, not a full visual game editor.
+- No 32-bit Windows or Linux runtime packages are provided.
+
+See [Platform support](docs/platform-support.md), [Project status](docs/project-status.md), and the [roadmap](docs/roadmap.md) for more detail.
 
 ## Downloads
 
-Use [GitHub Releases](https://github.com/Decitle/CX/releases) for versioned downloads. GitHub already provides automatic source-code ZIP and TAR.GZ snapshots for every tag, so the CX workflow does not upload a duplicate curated source pair. After all six native runtime jobs and the versioned-documentation job pass, the release workflow attaches six starter-runtime packages and a standalone HTML reference for that exact release. Choose the runtime matching the computer's operating system and CPU architecture; project files are portable, but native executables and libraries are not interchangeable.
+Use [GitHub Releases](https://github.com/Decitle/CX/releases) for tagged runtime packages. GitHub automatically provides source-code ZIP and TAR.GZ snapshots for each tag; the CX release workflow does not upload duplicate source archives.
 
-See [Release format](docs/release-format.md) for exact package names, contents, and validation rules.
+The release workflow builds six platform-specific starter-runtime packages and a version-matched HTML reference. It attaches those assets only after all six native runtime jobs and the documentation job succeed. Download the package matching the operating system and CPU architecture; native executables and libraries are not interchangeable between platforms.
+
+See the [release format guide](docs/release-format.md) for package contents, naming, and validation details.
 
 ## License
 
-CX Engine is currently distributed under the [BSD 3-Clause License](LICENSE).
-
-## Contributions and attribution
-
-AI-assisted repository changes are listed in [the contribution log](docs/CHATGPT_CONTRIBUTIONS.md). Project direction and release decisions remain with the project maintainer.
+CX Engine is distributed under the [BSD 3-Clause License](LICENSE). Third-party notices and the SFML license are included in the repository and runtime packages.
