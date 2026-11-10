@@ -136,6 +136,8 @@ class PackageReleaseTests(unittest.TestCase):
         dll_pattern = next((pattern for pattern in patterns if "azureattest" in pattern), None)
         self.assertIsNotNone(dll_pattern, "CMake must explicitly filter the Windows runner-only system components")
         assert dll_pattern is not None
+        # CMake quoted arguments unescape each doubled source backslash before regex matching.
+        dll_pattern = dll_pattern.replace("\\\\", "\\")
         self.assertEqual(dll_pattern, dll_pattern.lower(), "CMake matches lowercased Windows DLL names")
 
         system_names = (
