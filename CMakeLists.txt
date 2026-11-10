@@ -239,6 +239,9 @@ if(CX_BUILD_TESTS)
         add_test(NAME cx-package-release-tests
                  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_package_release.py)
         set_tests_properties(cx-package-release-tests PROPERTIES TIMEOUT 60)
+        add_test(NAME cx-package-reference-tests
+                 COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_package_reference.py)
+        set_tests_properties(cx-package-reference-tests PROPERTIES TIMEOUT 30)
         if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND TARGET cx-engine)
             add_test(NAME cx-wayland-no-xwayland-guard-tests
                      COMMAND ${Python3_EXECUTABLE}

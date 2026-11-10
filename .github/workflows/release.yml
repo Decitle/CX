@@ -16,33 +16,36 @@ permissions:
 
 
 jobs:
-  source:
-    name: Source ZIP and TAR.GZ
+  documentation:
+    name: Version-matched HTML reference
     runs-on: ubuntu-24.04
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
-      - name: Set release version
-        run: echo "CX_VERSION=$(echo '${{ github.event.inputs.tag || github.ref_name }}' | sed 's/^v//')" >> "$GITHUB_ENV"
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Create and verify source distributions
+      - name: Build standalone versioned reference
+        shell: bash
         run: |
-          python tools/package_release.py source --format all --output-dir dist
-          python tools/package_release.py verify --archive dist/CXEngine-v${CX_VERSION}-source.zip
-          python tools/package_release.py verify --archive dist/CXEngine-v${CX_VERSION}-source.tar.gz
-      - name: Upload source assets
+          TAG='${{ github.event.inputs.tag || github.ref_name }}'
+          VERSION="${TAG#v}"
+          python tools/package_reference.py \
+            --source docs/reference.html \
+            --output-dir dist \
+            --version "$VERSION" \
+            --tag "$TAG" \
+            --repository "$GITHUB_REPOSITORY"
+      - name: Upload versioned reference
         uses: actions/upload-artifact@v4
         with:
-          name: source-distributions
-          path: dist/*
+          name: versioned-reference
+          path: dist/*.html
           if-no-files-found: error
           retention-days: 7
-
   runtime:
     name: ${{ matrix.target }} runtime
     strategy:
@@ -157,10 +160,10 @@ jobs:
 
   publish:
     name: Publish GitHub Release
-    needs: [source, runtime]
+    needs: [runtime, documentation]
     runs-on: ubuntu-24.04
     steps:
-      - name: Download all verified assets
+      - name: Download all verified runtime and documentation assets
         uses: actions/download-artifact@v4
         with:
           pattern: "*"
@@ -172,5 +175,13 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: CX Engine ${{ github.event.inputs.tag || github.ref_name }}
           generate_release_notes: true
+          append_body: true
+          body: |
+            ## Version-matched documentation
+
+            Download or open the standalone HTML reference for this exact release:
+            https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.tag || github.ref_name }}/CXEngine-${{ github.event.inputs.tag || github.ref_name }}-reference.html
+
+            The detailed guide links in this file are pinned to the same source tag.
           prerelease: ${{ contains(github.event.inputs.tag || github.ref_name, '-') }}
           files: release-assets/*
