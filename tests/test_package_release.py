@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -121,6 +122,32 @@ class PackageReleaseTests(unittest.TestCase):
             (copied / "variables.csv").write_text("score,1\n", encoding="utf-8")
             self.assertFalse((source / "variables.csv").exists())
             self.assertTrue((copied / "variables.csv").is_file())
+
+
+    def test_windows_system_dependency_filter_matches_cmake_lowercase_names(self) -> None:
+        cmake_text = (MODULE_PATH.parents[1] / "CMakeLists.txt").read_text(encoding="utf-8")
+        block = re.search(
+            r"PRE_EXCLUDE_REGEXES\\s+(.*?)\\s+POST_EXCLUDE_REGEXES",
+            cmake_text,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(block, "CMake runtime dependency exclusion block must exist")
+        patterns = re.findall(r'"([^"]+)"', block.group(1))
+        dll_pattern = next((pattern for pattern in patterns if "azureattest" in pattern), None)
+        self.assertIsNotNone(dll_pattern, "CMake must explicitly filter the Windows runner-only system components")
+        assert dll_pattern is not None
+        self.assertEqual(dll_pattern, dll_pattern.lower(), "CMake matches lowercased Windows DLL names")
+
+        system_names = (
+            "AzureAttestManager.dll",
+            "AzureAttestNormal.dll",
+            "HvsiFileTrust.dll",
+            "PdmUtilities.dll",
+            "wpaxholder.dll",
+        )
+        for name in system_names:
+            with self.subTest(name=name):
+                self.assertRegex(name.lower(), dll_pattern)
 
     def test_windows_runtime_zip_contains_executables_dependencies_and_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

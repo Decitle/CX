@@ -112,23 +112,34 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: "1"
         run: xvfb-run -a python tools/smoke_graphical.py --engine ./build/cx-engine --project examples/quickstart --seconds 6
 
-      # Keep a downloadable Windows x64 starter package on successful CI runs.
-      # This is a short-lived Actions artifact, not a published GitHub Release.
-      - name: Set package version (Windows x64)
-        if: matrix.target == 'windows-x86_64'
+      # Exercise the exact install-and-package path on every native target.
+      # This catches release-only packaging regressions before a version tag is created.
+      - name: Set package version (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $match = [regex]::Match((Get-Content CMakeLists.txt -Raw), 'project\(CXEngine VERSION ([0-9]+\.[0-9]+\.[0-9]+)')
           if (-not $match.Success) { throw 'Could not read CXEngine project version from CMakeLists.txt' }
           "CX_VERSION=$($match.Groups[1].Value)" >> $env:GITHUB_ENV
 
-      - name: Install Windows x64 runtime (Windows x64)
-        if: matrix.target == 'windows-x86_64'
+      - name: Set package version (Linux and macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          VERSION="$(sed -nE 's/^project\(CXEngine VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' CMakeLists.txt | head -n 1)"
+          test -n "$VERSION"
+          echo "CX_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Install runtime dependencies (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         run: cmake --install build --config Release --prefix stage
 
-      - name: Package Windows x64 starter runtime
-        if: matrix.target == 'windows-x86_64'
+      - name: Install runtime dependencies (Linux and macOS)
+        if: runner.os != 'Windows'
+        run: cmake --install build --prefix stage
+
+      - name: Package starter runtime
         shell: bash
         run: >-
           python tools/package_runtime.py
@@ -136,17 +147,14 @@ jobs:
           --project examples/quickstart
           --build-dir build
           --source-root .
-          --target windows-x86_64
+          --target ${{ matrix.target }}
           --version "$CX_VERSION"
           --output-dir dist
 
-      - name: Upload Windows x64 runtime artifact
-        if: matrix.target == 'windows-x86_64'
+      - name: Upload native runtime artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CXEngine-Windows-x86_64-${{ github.run_number }}-${{ github.sha }}
-          path: |
-            dist/CXEngine-v*-windows-x86_64.zip
-            dist/CXEngine-v*-windows-x86_64.zip.sha256
+          name: CXEngine-${{ matrix.target }}-${{ github.run_number }}-${{ github.sha }}
+          path: dist/*
           if-no-files-found: error
           retention-days: 14

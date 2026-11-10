@@ -242,6 +242,9 @@ if(CX_BUILD_TESTS)
         add_test(NAME cx-package-reference-tests
                  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_package_reference.py)
         set_tests_properties(cx-package-reference-tests PROPERTIES TIMEOUT 30)
+        add_test(NAME cx-release-assets-verifier-tests
+                 COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_verify_release_assets.py)
+        set_tests_properties(cx-release-assets-verifier-tests PROPERTIES TIMEOUT 30)
         if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND TARGET cx-engine)
             add_test(NAME cx-wayland-no-xwayland-guard-tests
                      COMMAND ${Python3_EXECUTABLE}
@@ -282,7 +285,8 @@ install(RUNTIME_DEPENDENCY_SET cx_runtime_dependencies
     PRE_EXCLUDE_REGEXES
         "^api-ms-.*"
         "^ext-ms-.*"
-        "^(AzureAttestManager|AzureAttestNormal|HvsiFileTrust|PdmUtilities|wpaxholder)\\.dll$"
+        # CMake lowercases Windows DLL names before PRE_EXCLUDE_REGEXES matching.
+        "^(azureattestmanager|azureattestnormal|hvsifiletrust|pdmutilities|wpaxholder)\\.dll$"
         "^/lib/.*"
         "^/usr/lib/.*"
         "^[A-Za-z]:[/\\\\]Windows[/\\\\]System32[/\\\\].*"

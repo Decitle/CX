@@ -19,7 +19,7 @@ This roadmap describes the work needed to make CX a dependable general-purpose g
 
 **Remaining work:** physical-device and display/DPI testing, real-world driver/compositor coverage, additional Windows process-recovery testing, and macOS graphical smoke coverage. No 32-bit target is currently planned or advertised; add one only if a real compatibility requirement justifies a separately tested build.
 
-## 3. First-run workflow and native runtime releases — packaging fix under validation
+## 3. First-run workflow and native runtime releases — Windows ARM64 packaging fix in progress
 
 - Publish one self-contained starter-runtime package for each of the six configured native targets.
 - Include the graphical runtime, CLI, config, starter script, dependency notices, manifest, and checksum.
@@ -27,7 +27,7 @@ This roadmap describes the work needed to make CX a dependable general-purpose g
 - Attach a version-matched standalone HTML reference to each release, with its detailed guide links pinned to the same tag.
 - Verify clean extraction and runtime startup on supported native targets.
 
-**Current blocker:** the first preview.5 release attempt passed build/tests on all six targets but failed during Windows ARM64 dependency installation because five Windows system DLL names were unresolved on the runner. The publish gate correctly withheld the entire release asset set. A name-specific exclusion and regression coverage are now in main; the next preview tag must verify the fix.
+**Current blocker:** both preview.5 and preview.6 built and tested all six targets, but Windows ARM64 failed at CMake's install-time runtime-dependency scan. The first fix used mixed-case DLL patterns, while CMake lowercases Windows dependency names before matching PRE_EXCLUDE_REGEXES. The corrected filter uses lowercase exact names. Ordinary CI is being expanded to run the full install-and-package step on all six native targets, and the release publish job now validates all six archives, checksums, and the version-matched reference before attaching assets. Do not create preview.7 until that expanded matrix passes.
 
 **Exit:** a new user can download a matching runtime, open the starter project, edit a script, check it, and run it without installing a compiler.
 
