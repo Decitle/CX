@@ -2,30 +2,29 @@
 
 This roadmap describes the work needed to make CX a dependable general-purpose graphical 2D engine. It is not a promise of fixed delivery dates.
 
-## 1. Repository and reproducible builds — current priority
+## 1. Repository and reproducible builds — baseline complete
 
-- Keep the full engine source, build configuration, tests, focused examples, and public documentation in the repository.
-- Make a clean checkout build the graphical application and CLI.
-- Pin dependencies and add native CI for Linux, Windows, and macOS.
-- Keep source distributions free of handoff files, logs, generated builds, and compiled executables.
+- The complete curated engine source, build configuration, tests, focused examples, and public documentation are merged into `main`.
+- A clean checkout is configured to build the graphical application and CLI.
+- SFML 3.1.0 is pinned and fetched by CMake when no suitable installed package is found.
+- Source packaging has an allowlist and guards against binaries, build output, caches, generated save state, and internal development records.
 
-**Exit:** contributors can clone the repository, build the graphical engine, run the tests, and understand the project status.
+**Baseline evidence:** native CI run #10 passed build, CTest, and starter-project checks on all six configured targets. Ongoing changes still require normal review and CI.
 
-## 2. Platform portability
+## 2. Platform portability — native CI baseline complete
 
-- Establish Windows x86_64 as a native tested target.
-- Add Linux ARM64, Windows ARM64, and macOS x86_64/ARM64 validation.
-- Test persistent storage, paths, encoding, fonts, input, display scaling, and native runtime dependencies.
-- Confirm that the same project data opens across validated targets.
+- Native CI targets pass on Linux x86_64/ARM64, Windows x86_64/ARM64, and macOS x86_64/ARM64.
+- Linux and Windows graphical startup smoke tests pass in CI.
+- The same starter-project data is checked on all six targets.
 
-**Exit:** each advertised target passes native build/test/launch checks.
+**Remaining work:** physical-device and display/DPI testing, real-world driver/compositor coverage, additional Windows process-recovery testing, and macOS graphical smoke coverage. No 32-bit target is currently planned or advertised; add one only if a real compatibility requirement justifies a separately tested build.
 
-## 3. First-run workflow and structured releases
+## 3. First-run workflow and structured releases — release validation pending
 
-- Polish the starter project and first-run messages.
-- Publish source ZIP/TAR.GZ and per-platform starter runtime packages.
+- Publish curated source ZIP/TAR.GZ and per-platform starter runtime packages.
 - Include the graphical runtime, CLI, config, main script, dependency notices, and checksums.
 - Keep full sample games separate from the engine runtime.
+- Verify the first tag-triggered release matrix, including clean extraction and the attached assets.
 
 **Exit:** a new user can download a matching runtime, open the starter project, edit a script, check it, and run it without installing a compiler.
 
@@ -59,4 +58,4 @@ This roadmap describes the work needed to make CX a dependable general-purpose g
 
 ## v1.0 readiness
 
-A v1.0 release should wait until the repository is complete, graphical first-run is straightforward, platform claims are verified, common 2D gameplay and authoring workflows are dependable, and every release package passes clean extraction and launch tests.
+A v1.0 release should wait until graphical first-run is straightforward, common 2D gameplay and authoring workflows are dependable, platform claims have appropriate physical-device coverage, and every release package passes clean extraction and launch tests.

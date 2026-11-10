@@ -42,13 +42,13 @@ cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-The first configure fetches SFML 3.1.0 if it is not already installed. The resulting graphical application is `build\Release\cx-engine.exe` with Visual Studio generators. A native Windows build is configured in `.github/workflows/ci.yml`, but Windows support is not considered verified until that job and a starter-project smoke test have actually passed.
+The first configure fetches SFML 3.1.0 if it is not already installed. The resulting graphical application is `build\\Release\\cx-engine.exe` with Visual Studio generators. GitHub Actions run #10 passed native Windows x86_64 and ARM64 builds, CTest, and starter-project validation; the graphical startup smoke test also passed on both Windows runners.
 
-After the full source tree has been imported into GitHub, a successful `windows-x86_64` CI run also uploads a downloadable starter-runtime ZIP. Open the repository's **Actions** tab, select the successful **Build and test** run, and download the `CXEngine-Windows-x86_64-...` artifact. It contains `cx-engine.exe`, `cx-cli.exe`, the required SFML runtime DLLs, a starter project, notices, and a file-integrity manifest. The artifact is retained for 14 days and is intended for testing; it is not an official GitHub Release.
+A successful regular `windows-x86_64` CI run uploads a downloadable starter-runtime ZIP. Open the repository's **Actions** tab, select the successful **Build and test** run, and download the `CXEngine-Windows-x86_64-...` artifact. It is a short-lived testing artifact (14-day retention), not a versioned GitHub Release. For normal use, prefer the versioned runtime package on the [Releases page](https://github.com/Decitle/CX/releases).
 
 ## macOS
 
-Install Xcode command-line tools, CMake, and Git, then use the same configure/build/test sequence as Linux. Native Intel and Apple Silicon builds are separate targets in the CI matrix.
+Install Xcode command-line tools, CMake, and Git, then use the same configure/build/test sequence as Linux. Native Intel and Apple Silicon builds are separate targets in the CI matrix. The latest native matrix passed build, CTest, and starter-project validation on both; graphical startup smoke is not currently automated on macOS.
 
 ## CMake options
 

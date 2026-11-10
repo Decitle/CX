@@ -6,7 +6,7 @@ CX is a lightweight, scriptable foundation for 2D games. Its primary application
 
 A separate command-line utility provides project validation, diagnostics, and automation. The CLI supports development; it is not a substitute for the graphical engine.
 
-> **Repository status:** The complete curated source tree is merged into `main`. Native CI run #6 passed build, CTest, and starter-project validation on all six configured targets. Final follow-up run #7 also passed all six, including the clean starter-project, graphical smoke, and runtime-packaging safeguards. No versioned GitHub Release has been published yet. SFML's current Linux window backend requires XWayland on Wayland desktops; CX does not yet have a native Wayland backend.
+> **Repository status:** The complete curated source tree is merged into `main`. GitHub Actions run #10 passed the native build, CTest, and starter-project checks on all six configured targets for commit `a690dc023a072c6d5de797e276128491505a1d2b`. Graphical startup smoke tests passed on Linux and Windows; the current workflow does not run that smoke test on macOS. These are CI results, not comprehensive physical-device QA. The release workflow is configured to build source archives and six native runtime packages from a version tag.
 
 ## Highlights
 
@@ -16,7 +16,7 @@ A separate command-line utility provides project validation, diagnostics, and au
 - **Project workflows:** data-driven rooms, asset discovery, safe first-run project scaffolding, and a browser-based Room Studio helper.
 - **Developer CLI:** script checking and non-graphical workflows for testing and automation.
 
-CX is still under active development. Audio mixing, general-purpose moving-body physics, editor depth, profiling, and full cross-platform packaging remain in progress. See the [project status](docs/project-status.md) and [roadmap](docs/roadmap.md).
+CX is still under active development and is not a v1.0-complete engine. General moving-body physics, richer editor workflows, audio playback, profiling, and physical-device compatibility testing remain areas for improvement. SFML Audio playback is disabled by default in the current build configuration. See the [project status](docs/project-status.md) and [roadmap](docs/roadmap.md).
 
 ## Quick start
 
@@ -56,6 +56,17 @@ cmake --build build-headless --parallel
 ctest --test-dir build-headless --output-on-failure
 ```
 
+## Clone the source
+
+The public repository can be cloned with Git:
+
+```sh
+git clone https://github.com/Decitle/CX.git
+cd CX
+```
+
+A clone contains source code, tests, examples, build configuration, and documentation. It does **not** contain the precompiled runtime executables. To build from a clone, follow the build instructions above. If you only want to run CX without installing a C++ toolchain, use the native runtime package for your OS and CPU architecture from [GitHub Releases](https://github.com/Decitle/CX/releases).
+
 ## Repository layout
 
 ```text
@@ -77,18 +88,18 @@ Start at the [documentation home](docs/index.md). The [interactive language and 
 ## Platform notes
 
 - **Linux x86_64 and ARM64:** native CI build, CTest, starter-project validation, and virtual-display startup smoke passed.
-- **Windows x86_64 and ARM64:** native CI build, CTest, starter-project validation, and graphical startup smoke passed in the six-target matrix. The Windows x86_64 job also builds a downloadable CI runtime artifact.
+- **Windows x86_64 and ARM64:** native CI build, CTest, starter-project validation, and graphical startup smoke passed.
 - **macOS x86_64 and ARM64:** native CI build, CTest, and starter-project validation passed. The current workflow does not run the graphical smoke test on macOS.
-- These are native CI results, not a substitute for user testing on every physical device or display configuration.
+- These are six 64-bit/ARM64 CI targets. No 32-bit Windows or Linux runtime is currently built or advertised.
 - **Wayland:** SFML 3.1.0 opens Linux windows through XWayland. Install/enable XWayland on the compositor; native Wayland support is not available in this backend.
 
 See [Platform support](docs/platform-support.md) for the evidence and limitations.
 
 ## Downloads
 
-The official download location will be [GitHub Releases](https://github.com/Decitle/CX/releases/latest). A release is not published yet. The release workflow is configured to build source ZIP/TAR.GZ archives and matching native starter-runtime packages for each of the six CI architectures after a version tag is pushed. Use the package matching the computer's operating system and CPU architecture; the included project files are portable, but the native executable is not.
+Use [GitHub Releases](https://github.com/Decitle/CX/releases) for versioned downloads. The tag-triggered release workflow is configured to attach two curated source archives (ZIP and TAR.GZ) and six native starter-runtime packages. The release is published only after the source job and every runtime-matrix job succeeds. GitHub also provides its usual automatic source-code ZIP/TAR.GZ links for a tag. Choose the runtime matching the computer's operating system and CPU architecture; project files are portable, but native executables and libraries are not interchangeable.
 
-See [Release format](docs/release-format.md) for package names, contents, and validation rules.
+See [Release format](docs/release-format.md) for exact package names, contents, and validation rules.
 
 ## License
 

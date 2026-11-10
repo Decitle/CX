@@ -4,18 +4,24 @@ CX uses a C++20 core with a platform-specific graphical runtime. The project aim
 
 ## Current native CI evidence
 
-GitHub Actions run #6 completed successfully for the six configured native targets. The matrix built the graphical runtime and CLI, ran CTest, and checked the starter project on each architecture.
+GitHub Actions run #10 completed successfully for the six configured native targets on main commit `a690dc023a072c6d5de797e276128491505a1d2b`. Each job built the graphical runtime and CLI, ran CTest, and checked the starter project.
 
-| Platform | Native CI state | Current evidence and limits |
+| Platform | Native CI build / CTest / starter check | Graphical startup smoke |
 |---|---|---|
-| Linux x86_64 | **Pass** | Native build, CTest, starter CLI check, and Xvfb graphical startup smoke passed. A Linux x86_64 starter runtime has also passed local clean-extraction, dependency, CLI, and GUI smoke checks. |
-| Linux ARM64 | **Pass** | Native build, CTest, starter CLI check, and Xvfb graphical startup smoke passed. Official runtime packaging is performed by the tagged release workflow. |
-| Windows x86_64 | **Pass** | Native MSVC build, CTest, starter CLI check, and graphical startup smoke passed. The CI job also generates a short-lived Windows x64 runtime artifact. Final clean-packaging safeguards are being checked in follow-up CI. |
-| Windows ARM64 | **Pass** | Native ARM64 build, CTest, starter CLI check, and graphical startup smoke passed. The tagged release workflow is responsible for producing the downloadable runtime package. |
-| macOS x86_64 | **Pass** | Native build, CTest, and starter CLI check passed. The current CI workflow does not run a graphical startup smoke test on macOS. |
-| macOS ARM64 | **Pass** | Native build, CTest, and starter CLI check passed. The current CI workflow does not run a graphical startup smoke test on macOS. |
+| Linux x86_64 | **Pass** | **Pass** (Xvfb) |
+| Linux ARM64 | **Pass** | **Pass** (Xvfb) |
+| Windows x86_64 | **Pass** | **Pass** |
+| Windows ARM64 | **Pass** | **Pass** |
+| macOS x86_64 | **Pass** | Not run by current workflow |
+| macOS ARM64 | **Pass** | Not run by current workflow |
 
-The final smoke-test and generated-starter-state safeguards passed on run #7 of the merged source. See [GitHub Actions](https://github.com/Decitle/CX/actions) for the exact jobs and future results. These are native CI checks, not physical-device QA. Individual GPU drivers, display scaling, input devices, and desktop/compositor configurations can still differ.
+The Windows x86_64 CI job also creates a short-lived starter-runtime artifact for manual testing. It is an Actions artifact, not a versioned GitHub Release. The separate tag-triggered release workflow is configured to create runtime packages for all six targets; its first execution is the final check that all six release packages can be built and attached successfully.
+
+These are native CI checks, not physical-device QA. Individual GPU drivers, display scaling, input devices, desktop/compositor configurations, and specific OS versions can still differ. Run #10 does not establish that every CX feature has been manually tested on each physical machine.
+
+## Supported package targets
+
+The current release matrix targets Windows x86_64 and ARM64, Linux x86_64 and ARM64, and macOS x86_64 and ARM64. There are no 32-bit Windows or Linux packages in the current matrix. 32-bit support would require its own compiler/dependency configuration and native or equivalent runtime validation; it is not implied by the x86_64 builds.
 
 ## Wayland desktops
 

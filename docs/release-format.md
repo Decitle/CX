@@ -1,21 +1,25 @@
 # Release format
 
-The release workflow is implemented in `.github/workflows/release.yml`. Pushing a version tag beginning with `v` triggers source and native runtime builds. After the source package and every runtime job in the release matrix succeed, the workflow publishes a GitHub Release and attaches the verified assets. Tags containing a hyphen are marked as pre-releases.
+The release workflow is implemented in `.github/workflows/release.yml`. Pushing a version tag beginning with `v` starts source and native runtime builds. The source job creates curated source archives; the runtime matrix builds and packages one native runtime for each configured target. The final publish job depends on the source job and **all six runtime jobs**, so a failed job prevents a partial release from being published. Tags containing a hyphen are marked as pre-releases automatically.
 
-No official versioned release has been published yet.
+The first planned preview tag is `v0.10.14-preview.5`. The actual tagged release workflow must complete successfully before all of its assets are available. See [GitHub Releases](https://github.com/Decitle/CX/releases) for current publication state.
 
-## Source distributions
+## Curated source distributions
 
-Each release provides:
+The workflow attaches:
 
 - `CXEngine-vX.Y.Z-source.zip`
 - `CXEngine-vX.Y.Z-source.tar.gz`
 
-Both contain the same tagged source commit, public documentation, examples, tests, build configuration, tools, and license. They exclude build trees, compiled binaries, internal development records, handoff documents, logs, and complete showcase games.
+Both contain the same tagged source tree: build configuration, C++ source and public headers, tests, focused examples, tools, public documentation, third-party notices, and licenses. A versioned package manifest is included with SHA-256 and file-size records.
+
+The source packager uses an explicit repository allowlist and rejects compiled binaries/libraries, nested archives, build output, caches, generated save data, private/internal directories, handoff files, journals, prompt logs, and validation dumps. It does not put the native runtime packages inside the source archive. The two formats carry the same source content.
+
+GitHub also displays its standard automatically generated `Source code (zip)` and `Source code (tar.gz)` downloads for the tag. Those are separate from the two curated source assets produced by the release workflow.
 
 ## Native runtime packages
 
-The release matrix is configured for:
+The release matrix is configured for these six 64-bit/ARM64 targets:
 
 | Platform | Package |
 |---|---|
@@ -25,6 +29,8 @@ The release matrix is configured for:
 | Linux ARM64 | `CXEngine-vX.Y.Z-linux-arm64.tar.gz` |
 | macOS x86_64 | `CXEngine-vX.Y.Z-macos-x86_64.zip` |
 | macOS ARM64 | `CXEngine-vX.Y.Z-macos-arm64.zip` |
+
+No 32-bit Windows or Linux packages are configured or claimed. Adding legacy 32-bit builds later would require separate toolchain/dependency setup and native or equivalent runtime verification; it should be driven by a real compatibility need, not added as an untested promise.
 
 A runtime package contains the graphical executable, separate CLI, a basic `config.json`, a minimal `scripts/main.cx`, required application runtime libraries, license notices, a first-run README, and a file-size/SHA-256 manifest. It does not contain a full game or development SDK.
 
@@ -36,6 +42,6 @@ Scripts, room JSON, configuration, and game assets remain the same across platfo
 
 ## Release validation
 
-The release workflow performs a native build and CTest run for each matrix target, validates the starter project, installs runtime dependencies, packages the starter project, and attaches the generated manifests and checksums. A package is published only if its release job succeeds. The CI workflow additionally performs graphical startup smoke tests on Linux and Windows. macOS graphical startup is not currently covered by an automated smoke step.
+The tag-triggered release workflow performs a native build and CTest run for each target, validates the starter project, installs runtime dependencies, packages the starter project, and attaches generated manifests/checksums. The regular CI workflow additionally performs graphical startup smoke tests on Linux and Windows. macOS graphical startup is not currently covered by an automated smoke step.
 
-Follow the [getting-started guide](getting-started.md) after extracting a runtime package. The latest published version will appear at [GitHub Releases](https://github.com/Decitle/CX/releases).
+Use the [runtime package guide](runtime-package.md) after extracting a runtime package. The latest release appears at [GitHub Releases](https://github.com/Decitle/CX/releases).
