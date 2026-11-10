@@ -33,3 +33,15 @@
 - Replaced the plain Pages landing page with a responsive documentation homepage whose primary action opens the interactive reference; added direct documentation-site and reference links to the README.
 - Preserved the exact preview.5 HTML reference and refreshed the current catalogue's version framing, guide navigation, animation completion entry, duplicate animation entry, and random-choice description.
 - Updated release, testing, platform, status, and roadmap documentation to distinguish successful build/test evidence from the incomplete first package publication.
+
+
+## 2026-11-09 — public README polish and release-readiness review
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request  
+**Commit subject:** `AI-assisted by ChatGPT: Polish public README for wider audience`
+
+- Reworked the README opening to clearly identify CX as an open-source C++20 2D game engine and explain the role of CX Script.
+- Added direct, prominent routes to documentation, the searchable reference, getting started, and releases; included a live CI badge.
+- Organized the feature overview, build instructions, starter project, CLI checks, examples, platform matrix, known limitations, and release download behavior for prospective users.
+- Clarified that the current examples are feature demonstrations rather than complete showcase games, and avoided claiming general-purpose physics, full editor functionality, or unverified runtime compatibility.
+- Added natural project-specific terminology for discoverability without keyword stuffing. The GitHub repository About description and topic tags still require a manual edit because the connected GitHub actions do not expose repository metadata updates.
