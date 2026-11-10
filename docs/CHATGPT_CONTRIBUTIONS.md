@@ -57,3 +57,14 @@
 - Expanded ordinary native CI to install and package the starter runtime on all six platform/architecture targets, rather than packaging Windows x86_64 only.
 - Added a final release-asset verifier requiring all six runtime archives, matching SHA-256 sidecars, and the release-specific HTML reference. It checks archive integrity, internal manifests and file hashes, required executables/project files, and version-pinned guide links before publication.
 - Updated the public status and release documentation to distinguish the two failed preview attempts from the new packaging validation required before preview.7.
+
+
+## 2026-11-10 — repair release publisher checkout and inspect preview.7 artifacts
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request
+
+- Investigated preview.7 release run #3. All six native runtime packages and the version-matched HTML reference were produced and uploaded as Actions artifacts. The final publish job failed with exit code 2 because it invoked `tools/verify_release_assets.py` without checking out the tagged repository, so the script did not exist in the publisher's workspace.
+- Added an explicit checkout of the release tag to the publish job before asset verification. This is a fix for the next tagged release workflow; it does not retroactively alter preview.7's already-completed run.
+- Inspected the 100 MB Windows ARM64 runtime archive. It contains numerous Windows OS components (including `shell32.dll`, `windows.storage.dll`, and `d2d1.dll`) that should not be redistributed as application dependencies. It is excluded from the manual preview.7 asset set and requires a separate packaging-filter correction before a future release.
+- Verified the Windows x86_64, Linux x86_64, and Linux ARM64 runtime archives: each contains both expected executables, a valid internal manifest with matching file sizes and SHA-256 hashes, and a matching external checksum sidecar.
+- Verified the preview.7 standalone HTML reference and its version-pinned guide links. Prepared a manual upload bundle containing only the three validated runtime packages, their three checksum sidecars, and the matching reference.

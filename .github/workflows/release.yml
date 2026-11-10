@@ -163,6 +163,11 @@ jobs:
     needs: [runtime, documentation]
     runs-on: ubuntu-24.04
     steps:
+      - name: Check out the tagged source for release verification
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
+          persist-credentials: false
       - name: Download all verified runtime and documentation assets
         uses: actions/download-artifact@v4
         with:
