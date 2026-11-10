@@ -1,4 +1,6 @@
-# CX Engine world/entity system — v0.10.7
+# CX Engine world/entity reference (reviewed against v0.10.14)
+
+> Feature headings retain their original introduction versions. This guide also includes later additions; use the linked feature notes for current lifecycle rules and limitations.
 
 This document describes the working first implementation and the planned evolution. It deliberately separates the API that exists now from features that still need engineering.
 
