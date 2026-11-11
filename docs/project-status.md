@@ -1,9 +1,8 @@
 # Project status
 
 **Current published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
-**Current main commit:** `987f70ec1745e45a0eed8b719b8ffb1ef3a0172c`  
 **Release validation:** [six-target build and test](https://github.com/Decitle/CX/actions/runs/42959350359) and [tagged package/publish workflow](https://github.com/Decitle/CX/actions/runs/42961733306) both succeeded.  
-**Post-Preview.8 changes:** release-reference filename automation and the new guided download page are committed to `main`; their CI and Pages checks are running separately and must complete successfully before a later release is tagged.
+**Post-Preview.8 changes:** release-reference filename automation, the guided download page, updated first-run instructions and the beginner-first roadmap are committed to `main`. The Pages deployment for the current documentation set has succeeded. The corrected six-platform CI run is queued behind an earlier native matrix; do not tag another release until the current `main` head has a successful run.
 
 ## Published runtime state
 

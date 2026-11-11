@@ -113,3 +113,13 @@
 - Added a prominent README download route, linked the Pages homepage navigation and primary action to it, and corrected Getting Started commands to match the shipped `CX-Engine/` runtime layout rather than the retired `bin/` plus `project/` layout.
 - Reviewed the actual language/runtime documentation and verified that named deterministic random streams already exist; no duplicate random-number API was added.
 - Reoriented the roadmap around one firm next milestone: beginner-first onboarding and a tested first-project/first-game workflow. Updated project status to distinguish the published Preview.8 evidence from post-release changes still awaiting CI and Pages checks.
+
+
+## 2026-11-10 — correct the release-reference verifier's second filename path
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request
+
+- The first automated reference-name update changed the package builder and the verifier's expected asset set, but missed the separate local filename used later when the verifier opens the HTML asset.
+- The Linux CI jobs caught the inconsistency in `cx-release-assets-verifier-tests`: the fixture created `0_CX-Docs-v{version}.html`, while the verifier still attempted to read the legacy `CXEngine-v{version}-reference.html` filename.
+- Updated that final reference path and added explicit test assertions that the new name is required and the old name is absent.
+- The Pages deployment succeeded. The corrected six-target CI run is queued behind an earlier run because the workflow intentionally does not cancel a running native matrix; no green result is claimed until that current-head run completes.
