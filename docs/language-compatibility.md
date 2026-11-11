@@ -1,45 +1,28 @@
-# CX Script and Skript-inspired design
+# CX Script language design and Skript compatibility
 
-CX Script takes inspiration from the approachable event-and-action style of Minecraft Skript. It is a language designed for CX games and tools, not a drop-in implementation of Skript and not a Minecraft server scripting environment.
+CX Script is a language for portable 2D games and tools. Its product goal is to follow the **grammar and readability of Minecraft Skript closely for common language constructs**—events, variables, expressions, conditions, effects, loops and functions—without copying Minecraft-only server APIs.
 
-The intent is to make common 2D game behavior readable without requiring users to write C++. CX has its own types, runtime, project model, events, and platform-neutral game concepts.
+This is a stronger requirement than simply looking “Skript-inspired”. The v0.10.14 language has a useful Skript-like foundation, but some later features drifted toward function-call syntax and command-specific property forms. The next version, v0.11.0, is dedicated to correcting that drift across the complete language surface.
 
-## Concepts currently supported
+## Current release versus target syntax
 
-| Concept | CX form | Notes |
-|---|---|---|
-| Event handlers | `on load:`, `on tick:`, input and entity events | Event blocks use indented statements. |
-| Variables | `{score}`, `{_temporary}`, `{^session}` | Persistent global, execution-local, and process-lifetime temporary storage. |
-| Conditions | `if`, `else`, comparisons, boolean expressions | See the full syntax guide for supported operators. |
-| Loops | `loop N times:`, `while`, list iteration | Counted and collection loops are bounded. |
-| Delays | `wait 1 second` | Suspends the handler without sleeping the graphical thread. Pending continuations are volatile and follow room/reload lifecycle rules. |
-| Periodic handlers | `every 1 second:` | Timing is resolved at logic-tick granularity, not as a high-resolution real-time timer. |
-| Functions | `function name(value):` and `return` | Synchronous functions with parameters and bounded recursion; `wait` is not available inside a function. |
-| Lists | `{_items::*}` and named keys | Supports indexed/named entries and iteration. |
-| Entity/game concepts | sprites, hitboxes, collision channels, triggers, projectiles, tweens, animation clips | CX-specific rather than Minecraft player/block abstractions. |
-| Diagnostics and reload | parser/runtime diagnostics and `/reload` | A failed candidate reload leaves the last working program active. |
+The v0.10.14 syntax guide and interactive reference describe what the current release accepts. Do not assume that a target example in the new [language design charter](language-design.md) is already implemented.
 
-The [complete syntax reference](syntax.md) is the contract for exact syntax and behavior. The [interactive reference](reference.html) is a searchable overview. Individual systems have more detailed [feature guides](features/).
+One concrete example: the current random API documents `random_int("stream", minimum, maximum)`; it does not currently accept `set {_roll} to a random integer between 1 and 10` as a random expression. The latter is the required English-first form for the next language release. The compact function form can remain as an alias.
 
-## Deliberately out of scope
+The current engine already has familiar variable scopes, list variables, event blocks, `if`/`else`, loops, `wait`, periodic handlers, functions and return values. Those should be preserved while their complete grammar and edge cases are audited.
 
-CX is not trying to replicate Minecraft-specific concepts such as Bukkit players, blocks, inventories, server commands, permissions, or world administration. Those would not form a useful portable foundation for a 2D desktop game engine.
+## Compatibility boundary
 
-## Remaining language work
+CX is not trying to replicate Minecraft-specific concepts such as Bukkit players, blocks, inventories, server commands, permissions or world administration. Those are not useful abstractions for a portable 2D desktop game engine.
 
-The language still needs more complete task handles and cancellation, clearer module/import boundaries, stronger type/schema diagnostics, and additional authoring conveniences. These are tracked on the [roadmap](roadmap.md), rather than being implied by familiar-looking syntax.
+Instead, CX uses its own portable concepts—projects, rooms, sprites, entities, canvas UI, input, animation, audio and rendering effects—with Skript-like syntax. Common operations should have English-first forms and sensible compact aliases. Coordinates and vectors may use conventional tuples such as `(x, y)`.
 
-## Example
+## Governing documents
 
-```skript
-set {score} to 0
+- [Language design charter](language-design.md) — binding syntax and product principles for v0.11.0.
+- [Skript syntax audit](SKRIPT_SYNTAX_AUDIT.md) — current feature inventory, concrete mismatches and implementation order.
+- [Current syntax guide](syntax.md) — exact supported v0.10.14 grammar.
+- [Interactive reference](reference.html) — searchable current release catalogue.
 
-on load:
-    broadcast "Welcome! Press SPACE."
-
-on press key "SPACE":
-    add 1 to {score}
-    broadcast "Score: {score}"
-```
-
-The syntax resembles Skript, but the events, supported commands, and runtime semantics are defined by CX itself.
+Do not describe CX as a drop-in Skript replacement. Do commit to making its portable language grammar recognizably close to Skript, with more capabilities in the 2D-game domain.
