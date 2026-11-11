@@ -10,7 +10,7 @@ CX Engine is a cross-platform engine for building sprite-based 2D games. It comb
 [![GitHub repository](https://img.shields.io/badge/GitHub-Repository-24292f?logo=github)](https://github.com/Decitle/CX)
 [![License: BSD 3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-**[Download CX](https://decitle.github.io/CX/downloads.html)** · **[Documentation](https://decitle.github.io/CX/)** · **[Interactive reference](https://decitle.github.io/CX/reference.html)** · **[Getting started](docs/getting-started.md)**
+**[Download CX](https://decitle.github.io/CX/downloads.html)** · **[Documentation](https://decitle.github.io/CX/)** · **[Interactive reference](https://decitle.github.io/CX/reference.html)** · **[Language design](docs/language-design.md)** · **[Skript syntax audit](docs/SKRIPT_SYNTAX_AUDIT.md)** · **[Getting started](docs/getting-started.md)**
 
 > **Project status:** CX is an experimental pre-release and remains under active development. The current native CI matrix covers Windows, Linux, and macOS on x86_64 and ARM64. Versioned runtime packages are published through GitHub Releases after every required release job succeeds.
 
