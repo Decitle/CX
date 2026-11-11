@@ -1,64 +1,105 @@
 # Roadmap
 
-This roadmap describes the work needed to make CX a dependable general-purpose graphical 2D engine. It is not a promise of fixed delivery dates.
+**Product goal:** make a lightweight, reusable 2D game engine whose scripting workflow feels familiar to Minecraft Skript users: readable event-driven commands, approachable variables and functions, quick feedback, and no C++ requirement for ordinary game logic. CX is not a Minecraft server API or a feature-for-feature Skript clone. It should be more capable in its intended 2D-game domain, with its own clear and well-tested language contracts.
 
-## 1. Repository and reproducible builds — baseline complete
+The roadmap is dependency-ordered, not a delivery-date promise. A feature is not complete merely because its parser accepts an example.
 
-- The complete curated engine source, build configuration, tests, focused examples, and public documentation are merged into main.
-- A clean checkout is configured to build the graphical application and CLI.
-- SFML 3.1.0 is pinned and fetched by CMake when no suitable installed package is found.
-- Source packaging uses an allowlist and guards against binaries, build output, caches, generated save state, and internal development records.
+## Current checkpoint — v0.10.14-preview.8
 
-**Baseline evidence:** native CI run #13 passed build, CTest, and starter-project checks on all six configured targets before the latest release-packaging fix. Ongoing changes still require normal review and CI.
+- Preview.8 is published with six native runtime packages: Windows, Linux and macOS, each x86_64 and ARM64.
+- The all-target native build/test workflow passed in [run 42959350359](https://github.com/Decitle/CX/actions/runs/42959350359).
+- The tagged package assembly, archive verification and release publication passed in [run 42961733306](https://github.com/Decitle/CX/actions/runs/42961733306).
+- The version-matched reference attached to Preview.8 is currently named `0_CX-Docs-v0.10.14-preview.8.html`. The project owner renamed that asset manually after it was published. The new release generator/verifier change makes this naming automatic for future tags.
+- The post-Preview.8 download-page and release-reference changes are on `main`; their new CI runs must pass before a future release tag is created.
 
-## 2. Platform portability — native CI baseline complete
+## Established engine foundation
 
-- Native CI targets pass on Linux x86_64/ARM64, Windows x86_64/ARM64, and macOS x86_64/ARM64.
-- Linux and Windows graphical startup smoke tests pass in CI.
-- The same starter-project data is checked on all six targets.
+### Language and runtime
 
-**Remaining work:** physical-device and display/DPI testing, real-world driver/compositor coverage, additional Windows process-recovery testing, and macOS graphical smoke coverage. No 32-bit target is currently planned or advertised; add one only if a real compatibility requirement justifies a separately tested build.
+- Source-aware parsing and file/line diagnostics; candidate script reload is transactional.
+- Persistent globals `{name}`, execution-local `{_name}`, and process-lifetime temporary `{^name}` values.
+- Conditions, arithmetic/boolean expressions, string interpolation, lists, functions, counted/condition/list loops, `exit loop`, `continue loop`, `wait`, and periodic `every` handlers.
+- Input, lifecycle, entity, trigger, tween, animation and UI-related events.
+- Explicitly seeded, deterministic named random streams: `random_float`, inclusive unbiased `random_int`, and type-preserving `random_choice`. Stream isolation, validation, reload behavior and golden vectors have regression coverage. This is pseudo-randomness, not cryptographic randomness; stream state is currently transient rather than saved with a game.
+- CLI syntax validation and runtime utilities, bounded diagnostic/log storage, project scaffolding and persistent-variable recovery.
 
-## 3. First-run workflow and native runtime releases — Windows ARM64 packaging fix in progress
+### 2D engine systems
 
-- Publish one self-contained starter-runtime package for each of the six configured native targets.
-- Include the graphical runtime, CLI, config, starter script, dependency notices, manifest, and checksum.
-- Use GitHub's automatic Source code (zip) and Source code (tar.gz) snapshots for tagged source downloads; do not upload a duplicate curated source-archive pair.
-- Attach a version-matched standalone HTML reference to each release, with its detailed guide links pinned to the same tag.
-- Verify clean extraction and runtime startup on supported native targets.
+- Project/room loading, texture and audio asset discovery, sprites/entities, hitboxes, collision channels, tile collision metadata, triggers and interaction focus.
+- Scripted entity motion/tweens, named animation clips, projectiles and tested radial/fan patterns.
+- Screen-space canvas UI, lighting meshes, textured beams and endpoint lighting.
+- Optional SFML graphical host kept separate from the graphics-independent core and CLI; Room Studio is an optional localhost authoring tool.
 
-**Current blocker:** both preview.5 and preview.6 built and tested all six targets, but Windows ARM64 failed at CMake's install-time runtime-dependency scan. The first fix used mixed-case DLL patterns, while CMake lowercases Windows dependency names before matching PRE_EXCLUDE_REGEXES. The corrected filter uses lowercase exact names. Ordinary CI is being expanded to run the full install-and-package step on all six native targets, and the release publish job now validates all six archives, checksums, and the version-matched reference before attaching assets. Do not create preview.7 until that expanded matrix passes.
+These are substantial foundations, not a claim that every general-purpose 2D workflow is already finished. The individual syntax and feature guides define the actual guarantees and limitations.
 
-**Exit:** a new user can download a matching runtime, open the starter project, edit a script, check it, and run it without installing a compiler.
+## Active milestone — beginner-first onboarding and first-project success
 
-## 4. Input, editor, and scripting completeness
+**This is the next firm goal.** Before adding another large subsystem, prove that a new user who knows Minecraft Skript can get CX running, understand the project structure, change a script, see the result, and recover from a mistake without needing C++ or a compiler.
 
-- Complete a consistent logical UI coordinate contract across aspect ratios and DPI scales.
-- Improve mouse/keyboard action handling and rebinding.
-- Expand Room Studio path/waypoint tools, undo/redo, validation, and round-trip coverage.
-- Finish list/map and task/timer semantics, cancellation, and clearer errors.
+### Work items
 
-**Exit:** common authoring and interaction tasks do not require game-specific C++ workarounds.
+1. **One clear download route**
+   - Put a prominent Download button beside the Documentation and GitHub routes in the README.
+   - Provide a small Pages download page with browser-based OS detection, a visible manual OS/architecture selector, and one direct runtime download link.
+   - Keep checksums and source snapshots available on GitHub Releases, but do not present a `.sha256` file as a primary download choice.
+   - This page is now on `main`; verify the deployed page, API lookup, target selection and fallback behavior before calling it complete.
 
-## 5. Gameplay and rendering depth
+2. **Exact first-run instructions**
+   - Keep the package layout and launch commands identical across the README, download page, Getting Started guide and generated runtime README.
+   - Test a clean extraction: the runtime is launched against the sole `CX-Engine/` folder, where the executable and starter project are colocated.
+   - Make the distinction between a prebuilt runtime, a source checkout and a game project unmistakable.
 
-- Expand moving-entity collision and simple physics beyond the current specialized collision systems.
-- Improve animation state transitions and ownership/lifecycle rules.
-- Verify lighting/effects visually across reloads and room transitions.
-- Add reusable menus and UI widgets.
-- Build polished top-down and side-on example slices to reveal missing engine functionality.
+3. **A small guided first game**
+   - Add one complete, intentionally small 2D example project with annotated CX Script.
+   - Teach the user to find the script, change a variable or input action, use a condition and a loop/function, run the CLI checker, then launch the graphical runtime.
+   - Keep it a real runnable project, not a long list of isolated command snippets. Do not inject generic tutorial dialogue into the engine; all in-game copy belongs to the example game.
 
-**Exit:** representative games can be implemented mostly through shared engine APIs and scripts.
+4. **A tested new-user path**
+   - Test an empty project folder and a partially populated project folder; existing user files must remain untouched.
+   - Exercise script errors, source/line diagnostics, correcting the error, CLI validation and successful/failed reload.
+   - Walk through the same steps from a clean runtime package, not only from a developer build.
+   - Record exact platform and display limitations. Native CI is not the same as physical-device visual/input QA.
 
-## 6. Audio, profiling, and optimization
+### Exit criteria
 
-- Develop practical multi-voice audio playback/mixing controls.
-- Add frame/tick, memory, rendering, and handler-cost profiling.
-- Benchmark on modest hardware and optimize measured bottlenecks.
-- Test clean-machine project transfer and packaging.
+A beginner can start from the Download button, select or confirm their system, extract and launch the runtime, understand where the project and script live, make a small meaningful change, validate and run it, and fix a deliberately introduced syntax error by following the diagnostic. No compiler, C++ source changes or manual library setup should be required for this path.
 
-**Exit:** performance and compatibility claims have repeatable evidence.
+## Next engineering stages
 
-## v1.0 readiness
+### Scripting completeness and maintainability
 
-A v1.0 release should wait until graphical first-run is straightforward, common 2D gameplay and authoring workflows are dependable, platform claims have appropriate physical-device coverage, and every release package passes clean extraction and launch tests.
+- Named task handles and explicit task cancellation, with stable rules for reload, room transitions, completion and error propagation.
+- Lightweight module/import boundaries and predictable name resolution across multiple scripts.
+- Clearer value/type/schema diagnostics and deliberate serialization rules for nested or map-like data.
+- A documented event-payload convention and a consistent set of common string, numeric and collection helpers.
+- Decide whether save-game/replay use cases require persisted random-stream state or a saved world-seed/subsystem-seed contract.
+
+Do not add these as a broad language redesign. Each needs a small script example, an explicit behavior/lifetime/error contract, and regression tests.
+
+### Gameplay and authoring depth
+
+- General moving-body physics and broader collision response beyond the current specialized tile avoidance, tween and projectile collision paths.
+- Consistent logical UI coordinates and DPI/aspect-ratio behavior on physical displays.
+- More complete Room Studio path/waypoint editing, undo/redo and lossless round-trip coverage.
+- Reusable menus/widgets and polished top-down and side-on sample slices that expose gaps in shared engine APIs.
+
+### Audio, performance and platform quality
+
+- Practical multi-voice audio playback/mixing and script-level control; keep real-time callback work allocation-free and separate from script execution.
+- Frame/tick, allocation/memory, rendering and handler-cost profiling.
+- Repeatable low-end hardware benchmarks, including the project's modest Linux Chromebook target; do not infer performance from CI runners.
+- Physical-device and display/DPI testing on supported operating systems. Linux Wayland currently requires XWayland; the native Wayland backend is not implemented.
+- Broader clean-machine installation and project-transfer testing.
+
+## v1.0 readiness gates
+
+A stable 1.0 should wait until all of these are true:
+
+1. The beginner-first onboarding and first-game path passes the exit criteria above.
+2. Common top-down and side-on 2D game workflows can be built mostly through shared CX APIs and scripts without one-off engine workarounds.
+3. Scripting task/module/data semantics have explicit contracts and reliable error handling.
+4. Input, UI coordinates, collision and rendering behavior are tested on real supported devices, not only CI.
+5. Audio and performance claims are backed by repeatable measurements.
+6. Every release package passes all-target build, tests, clean extraction, launch and version-matched documentation verification.
+
+No percentage-complete or fixed delivery date is implied by the version number.

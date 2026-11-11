@@ -101,3 +101,15 @@
 - Updated THIRD_PARTY_NOTICES.md and runtime documentation to make the one-project layout and consolidated third-party licensing explicit.
 
 - During the license audit, also included the additional BDF and PCF driver notices and FreeType hash-helper MIT notice that the FreeType license file identifies separately.
+
+
+## 2026-11-10 — automate reference naming and simplify first-time downloads
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request
+
+- Changed the versioned standalone HTML reference generator to emit `0_CX-Docs-v{version}.html`, retaining the complete package version identifier. Pre-release tags retain their preview suffix; stable tags omit it.
+- Updated the release asset verifier, unit-test fixtures and automatic release-note link to require and use that exact filename. Preview.8's visible asset was manually renamed by the project owner after publication; the generator change applies to future tags.
+- Added a GitHub Pages download page that finds the newest release containing all six runtime archives, uses browser platform/architecture hints where available, offers manual overrides, and sends the primary button directly to the selected runtime archive. SHA-256 sidecars remain on the release page but are not primary download choices.
+- Added a prominent README download route, linked the Pages homepage navigation and primary action to it, and corrected Getting Started commands to match the shipped `CX-Engine/` runtime layout rather than the retired `bin/` plus `project/` layout.
+- Reviewed the actual language/runtime documentation and verified that named deterministic random streams already exist; no duplicate random-number API was added.
+- Reoriented the roadmap around one firm next milestone: beginner-first onboarding and a tested first-project/first-game workflow. Updated project status to distinguish the published Preview.8 evidence from post-release changes still awaiting CI and Pages checks.

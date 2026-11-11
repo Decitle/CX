@@ -1,55 +1,52 @@
 # Project status
 
-**Development checkpoint:** v0.10.14-preview.6 source line  
-**Source repository:** complete curated source tree merged into main  
-**Latest completed native build/test baseline:** [CI run #20](https://github.com/Decitle/CX/actions/runs/42756628417), all six configured targets passed builds, CTest, and starter-project CLI checks. This run predates the new all-target package-install checks.  
-**Release state:** preview.5 and preview.6 have no uploaded runtime assets. Both release attempts passed native compilation and tests but failed in Windows ARM64 at CMake's install-time runtime-dependency scan. The first exclusion patch was incomplete because CMake lowercases Windows DLL names before applying PRE_EXCLUDE_REGEXES; the filter was written with mixed-case names.
+**Current published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
+**Current main commit:** `987f70ec1745e45a0eed8b719b8ffb1ef3a0172c`  
+**Release validation:** [six-target build and test](https://github.com/Decitle/CX/actions/runs/42959350359) and [tagged package/publish workflow](https://github.com/Decitle/CX/actions/runs/42961733306) both succeeded.  
+**Post-Preview.8 changes:** release-reference filename automation and the new guided download page are committed to `main`; their CI and Pages checks are running separately and must complete successfully before a later release is tagged.
+
+## Published runtime state
+
+Preview.8 includes six native runtime archives:
+
+- Windows x86_64 and ARM64
+- Linux x86_64 and ARM64
+- macOS x86_64 and ARM64
+
+The tagged release workflow verified the six archives, their SHA-256 sidecars, internal runtime manifests, package paths and the version-matched HTML reference before publishing. GitHub also provides its automatic source-code ZIP and TAR.GZ snapshots.
+
+The Preview.8 HTML asset currently has the filename `0_CX-Docs-v0.10.14-preview.8.html` because the project owner manually renamed it after publication. Commit `917a43b` changes the reference generator, release verifier, tests and release-note URL so future releases generate and require the `0_CX-Docs-v{version}.html` convention automatically. For stable versions, the full version identifier naturally omits the `-preview.N` suffix.
 
 ## Implemented foundation
 
-The engine contains a C++20 core, parser and scripting runtime, local/event/transient/persistent variable lifetimes, function and loop support, waits and scheduled handlers, transactional script reload, project scaffolding, data-driven rooms, asset discovery, tile collision metadata, entities and hitboxes, collision channels, triggers, interaction focus, projectiles, tweens, animation clips, seeded random streams, textured-beam/effect geometry, canvas UI, lighting meshes, a graphical terminal, a separate CLI, persistent storage recovery, and a local Room Studio tool.
+CX currently has a C++20 core, source-aware parser and runtime, three variable lifetimes, conditions and expressions, functions, lists, loops, non-blocking waits and periodic handlers, transactional reload, project scaffolding, data-driven rooms, asset discovery, sprites/entities/hitboxes, collision channels and specialized collision paths, triggers, interaction focus, projectiles, tweens, animation clips, screen-space canvas UI, lighting meshes, textured beams, deterministic seeded random streams, persistent-variable recovery, a separate CLI, and a localhost Room Studio tool.
 
-## Current verified checks
+The random API is already implemented and documented. Scripts can seed independent named streams and call `random_float`, inclusive unbiased `random_int`, and `random_choice`. It is deterministic pseudo-randomness, not a security RNG; stream state is process-local and not yet serialized with saved games.
 
-### Native build and test baseline
+## Current user-facing download work
 
-The latest completed six-target build/test run is [run #20](https://github.com/Decitle/CX/actions/runs/42756628417). Linux x86_64/ARM64, Windows x86_64/ARM64, and macOS x86_64/ARM64 all passed native compilation, CTest, and starter-project CLI validation. Graphical startup smoke testing is present on Linux and Windows, not macOS.
+- The README now has a direct Download route next to Documentation and GitHub.
+- `docs/downloads.html` selects the newest published release that contains all six runtime targets, suggests an OS/architecture using browser hints when available, and allows manual overrides.
+- The primary page links directly to the runtime archive. SHA-256 sidecars stay accessible on the full release page but are not presented as download choices.
+- The Getting Started guide now matches the actual package layout: the graphical executable, CLI and single starter project are all under `CX-Engine/`; there is no old `bin/` plus separate `project/` structure.
 
-This run did not exercise runtime installation/package creation on every target. The expanded CI workflow now adds those exact release steps to all six native jobs; the expanded matrix must pass before preview.7 is tagged.
+These changes still need their current CI and Pages runs to finish, plus browser-level testing of the live download page.
 
-### Release attempt history
+## Next milestone: beginner-first onboarding and first-project success
 
-- **v0.10.14-preview.5:** all six native builds and tests passed; Windows ARM64 failed at CMake install with unresolved Windows system DLL names, so publication was skipped.
-- **v0.10.14-preview.6:** the same Windows ARM64 install stage failed again. Four DLL names remained unresolved: `AzureAttestManager.dll`, `AzureAttestNormal.dll`, `HvsiFileTrust.dll`, and `PdmUtilities.dll`. The version-matched HTML reference and the other five runtime jobs succeeded, but the all-or-nothing publish job was skipped.
+The immediate priority is to prove that a Skript-familiar beginner can download CX, extract and launch it, find and edit the starter script, make a small game behavior change, validate it with `cx-cli`, run it, and recover from a syntax error using the diagnostic. This should be demonstrated by one annotated, complete mini-game project and tested from a clean runtime package, not only from a developer build.
 
-CMake's Windows runtime-dependency scanner lowercases DLL names before matching `PRE_EXCLUDE_REGEXES`. The earlier filter used mixed-case names, so it did not match reliably. The corrected filter uses lowercase exact names. The runtime packager independently filters these five operating-system components from the final Windows package while preserving unknown application DLL dependencies.
-
-### CI and publication safeguards
-
-Ordinary CI previously packaged only Windows x86_64. It now exercises CMake installation and `tools/package_runtime.py` on every configured target: Windows, Linux, and macOS, each x86_64 and ARM64. The release publish job additionally verifies the complete assembled set of six runtime archives, six checksum sidecars, and one release-matched HTML reference. It checks archive integrity, internal manifests and hashes, required executables and starter-project files, and pinned documentation links before publishing.
-
-The expanded six-target CI matrix must complete successfully before preview.7 is created. A successful ordinary build alone is no longer sufficient evidence for publishing runtime downloads.
-
-## Runtime package quality
-
-Runtime packages contain the graphical application, CLI, starter project, required application runtime libraries, third-party notices, and manifest/checksum. They exclude the full SDK: static development libraries, headers, CMake metadata, and SDK documentation. Operating-system DLLs are not redistributed. The source repository remains the authoritative full buildable source.
-
-GitHub automatically supplies the generic Source code (zip) and Source code (tar.gz) snapshots for each tag. The CX release workflow uploads six native runtime packages and a version-matched standalone HTML reference; it does not upload duplicate curated source archives.
+See the [roadmap](roadmap.md) for the ordered tasks and acceptance gates.
 
 ## Important unfinished areas
 
-- Native Wayland backend; the current Linux SFML window backend relies on XWayland.
-- General moving-body physics and broader collision response.
-- More complete Room Studio tools and undo/redo.
-- UI widget/menu coverage and coordinate/DPI verification across physical devices.
-- Full real-time audio mixer and playback automation. SFML Audio is disabled in the current build configuration.
-- Repeatable performance benchmarks and larger-world optimization.
-- Further first-run/editor polish and the broader v1.0 feature-completion roadmap.
+- General moving-body physics and broad collision response are not complete; current collision systems have narrower documented contracts.
+- Named/cancellable task handles, module/import boundaries and stronger data/type/schema semantics remain future scripting work.
+- Consistent logical UI coordinates and physical DPI/aspect-ratio behavior need broader testing.
+- Room Studio is a useful local helper, not a full visual editor.
+- SFML audio playback is disabled in current release builds; practical multi-voice mixing and automation are not complete.
+- Performance profiling and repeatable benchmarks on modest physical hardware are still needed.
+- Linux currently uses the SFML X11/XWayland window backend; Wayland desktops need XWayland. A native Wayland backend is not implemented.
+- CI native build success does not replace physical-device graphics, input, focus, DPI or packaging QA.
 
-## Completion estimate
-
-CX has a substantial usable foundation but is not yet v1.0 feature-complete. The main remaining risks are first-use/editor polish, moving-body physics, audio playback, performance profiling, physical-device QA, and proving that every runtime package can be built, extracted, and launched from a clean environment. A version number is not a completion percentage.
-
-## Download and first use
-
-The preview.5 and preview.6 release pages currently contain only GitHub's automatic source snapshots; neither has verified executable downloads. Do not treat those source snapshots as ready-to-run packages. Use the next preview's native runtime assets only after the release workflow completes successfully.
+CX is a substantial experimental foundation, not yet v1.0 feature-complete. The next priority is first-project success, followed by the scripting, gameplay, audio and platform gates in the roadmap.
