@@ -4,13 +4,13 @@ This guide assumes you want to make a small 2D game using CX Script. You do not 
 
 ## 1. Get the engine
 
-Open [GitHub Releases](https://github.com/Decitle/CX/releases) and download the runtime package matching the computer's operating system and CPU architecture. Extract it to a writable folder. The package includes the graphical engine, CLI, required application libraries, notices, and a minimal editable project. See the [runtime package guide](runtime-package.md).
+Open the [CX download page](downloads.html) and select the package for your operating system and CPU architecture. Extract it to a writable folder. The package includes the graphical engine, CLI, required application libraries, notices, and a minimal editable project. See the [runtime package guide](runtime-package.md).
 
 If you want to compile the engine yourself, use [the build guide](building.md). The normal source build creates both the graphical runtime and the separate CLI. A source clone is not a precompiled application.
 
 ## 2. Open the quickstart project
 
-The source repository includes a small starter project in `examples/quickstart/`; a runtime package contains its own minimal editable `project/` folder.
+The source repository includes a small starter project in `examples/quickstart/`. In a runtime package, the single starter project lives directly inside `CX-Engine/`, alongside the graphical executable and CLI; there is no separate `project/` or `bin/` folder.
 
 To launch the repository example from the source root:
 
@@ -20,10 +20,10 @@ To launch the repository example from the source root:
 
 On Windows, run `cx-engine.exe` from the configured build output folder and pass the path to `examples/quickstart`.
 
-With a prebuilt runtime package, use the `project/` folder beside the executable:
+With a prebuilt runtime package, run the executable against the `CX-Engine/` folder from the extracted archive root:
 
-- Windows: `bin/cx-engine.exe project`
-- Linux/macOS: `./bin/cx-engine ./project`
+- Windows: `CX-Engine\\cx-engine.exe CX-Engine`
+- Linux/macOS: `./CX-Engine/cx-engine ./CX-Engine`
 
 The included quickstart demonstrates a working project rather than an empty engine shell. Press Space to increment the sample score and R to reset it. The in-game terminal can display script messages and engine diagnostics.
 
@@ -50,8 +50,8 @@ The event header describes when a block runs. Indented statements are the action
 
 Before opening the graphical runtime, you can ask the CLI to parse every script in a project:
 
-- Windows: `bin/cx-cli.exe --check project` (runtime package) or `build/Release/cx-cli.exe --check examples/quickstart` (source build)
-- Linux/macOS: `./bin/cx-cli --check ./project` (runtime package) or `./build/cx-cli --check examples/quickstart` (source build)
+- Windows: `CX-Engine\\cx-cli.exe --check CX-Engine` (runtime package) or `build/Release/cx-cli.exe --check examples/quickstart` (source build)
+- Linux/macOS: `./CX-Engine/cx-cli --check ./CX-Engine` (runtime package) or `./build/cx-cli --check examples/quickstart` (source build)
 
 This checks syntax and emits file/line diagnostics. It does not prove that a behavior looks correct on screen.
 

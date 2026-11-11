@@ -5,10 +5,12 @@
 CX Engine is a cross-platform engine for building sprite-based 2D games. It combines a native desktop runtime with **CX Script**, an approachable, event-driven language inspired by Minecraft Skript. Game logic can be written in scripts while the engine's core, parser, and runtime are implemented in modern C++.
 
 [![Build and test](https://github.com/Decitle/CX/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Decitle/CX/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/documentation-online-5277c3)](https://decitle.github.io/CX/)
+[![Download CX Engine](https://img.shields.io/badge/Download-CX%20Engine-168b78)](https://decitle.github.io/CX/downloads.html)
+[![Documentation](https://img.shields.io/badge/Documentation-Online-5277c3)](https://decitle.github.io/CX/)
+[![GitHub repository](https://img.shields.io/badge/GitHub-Repository-24292f?logo=github)](https://github.com/Decitle/CX)
 [![License: BSD 3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-**[Documentation](https://decitle.github.io/CX/)** · **[Interactive language and runtime reference](https://decitle.github.io/CX/reference.html)** · **[Getting started](docs/getting-started.md)** · **[GitHub Releases](https://github.com/Decitle/CX/releases)**
+**[Download CX](https://decitle.github.io/CX/downloads.html)** · **[Documentation](https://decitle.github.io/CX/)** · **[Interactive reference](https://decitle.github.io/CX/reference.html)** · **[Getting started](docs/getting-started.md)**
 
 > **Project status:** CX is an experimental pre-release and remains under active development. The current native CI matrix covers Windows, Linux, and macOS on x86_64 and ARM64. Versioned runtime packages are published through GitHub Releases after every required release job succeeds.
 
@@ -26,7 +28,7 @@ CX is intended to make common 2D gameplay logic approachable without hiding the 
 
 ### Get a runtime
 
-Open [GitHub Releases](https://github.com/Decitle/CX/releases) and choose a published package for the computer's operating system and CPU architecture. A runtime package contains the graphical engine, the separate CLI, required application libraries, notices, and a minimal editable starter project. The release page also provides the version-matched HTML reference when the release workflow completes.
+Open the [CX download page](https://decitle.github.io/CX/downloads.html). It detects your operating system where the browser allows it, offers a manual OS/architecture selector, and links directly to the matching runtime archive. The page keeps checksum sidecars out of the main download choice; they remain available on the full [GitHub release page](https://github.com/Decitle/CX/releases) for anyone who wants to verify a download. A runtime package contains the graphical engine, the separate CLI, required application libraries, notices, and a minimal editable starter project.
 
 A source checkout is not a precompiled application. To build CX yourself, use the steps below or follow the [full build guide](docs/building.md).
 
@@ -112,7 +114,7 @@ See [Platform support](docs/platform-support.md), [Project status](docs/project-
 
 ## Downloads
 
-Use [GitHub Releases](https://github.com/Decitle/CX/releases) for tagged runtime packages. GitHub automatically provides source-code ZIP and TAR.GZ snapshots for each tag; the CX release workflow does not upload duplicate source archives.
+Use the [CX download page](https://decitle.github.io/CX/downloads.html) for a platform-aware direct runtime download, or open [GitHub Releases](https://github.com/Decitle/CX/releases) to inspect release notes, all six packages, SHA-256 checksum sidecars, and GitHub's automatic source-code ZIP and TAR.GZ snapshots. The CX workflow does not upload duplicate curated source archives.
 
 The release workflow builds six platform-specific starter-runtime packages and a version-matched HTML reference. It attaches those assets only after all six native runtime jobs and the documentation job succeed. Download the package matching the operating system and CPU architecture; native executables and libraries are not interchangeable between platforms.
 

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Download the CX Engine runtime for Windows, Linux, or macOS. Choose the matching CPU architecture.">
+<meta name="theme-color" content="#101722">
+<title>Download CX Engine</title>
+<style>
+:root{color-scheme:dark;--bg:#0d121b;--panel:#162333;--line:#33465e;--text:#edf3fc;--muted:#a9b7ca;--blue:#91adff;--mint:#68e1bd}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 10% 0%,#17345a 0,transparent 38%),radial-gradient(ellipse at 100% 16%,#104d4b 0,transparent 34%),var(--bg);color:var(--text);font:16px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}a:focus-visible,select:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+.wrap{width:min(900px,calc(100% - 32px));margin:0 auto}header{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff17}
+.brand{display:flex;align-items:center;gap:12px;color:var(--text);font-weight:800}.mark{width:39px;height:39px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#91b0ff,#62e6c0);color:#09131d;font-weight:950}
+nav{display:flex;gap:20px;font-size:13px}nav a{color:var(--muted)}
+main{padding:64px 0 48px}.eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--mint);font-weight:800}
+h1{font-size:clamp(38px,7vw,62px);line-height:1.06;letter-spacing:-.05em;margin:14px 0}.lead{color:#c0cbd9;font-size:18px;max-width:710px;margin:0 0 28px}
+.panel{background:linear-gradient(145deg,#1a2a3d,#121d2a);border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 18px 55px #0003}
+.detect{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #3e625d;background:#142c31;color:#b9f0dc;border-radius:999px;font-size:12px;font-weight:750;margin-bottom:18px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field{display:grid;gap:7px}.field label{font-size:13px;color:var(--muted);font-weight:700}
+select{width:100%;min-height:48px;border-radius:9px;border:1px solid #465a73;background:#0e1825;color:var(--text);padding:0 12px;font:inherit}
+.release{margin-top:20px;padding:18px;border:1px solid #3c655d;border-radius:12px;background:#122a2d}
+.release-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.tag{font-size:12px;color:#aef0d9;border:1px solid #3e7466;border-radius:999px;padding:4px 9px}
+.package-name{color:var(--muted);font-size:13px;overflow-wrap:anywhere;margin:7px 0 16px}
+.button{display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:0 19px;border-radius:10px;background:linear-gradient(115deg,#7898ff,#60dcbf);color:#08151d;font-weight:850}
+.button:hover{text-decoration:none;filter:brightness(1.08)}
+.secondary{display:flex;gap:18px;flex-wrap:wrap;margin-top:18px;font-size:13px}
+.note{color:#8fa0b6;font-size:13px;margin:20px 0 0}
+footer{padding:25px 0 40px;border-top:1px solid #ffffff17;color:#8fa0b6;font-size:12px}
+@media(max-width:600px){header{height:66px}main{padding-top:42px}.panel{padding:18px}.fields{grid-template-columns:1fr}.button{width:100%}nav{gap:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="brand" href="index.html"><span class="mark">CX</span><span>CX Engine</span></a>
+  <nav aria-label="Main navigation"><a href="index.html">Documentation</a><a href="reference.html">Reference</a><a href="https://github.com/Decitle/CX">GitHub</a></nav>
+</header>
+<main>
+  <div class="eyebrow">Native runtime packages</div>
+  <h1>Get the right CX Engine build.</h1>
+  <p class="lead">Choose your operating system and processor architecture. We’ll suggest a matching package when your browser exposes that information, and you can always change the selection yourself.</p>
+  <section class="panel" aria-labelledby="choice-title">
+    <h2 id="choice-title">Your download</h2>
+    <div id="detect-status" class="detect" aria-live="polite">Detecting this browser…</div>
+    <div class="fields">
+      <div class="field"><label for="platform">Operating system</label><select id="platform"><option value="windows">Windows</option><option value="linux">Linux</option><option value="macos">macOS</option></select></div>
+      <div class="field"><label for="architecture">CPU architecture</label><select id="architecture"><option value="x86_64">x86_64 (Intel / AMD)</option><option value="arm64">ARM64</option></select></div>
+    </div>
+    <div id="release-box" class="release" aria-live="polite">
+      <div class="release-head"><strong>Finding the latest complete release…</strong></div>
+      <p class="package-name">The release list is being checked.</p>
+    </div>
+    <div class="secondary">
+      <a id="release-link" href="https://github.com/Decitle/CX/releases">All releases, notes and SHA-256 checksums ↗</a>
+      <a id="docs-link" href="https://decitle.github.io/CX/">Documentation</a>
+    </div>
+    <p class="note">SHA-256 sidecars are intentionally kept off this main download choice so they are not mistaken for the runtime archive. They remain on GitHub Releases for anyone who wants to verify a downloaded file. Linux desktop builds currently require XWayland on Wayland sessions.</p>
+  </section>
+</main>
+<footer>Downloads are served from the official <a href="https://github.com/Decitle/CX/releases">CX Engine GitHub releases</a>. Always choose the package matching both your operating system and CPU architecture.</footer>
+</div>
+<script>
+(() => {
+  "use strict";
+  const repository = "Decitle/CX";
+  const apiUrl = "https://api.github.com/repos/" + repository + "/releases?per_page=20";
+  const targets = {
+    "windows-x86_64": { platform: "windows", architecture: "x86_64", extension: ".zip" },
+    "windows-arm64": { platform: "windows", architecture: "arm64", extension: ".zip" },
+    "linux-x86_64": { platform: "linux", architecture: "x86_64", extension: ".tar.gz" },
+    "linux-arm64": { platform: "linux", architecture: "arm64", extension: ".tar.gz" },
+    "macos-x86_64": { platform: "macos", architecture: "x86_64", extension: ".zip" },
+    "macos-arm64": { platform: "macos", architecture: "arm64", extension: ".zip" }
+  };
+  const platformSelect = document.getElementById("platform");
+  const architectureSelect = document.getElementById("architecture");
+  const detection = document.getElementById("detect-status");
+  const releaseBox = document.getElementById("release-box");
+  const releaseLink = document.getElementById("release-link");
+  const docsLink = document.getElementById("docs-link");
+  let selectedRelease = null;
+  let detectionMessage = "Choose your platform and architecture.";
+
+  function detectPlatform(value) {
+    const text = String(value || "").toLowerCase();
+    if (/windows|win32|win64/.test(text)) return "windows";
+    if (/mac|darwin/.test(text)) return "macos";
+    if (/linux|cros|chrome.?os/.test(text)) return "linux";
+    return null;
+  }
+
+  async function detectBrowser() {
+    const uaData = navigator.userAgentData;
+    const platformHint = uaData && uaData.platform ? uaData.platform : (navigator.platform || navigator.userAgent);
+    const platform = detectPlatform(platformHint) || detectPlatform(navigator.userAgent) || "windows";
+    let architecture = null;
+    let reliableArchitecture = false;
+    if (uaData && typeof uaData.getHighEntropyValues === "function") {
+      try {
+        const hints = await uaData.getHighEntropyValues(["architecture", "bitness"]);
+        const archText = String(hints.architecture || "").toLowerCase();
+        if (archText.includes("arm") && (!hints.bitness || hints.bitness === "64")) {
+          architecture = "arm64";
+          reliableArchitecture = true;
+        } else if (archText.includes("x86") && (!hints.bitness || hints.bitness === "64")) {
+          architecture = "x86_64";
+          reliableArchitecture = true;
+        }
+      } catch (_) {
+        // Browsers may decline high-entropy hints; leave architecture for manual confirmation.
+      }
+    }
+    if (!architecture) {
+      const ua = String(navigator.userAgent || "") + " " + String(navigator.platform || "");
+      if (/aarch64|arm64|winarm/i.test(ua)) {
+        architecture = "arm64";
+        reliableArchitecture = true;
+      } else if (/x86_64|amd64|win64|x64|wow64/i.test(ua)) {
+        architecture = "x86_64";
+        reliableArchitecture = true;
+      }
+    }
+    return { platform, architecture: architecture || "x86_64", reliableArchitecture, platformHint };
+  }
+
+  function getAsset(release, target) {
+    if (!release) return null;
+    const descriptor = targets[target];
+    const expected = "CXEngine-" + release.tag_name + "-" + target + descriptor.extension;
+    return (release.assets || []).find(asset => asset.name === expected && asset.state === "uploaded") || null;
+  }
+
+  function formatSize(bytes) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return "";
+    const units = ["B", "KB", "MB", "GB"];
+    let size = bytes;
+    let index = 0;
+    while (size >= 1024 && index < units.length - 1) {
+      size /= 1024;
+      index += 1;
+    }
+    return size.toFixed(index === 0 ? 0 : 1) + " " + units[index];
+  }
+
+  function render() {
+    const target = platformSelect.value + "-" + architectureSelect.value;
+    const asset = getAsset(selectedRelease, target);
+    if (!selectedRelease) {
+      releaseBox.innerHTML = "<div class=\"release-head\"><strong>Runtime downloads could not be loaded.</strong></div><p class=\"package-name\">Open the GitHub release page to choose a package manually.</p>";
+      return;
+    }
+    const label = platformSelect.options[platformSelect.selectedIndex].text + " · " + architectureSelect.options[architectureSelect.selectedIndex].text;
+    if (!asset) {
+      releaseBox.innerHTML = "<div class=\"release-head\"><strong>No matching package was found.</strong></div><p class=\"package-name\">The selected target may not be available in this release. Check all release assets.</p>";
+      return;
+    }
+    const version = selectedRelease.tag_name;
+    const kind = selectedRelease.prerelease ? "Preview release" : "Stable release";
+    const safeAssetUrl = new URL(asset.browser_download_url);
+    if (safeAssetUrl.hostname !== "github.com" || safeAssetUrl.protocol !== "https:") {
+      releaseBox.textContent = "The release returned an unexpected download URL. Use GitHub Releases to continue.";
+      return;
+    }
+    releaseBox.innerHTML = "";
+    const head = document.createElement("div");
+    head.className = "release-head";
+    const title = document.createElement("strong");
+    title.textContent = version + " · " + label;
+    const badge = document.createElement("span");
+    badge.className = "tag";
+    badge.textContent = kind;
+    head.append(title, badge);
+    const file = document.createElement("p");
+    file.className = "package-name";
+    file.textContent = asset.name + (asset.size ? " · " + formatSize(asset.size) : "");
+    const button = document.createElement("a");
+    button.className = "button";
+    button.href = asset.browser_download_url;
+    button.textContent = "Download " + label;
+    const release = document.createElement("p");
+    release.className = "package-name";
+    const releaseAnchor = document.createElement("a");
+    releaseAnchor.href = selectedRelease.html_url;
+    releaseAnchor.textContent = "View " + version + " release notes";
+    release.append(releaseAnchor);
+    releaseBox.append(head, file, button, release);
+    releaseLink.href = selectedRelease.html_url;
+    const tag = selectedRelease.tag_name;
+    const docAsset = (selectedRelease.assets || []).find(item => item.name === "0_CX-Docs-" + tag + ".html");
+    docsLink.href = docAsset ? docAsset.browser_download_url : "https://decitle.github.io/CX/";
+    docsLink.textContent = docAsset ? "Open this release’s versioned reference ↗" : "Current documentation";
+  }
+
+  async function loadReleases() {
+    try {
+      const response = await fetch(apiUrl, { headers: { "Accept": "application/vnd.github+json" }, cache: "no-store" });
+      if (!response.ok) throw new Error("GitHub returned HTTP " + response.status);
+      const releases = await response.json();
+      selectedRelease = releases.find(release => {
+        if (release.draft) return false;
+        return Object.keys(targets).every(target => Boolean(getAsset(release, target)));
+      }) || null;
+      if (!selectedRelease) throw new Error("No complete six-platform release is published yet.");
+      releaseLink.href = selectedRelease.html_url;
+      render();
+    } catch (error) {
+      selectedRelease = null;
+      releaseBox.innerHTML = "<div class=\"release-head\"><strong>Could not load the latest complete release.</strong></div><p class=\"package-name\"></p>";
+      releaseBox.querySelector(".package-name").textContent = String(error && error.message ? error.message : "Network request failed") + " Open GitHub Releases to choose manually.";
+      releaseLink.href = "https://github.com/" + repository + "/releases";
+    }
+  }
+
+  Promise.resolve(detectBrowser()).then(result => {
+    platformSelect.value = result.platform;
+    architectureSelect.value = result.architecture;
+    const platformName = platformSelect.options[platformSelect.selectedIndex].text;
+    const architectureName = architectureSelect.options[architectureSelect.selectedIndex].text;
+    detectionMessage = platformName + " detected. " + (result.reliableArchitecture
+      ? architectureName + " suggested."
+      : "Confirm CPU architecture; this browser does not expose it reliably.");
+    detection.textContent = detectionMessage;
+    render();
+  });
+  platformSelect.addEventListener("change", render);
+  architectureSelect.addEventListener("change", render);
+  loadReleases();
+})();
+</script>
+</body>
+</html>
