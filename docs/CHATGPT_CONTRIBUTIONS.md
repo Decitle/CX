@@ -73,10 +73,22 @@
 
 **Pushed by:** ChatGPT (OpenAI), at Decitle's request
 
-- Used the user's repackaged Linux runtime archive as the target layout: a CX-Engine folder containing the executables, bundled runtime dependencies, and an in-place quickstart project, plus a separate root project starter.
+- Used the user's repackaged Linux runtime archive as the target layout: a CX-Engine folder containing the executables, bundled runtime dependencies, and an in-place quickstart project, with no duplicate project directory at the archive root.
 - Changed the runtime packager to flatten CMake's bin and lib install payloads into CX-Engine, preserve macOS frameworks under that directory, reject filename collisions, and place the runtime manifest beside the executables.
 - Set Linux and macOS install RPATHs to match the new colocated-library layout; kept the release archives' platform-specific formats and checksum sidecars.
 - Replaced the three-path runtime license presentation with one LICENSES.txt containing the complete CX Engine BSD 3-Clause text and the unmodified SFML zlib/libpng notice as separately labeled sections. The repository's source license files remain available in their normal locations.
 - Updated runtime instructions, third-party disclosure, and release asset verification to require the new layout and reject the old bin structure or duplicate license files.
 - Expanded Windows system-DLL exclusions to cover components found in the oversized preview.7 Windows ARM64 archive and added packaging regression fixtures for those names.
 - Added Linux archive-layout coverage and updated the six-target release verifier fixtures to test the new package contract.
+
+
+## 2026-11-10 — remove the duplicate root project from runtime archives
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request
+
+- Corrected the package contract after the author clarified that the uploaded archive accidentally contained a duplicate top-level project/ folder. Runtime packages now contain exactly one starter project, directly inside CX-Engine/.
+- Removed the second copy step from the runtime packager, updated the six-target release verifier to allow only CX-Engine/, README.md, and LICENSES.txt at the archive root, and added a regression test that rejects any top-level project/ directory.
+- Updated package launch and check instructions so both the graphical runtime and CLI operate on CX-Engine/ as the project path.
+- Expanded LICENSES.txt to include the applicable full notices for bundled FreeType, HarfBuzz, SheenBidi, QOI, cpp-unicodelib, glad, and stb_image components when their source is present in the FetchContent build tree. Host-provided dependencies are not treated as bundled files.
+- Corrected the Windows packaging test to normalize CRLF/LF differences instead of assuming Unix line endings.
+- Updated THIRD_PARTY_NOTICES.md and runtime documentation to make the one-project layout and consolidated third-party licensing explicit.

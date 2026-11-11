@@ -25,8 +25,6 @@ REQUIRED_COMMON = {
     "CX-Engine/README.md",
     "CX-Engine/config.json",
     "CX-Engine/scripts/main.cx",
-    "project/config.json",
-    "project/scripts/main.cx",
 }
 
 
@@ -119,6 +117,19 @@ def verify_runtime_archive(path: Path, target: str, version: str) -> None:
             raise RuntimeError(f"{path.name}: SHA-256 mismatch for {name}")
 
     executable_suffix = ".exe" if target.startswith("windows-") else ""
+    root_entries = {PurePosixPath(name).parts[0] for name in actual}
+    allowed_root_entries = {"CX-Engine", "README.md", "LICENSES.txt"}
+    if root_entries != allowed_root_entries:
+        missing_roots = sorted(allowed_root_entries - root_entries)
+        extra_roots = sorted(root_entries - allowed_root_entries)
+        raise RuntimeError(
+            f"{path.name}: package root must contain only CX-Engine/, README.md, "
+            f"and LICENSES.txt; missing={missing_roots}, extra={extra_roots}"
+        )
+    if any(name.startswith("project/") for name in actual):
+        raise RuntimeError(
+            f"{path.name}: duplicate top-level project/ directory is not part of the runtime package"
+        )
     legacy_license_paths = {"LICENSE", "THIRD_PARTY_NOTICES.md"}
     if legacy_license_paths.intersection(actual) or any(
         name.startswith("third-party-licenses/") for name in actual

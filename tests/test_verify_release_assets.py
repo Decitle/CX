@@ -32,9 +32,6 @@ class VerifyReleaseAssetsTests(unittest.TestCase):
                 "CX-Engine/scripts/main.cx": b'broadcast "ready"\n',
                 "LICENSES.txt": b"BSD and SFML license sections",
                 "README.md": b"Runtime instructions",
-                "project/config.json": b"{}\n",
-                "project/README.md": b"Quickstart project instructions",
-                "project/scripts/main.cx": b'broadcast "ready"\n',
             }
             manifest = {
                 "product": "CX Engine",
@@ -109,6 +106,30 @@ class VerifyReleaseAssetsTests(unittest.TestCase):
             reference.write_text("Version-matched reference v0.10.14-preview.7", encoding="utf-8")
             with self.assertRaisesRegex(RuntimeError, "not pinned"):
                 verifier.verify_release_directory(root, self.version, self.repository)
+
+
+    def test_rejects_duplicate_top_level_project_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "assets"
+            self.create_valid_release(root)
+            archive_path = root / f"CXEngine-v{self.version}-windows-x86_64.zip"
+            members = verifier.read_archive(archive_path)
+            extra = b'broadcast "duplicate"\n'
+            members["project/scripts/main.cx"] = extra
+            manifest = json.loads(members[verifier.MANIFEST_NAME])
+            manifest["files"].append({
+                "path": "project/scripts/main.cx",
+                "size_bytes": len(extra),
+                "sha256": hashlib.sha256(extra).hexdigest(),
+            })
+            members[verifier.MANIFEST_NAME] = (
+                json.dumps(manifest, sort_keys=True) + "\n"
+            ).encode()
+            with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as packed:
+                for name, data in members.items():
+                    packed.writestr(name, data)
+            with self.assertRaisesRegex(RuntimeError, "duplicate top-level project"):
+                verifier.verify_runtime_archive(archive_path, "windows-x86_64", self.version)
 
 
 if __name__ == "__main__":

@@ -211,6 +211,44 @@ class PackageReleaseTests(unittest.TestCase):
                 f"SFML_DIR:PATH={sdk / 'lib' / 'cmake' / 'SFML'}\n",
                 encoding="utf-8",
             )
+            sfml_tree = build / "_deps" / "sfml-src"
+            (sfml_tree / "license.md").parent.mkdir(parents=True, exist_ok=True)
+            (sfml_tree / "license.md").write_text("SFML license fixture\n", encoding="utf-8")
+            (sfml_tree / "extlibs" / "headers" / "qoi").mkdir(parents=True)
+            (sfml_tree / "extlibs" / "headers" / "cpp-unicodelib").mkdir(parents=True)
+            (sfml_tree / "extlibs" / "headers" / "glad" / "include" / "glad").mkdir(parents=True)
+            (sfml_tree / "extlibs" / "headers" / "stb_image").mkdir(parents=True)
+            (sfml_tree / "extlibs" / "headers" / "qoi" / "qoi.h").write_text(
+                "SPDX-License-Identifier: MIT\nCopyright (c) 2021, Dominic Szablewski",
+                encoding="utf-8",
+            )
+            (sfml_tree / "extlibs" / "headers" / "cpp-unicodelib" / "unicodelib.h").write_text(
+                "Copyright (c) 2025 Yuji Hirose. All rights reserved.\nMIT License",
+                encoding="utf-8",
+            )
+            (sfml_tree / "extlibs" / "headers" / "glad" / "include" / "glad" / "gl.h").write_text(
+                "SPDX-License-Identifier: (WTFPL OR CC0-1.0) AND Apache-2.0",
+                encoding="utf-8",
+            )
+            stb_fixture = (
+                "ALTERNATIVE A - MIT License\nCopyright (c) 2017 Sean Barrett\n"
+                "Permission is hereby granted.\nTHE SOFTWARE IS PROVIDED AS IS.\n"
+                "ALTERNATIVE B - Public Domain\n"
+            )
+            for name in ("stb_image.h", "stb_image_write.h"):
+                (sfml_tree / "extlibs" / "headers" / "stb_image" / name).write_text(
+                    stb_fixture, encoding="utf-8"
+                )
+            dependency_licenses = {
+                "_deps/freetype-src/docs/FTL.TXT": "FreeType fixture license",
+                "_deps/harfbuzz-src/COPYING": "HarfBuzz fixture license",
+                "_deps/harfbuzz-src/src/ms-use/COPYING": "HarfBuzz Microsoft fixture license",
+                "_deps/sheenbidi-src/LICENSE": "SheenBidi fixture license",
+            }
+            for relative, body in dependency_licenses.items():
+                license_path = build / relative
+                license_path.parent.mkdir(parents=True, exist_ok=True)
+                license_path.write_text(body, encoding="utf-8")
 
             command = [
                 sys.executable, str(RUNTIME_MODULE_PATH),
@@ -244,14 +282,26 @@ class PackageReleaseTests(unittest.TestCase):
                 self.assertFalse(any(name.startswith("bin/") or name.startswith("lib/") for name in names), "runtime files must be flattened inside CX-Engine/")
                 self.assertFalse(any(name.startswith("lib/") for name in names), "static libraries and SDK metadata must not be bundled")
                 self.assertFalse(any(name.startswith("share/") for name in names), "SDK documentation must not be bundled")
-                self.assertEqual(zipped.read("project/scripts/main.cx").replace(b"\r\n", b"\n"), b"broadcast \"ready\"\n")
+                self.assertFalse(any(name.startswith("project/") for name in names))
+                self.assertIn("README.md", names)
+                self.assertIn("LICENSES.txt", names)
                 license_text = zipped.read("LICENSES.txt").decode("utf-8")
                 self.assertIn("CX license fixture", license_text)
                 self.assertIn("SFML license fixture", license_text)
+                self.assertIn("FreeType fixture license", license_text)
+                self.assertIn("HarfBuzz fixture license", license_text)
+                self.assertIn("HarfBuzz Microsoft fixture license", license_text)
+                self.assertIn("SheenBidi fixture license", license_text)
+                self.assertIn("QOI — MIT LICENSE", license_text)
+                self.assertIn("cpp-unicodelib — MIT LICENSE", license_text)
+                self.assertIn("glad generated loader — CC0-1.0", license_text)
+                self.assertIn("glad generated loader — APACHE LICENSE 2.0", license_text)
+                self.assertIn("stb_image and stb_image_write — MIT LICENSE", license_text)
+                self.assertEqual(sum(name == "LICENSES.txt" for name in names), 1)
                 self.assertNotIn("THIRD_PARTY_NOTICES.md", names)
                 self.assertFalse(any(name.startswith("third-party-licenses/") for name in names))
                 self.assertEqual(zipped.read("CX-Engine/scripts/main.cx").replace(b"\r\n", b"\n"), b"broadcast \"ready\"\n")
-                self.assertEqual(zipped.read("CX-Engine/config.json"), b"{}\n")
+                self.assertEqual(zipped.read("CX-Engine/config.json").replace(b"\r\n", b"\n"), b"{}\n")
                 payloads = {
                     name: zipped.read(name)
                     for name in ("CX-Engine/cx-engine.exe", "CX-Engine/cx-cli.exe", "CX-Engine/sfml-graphics-3.dll")
@@ -318,7 +368,8 @@ class PackageReleaseTests(unittest.TestCase):
                 self.assertIn("CX-Engine/cx-cli", names)
                 self.assertIn("CX-Engine/libsfml-graphics.so.3.1.0", names)
                 self.assertIn("CX-Engine/runtime-manifest.json", names)
-                self.assertIn("project/scripts/main.cx", names)
+                self.assertFalse(any(name.startswith("project/") for name in names))
+                self.assertIn("README.md", names)
                 self.assertIn("LICENSES.txt", names)
                 self.assertIn("CX-Engine/scripts/main.cx", names)
                 self.assertFalse(any(name.startswith("bin/") or name.startswith("lib/") for name in names))
