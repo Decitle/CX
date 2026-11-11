@@ -1,0 +1,134 @@
+---
+---
+@import "{{ site.theme }}";
+
+/* One consistent dark palette for every Markdown page rendered by Jekyll.
+   Standalone documentation HTML files carry their own matching dark theme. */
+:root {
+  color-scheme: dark;
+  --cx-bg: #0d121b;
+  --cx-panel: #151f2d;
+  --cx-panel-2: #1b2838;
+  --cx-border: #304157;
+  --cx-text: #eaf0f8;
+  --cx-muted: #a8b7ca;
+  --cx-link: #9bb4ff;
+  --cx-accent: #6ce0bd;
+}
+
+html,
+body {
+  background: var(--cx-bg);
+  color: var(--cx-text);
+}
+
+body {
+  color-scheme: dark;
+}
+
+.page-header {
+  background-color: #111c2b;
+  background-image: radial-gradient(ellipse at 12% 0%, #1a3a5e 0, transparent 55%),
+                    linear-gradient(135deg, #111c2b, #142d34);
+  color: var(--cx-text);
+}
+
+.page-header .project-name,
+.page-header .project-tagline {
+  color: var(--cx-text);
+}
+
+.main-content {
+  background: var(--cx-bg);
+  color: var(--cx-text);
+}
+
+.main-content h1,
+.main-content h2,
+.main-content h3,
+.main-content h4,
+.main-content h5,
+.main-content h6 {
+  color: #f2f6fc;
+}
+
+.main-content p,
+.main-content li,
+.main-content td,
+.main-content th,
+.main-content strong {
+  color: inherit;
+}
+
+.main-content a,
+.site-footer a {
+  color: var(--cx-link);
+}
+
+.main-content a:visited,
+.site-footer a:visited {
+  color: #c0a8ff;
+}
+
+.main-content code {
+  color: #e9d7a6;
+  background: #1b2736;
+  border: 1px solid #304157;
+}
+
+.main-content pre {
+  color: #eaf0f8;
+  background: #111a26;
+  border: 1px solid #304157;
+  border-radius: 9px;
+}
+
+.main-content pre code {
+  color: inherit;
+  background: transparent;
+  border: 0;
+}
+
+.main-content blockquote {
+  color: var(--cx-muted);
+  border-left-color: var(--cx-accent);
+}
+
+.main-content table {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  border-collapse: collapse;
+}
+
+.main-content table th,
+.main-content table td {
+  border: 1px solid var(--cx-border);
+}
+
+.main-content table th {
+  background: var(--cx-panel-2);
+}
+
+.main-content table tr {
+  background: var(--cx-panel);
+  border-top: 1px solid var(--cx-border);
+}
+
+.main-content table tr:nth-child(2n) {
+  background: #121b28;
+}
+
+.main-content hr {
+  background: var(--cx-border);
+  border-color: var(--cx-border);
+}
+
+.site-footer {
+  color: var(--cx-muted);
+  border-top-color: var(--cx-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
