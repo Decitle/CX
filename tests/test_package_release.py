@@ -146,6 +146,16 @@ class PackageReleaseTests(unittest.TestCase):
             "HvsiFileTrust.dll",
             "PdmUtilities.dll",
             "wpaxholder.dll",
+            "shell32.dll",
+            "shlwapi.dll",
+            "dbgeng.dll",
+            "d2d1.dll",
+            "uiautomationcore.dll",
+            "esent.dll",
+            "coreuicomponents.dll",
+            "certenroll.dll",
+            "setupapi.dll",
+            "windows.storage.dll",
         )
         for name in system_names:
             with self.subTest(name=name):
@@ -172,7 +182,13 @@ class PackageReleaseTests(unittest.TestCase):
             (stage / "bin" / "cx-cli.exe").write_bytes(b"Windows CLI fixture")
             (stage / "bin" / "sfml-graphics-3.dll").write_bytes(b"SFML DLL fixture")
             (stage / "bin" / "kernel32.dll").write_bytes(b"Windows system DLL must not be redistributed")
-            for name in ("AzureAttestManager.dll", "AzureAttestNormal.dll", "HvsiFileTrust.dll", "PdmUtilities.dll", "wpaxholder.dll"):
+            for name in (
+                "AzureAttestManager.dll", "AzureAttestNormal.dll", "HvsiFileTrust.dll",
+                "PdmUtilities.dll", "wpaxholder.dll", "shell32.dll", "shlwapi.dll",
+                "dbgeng.dll", "d2d1.dll", "uiautomationcore.dll", "esent.dll",
+                "coreuicomponents.dll", "certenroll.dll", "setupapi.dll",
+                "windows.storage.dll",
+            ):
                 (stage / "bin" / name).write_bytes(b"Windows system component must not be bundled")
             (stage / "include" / "SFML").mkdir(parents=True)
             (stage / "include" / "SFML" / "Graphics.hpp").write_text("development header\\n", encoding="utf-8")
@@ -183,6 +199,7 @@ class PackageReleaseTests(unittest.TestCase):
 
             (project / "scripts").mkdir(parents=True)
             (project / "config.json").write_text("{}\n", encoding="utf-8")
+            (project / "README.md").write_text("Quickstart project\n", encoding="utf-8")
             (project / "scripts" / "main.cx").write_text("broadcast \"ready\"\n", encoding="utf-8")
 
             (sdk / "include" / "SFML").mkdir(parents=True)
@@ -215,29 +232,99 @@ class PackageReleaseTests(unittest.TestCase):
 
             with zipfile.ZipFile(archive) as zipped:
                 self.assertIsNone(zipped.testzip())
-                self.assertEqual(zipped.read("bin/cx-engine.exe"), b"Windows executable fixture")
-                self.assertEqual(zipped.read("bin/cx-cli.exe"), b"Windows CLI fixture")
-                self.assertEqual(zipped.read("bin/sfml-graphics-3.dll"), b"SFML DLL fixture")
+                self.assertEqual(zipped.read("CX-Engine/cx-engine.exe"), b"Windows executable fixture")
+                self.assertEqual(zipped.read("CX-Engine/cx-cli.exe"), b"Windows CLI fixture")
+                self.assertEqual(zipped.read("CX-Engine/sfml-graphics-3.dll"), b"SFML DLL fixture")
                 names = set(zipped.namelist())
-                self.assertNotIn("bin/kernel32.dll", names, "Windows system DLLs must not be bundled")
+                self.assertNotIn("CX-Engine/kernel32.dll", names, "Windows system DLLs must not be bundled")
                 for name in ("AzureAttestManager.dll", "AzureAttestNormal.dll", "HvsiFileTrust.dll", "PdmUtilities.dll", "wpaxholder.dll"):
-                    self.assertNotIn(f"bin/{name}", names, f"{name} is a Windows system component and must not be bundled")
+                    self.assertNotIn(f"CX-Engine/{name}", names, f"{name} is a Windows system component and must not be bundled")
                 self.assertFalse(any(name.startswith("include/") for name in names), "development headers must not be bundled")
+                self.assertFalse(any(name.startswith("bin/") or name.startswith("lib/") for name in names), "runtime files must be flattened inside CX-Engine/")
                 self.assertFalse(any(name.startswith("lib/") for name in names), "static libraries and SDK metadata must not be bundled")
                 self.assertFalse(any(name.startswith("share/") for name in names), "SDK documentation must not be bundled")
                 self.assertEqual(zipped.read("project/scripts/main.cx").replace(b"\r\n", b"\n"), b"broadcast \"ready\"\n")
-                self.assertEqual(zipped.read("third-party-licenses/SFML-LICENSE.txt").replace(b"\r\n", b"\n"), b"SFML license fixture\n")
+                license_text = zipped.read("LICENSES.txt").decode("utf-8")
+                self.assertIn("CX license fixture", license_text)
+                self.assertIn("SFML license fixture", license_text)
+                self.assertNotIn("THIRD_PARTY_NOTICES.md", names)
+                self.assertFalse(any(name.startswith("third-party-licenses/") for name in names))
+                self.assertEqual(zipped.read("CX-Engine/scripts/main.cx").replace(b"\r\n", b"\n"), b"broadcast \"ready\"\n")
+                self.assertEqual(zipped.read("CX-Engine/config.json"), b"{}\n")
                 payloads = {
                     name: zipped.read(name)
-                    for name in ("bin/cx-engine.exe", "bin/cx-cli.exe", "bin/sfml-graphics-3.dll")
+                    for name in ("CX-Engine/cx-engine.exe", "CX-Engine/cx-cli.exe", "CX-Engine/sfml-graphics-3.dll")
                 }
-                manifest = json.loads(zipped.read("runtime-manifest.json"))
+                manifest = json.loads(zipped.read("CX-Engine/runtime-manifest.json"))
 
             self.assertEqual(manifest["target"], "windows-x86_64")
             listed = {entry["path"]: entry for entry in manifest["files"]}
             for name, data in payloads.items():
                 self.assertEqual(listed[name]["size_bytes"], len(data))
                 self.assertEqual(listed[name]["sha256"], hashlib.sha256(data).hexdigest())
+
+
+    def test_linux_runtime_archive_flattens_shared_libraries_into_engine_folder(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "source"
+            stage = root / "stage"
+            project = root / "quickstart"
+            build = root / "build"
+            output = root / "dist"
+            sdk = root / "SFML-3.1.0"
+
+            (source / "LICENSE").parent.mkdir(parents=True)
+            (source / "LICENSE").write_text("CX license fixture\n", encoding="utf-8")
+            (source / "docs").mkdir()
+            (source / "docs" / "runtime-package.md").write_text("Runtime instructions\n", encoding="utf-8")
+            (stage / "bin").mkdir(parents=True)
+            (stage / "bin" / "cx-engine").write_bytes(b"Linux executable fixture")
+            (stage / "bin" / "cx-cli").write_bytes(b"Linux CLI fixture")
+            (stage / "lib").mkdir(parents=True)
+            (stage / "lib" / "libsfml-graphics.so.3.1.0").write_bytes(b"SFML shared library fixture")
+
+            (project / "scripts").mkdir(parents=True)
+            (project / "config.json").write_text("{}\n", encoding="utf-8")
+            (project / "README.md").write_text("Quickstart project\n", encoding="utf-8")
+            (project / "scripts" / "main.cx").write_text('broadcast "ready"\n', encoding="utf-8")
+
+            (sdk / "include" / "SFML").mkdir(parents=True)
+            (sdk / "lib" / "cmake" / "SFML").mkdir(parents=True)
+            (sdk / "license.md").write_text("SFML license fixture\n", encoding="utf-8")
+            build.mkdir()
+            (build / "CMakeCache.txt").write_text(
+                f"SFML_DIR:PATH={sdk / 'lib' / 'cmake' / 'SFML'}\n",
+                encoding="utf-8",
+            )
+
+            command = [
+                sys.executable, str(RUNTIME_MODULE_PATH),
+                "--stage", str(stage),
+                "--project", str(project),
+                "--build-dir", str(build),
+                "--source-root", str(source),
+                "--target", "linux-x86_64",
+                "--version", "0.10.14-test",
+                "--output-dir", str(output),
+            ]
+            subprocess.run(command, check=True, capture_output=True, text=True)
+
+            archive = output / "CXEngine-v0.10.14-test-linux-x86_64.tar.gz"
+            with tarfile.open(archive, "r:gz") as packed:
+                names = {member.name for member in packed.getmembers()}
+                self.assertIn("CX-Engine/cx-engine", names)
+                self.assertIn("CX-Engine/cx-cli", names)
+                self.assertIn("CX-Engine/libsfml-graphics.so.3.1.0", names)
+                self.assertIn("CX-Engine/runtime-manifest.json", names)
+                self.assertIn("project/scripts/main.cx", names)
+                self.assertIn("LICENSES.txt", names)
+                self.assertIn("CX-Engine/scripts/main.cx", names)
+                self.assertFalse(any(name.startswith("bin/") or name.startswith("lib/") for name in names))
+                self.assertNotIn("LICENSE", names)
+                self.assertNotIn("THIRD_PARTY_NOTICES.md", names)
+            cmake_text = (MODULE_PATH.parents[1] / "CMakeLists.txt").read_text(encoding="utf-8")
+            self.assertIn('set(CX_INSTALL_RPATH "$ORIGIN")', cmake_text)
 
 
 if __name__ == "__main__":

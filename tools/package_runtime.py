@@ -94,6 +94,16 @@ WINDOWS_SYSTEM_DLLS = frozenset({
     "samlib.dll",
     "sechost.dll",
     "shcore.dll",
+    "shell32.dll",
+    "shlwapi.dll",
+    "dbgeng.dll",
+    "d2d1.dll",
+    "uiautomationcore.dll",
+    "esent.dll",
+    "coreuicomponents.dll",
+    "certenroll.dll",
+    "setupapi.dll",
+    "windows.storage.dll",
     "srvcli.dll",
     "sspicli.dll",
     "tbs.dll",
@@ -120,11 +130,12 @@ WINDOWS_SYSTEM_DLLS = frozenset({
 
 
 def copy_runtime_stage(stage: Path, destination: Path, target: str) -> None:
-    """Copy only runtime payloads from CMake's install prefix.
+    """Copy runtime payloads beside the executables in the CX-Engine folder.
 
-    SFML's install rules also populate headers, static libraries, CMake metadata,
-    and docs. Those are SDK/development files, not required to run CX. Keep native
-    executables and shared runtime libraries only; omit known Windows system DLLs.
+    CMake installs executables and Windows DLLs under bin/, shared Unix
+    libraries under lib/, and macOS frameworks under Frameworks/. The public
+    archive intentionally presents a single launch folder, so files from bin/
+    and lib/ are placed together. CMake's install RPATH is configured to match.
     """
     if not stage.is_dir():
         raise RuntimeError(f"CMake install stage is missing: {stage}")
@@ -145,6 +156,7 @@ def copy_runtime_stage(stage: Path, destination: Path, target: str) -> None:
         name = source.name.lower()
 
         keep = False
+        output_relative: Path | None = None
         if top == "bin":
             if windows:
                 keep = suffix == ".exe" or (
@@ -154,6 +166,8 @@ def copy_runtime_stage(stage: Path, destination: Path, target: str) -> None:
                 )
             else:
                 keep = suffix in {"", ".so", ".dylib"} or ".so." in name or ".dylib." in name
+            if keep:
+                output_relative = Path(source.name)
         elif top == "lib":
             if windows:
                 keep = suffix == ".dll" and name not in WINDOWS_SYSTEM_DLLS and not name.startswith(("api-ms-", "ext-ms-"))
@@ -161,23 +175,30 @@ def copy_runtime_stage(stage: Path, destination: Path, target: str) -> None:
                 keep = ".dylib" in name
             else:
                 keep = ".so" in name
-        elif top == "Frameworks":
+            if keep:
+                output_relative = Path(source.name)
+        elif top == "Frameworks" and macos:
             keep = True
+            output_relative = relative
 
-        if not keep:
+        if not keep or output_relative is None:
             continue
-        output = destination / relative
+
+        output = destination / output_relative
         output.parent.mkdir(parents=True, exist_ok=True)
+        if output.exists():
+            raise RuntimeError(
+                f"Runtime stage contains colliding runtime filenames: {output_relative}"
+            )
         shutil.copy2(source, output)
         copied += 1
 
-    required = ("bin/cx-engine.exe", "bin/cx-cli.exe") if windows else ("bin/cx-engine", "bin/cx-cli")
+    required = ("cx-engine.exe", "cx-cli.exe") if windows else ("cx-engine", "cx-cli")
     for relative in required:
         if not (destination / relative).is_file():
-            raise RuntimeError(f"CMake install stage did not contain required runtime file: {relative}")
+            raise RuntimeError(f"Runtime install stage did not contain required runtime file: {relative}")
     if copied < len(required):
         raise RuntimeError("Runtime install stage did not contain the expected executable payload")
-
 
 GENERATED_PROJECT_STATE_NAMES = frozenset({
     ".variables.lock",
@@ -267,34 +288,71 @@ def find_sfml_license(build_dir: Path, explicit: Path | None = None) -> Path:
     )
 
 
+def write_combined_licenses(
+    source_root: Path,
+    sfml_license: Path,
+    destination: Path,
+) -> None:
+    """Write one runtime license file while keeping each license text distinct."""
+    cx_license = source_root / "LICENSE"
+    if not cx_license.is_file():
+        raise RuntimeError(f"CX Engine license file is missing: {cx_license}")
+    if not sfml_license.is_file():
+        raise RuntimeError(f"SFML license file is missing: {sfml_license}")
+
+    cx_text = cx_license.read_text(encoding="utf-8").rstrip("\r\n")
+    sfml_text = sfml_license.read_text(encoding="utf-8").rstrip("\r\n")
+    combined = (
+        "CX ENGINE — BSD 3-CLAUSE LICENSE\n"
+        "================================\n\n"
+        f"{cx_text}\n\n"
+        "SFML 3.1.0 — ZLIB/LIBPNG LICENSE\n"
+        "================================\n\n"
+        f"{sfml_text}\n"
+    )
+    destination.write_text(combined, encoding="utf-8")
+
+
 def make_manifest(root: Path, target: str, version: str) -> None:
-    files=collect_files(root)
-    manifest={
-        "product":"CX Engine",
-        "version":version,
-        "target":target,
-        "package_type":"minimal-starter-runtime",
-        "files":[
-            {"path":p.relative_to(root).as_posix(),"size_bytes":p.stat().st_size,"sha256":sha256(p)}
-            for p in files
+    manifest_path = root / "CX-Engine" / "runtime-manifest.json"
+    files = [path for path in collect_files(root) if path != manifest_path]
+    manifest = {
+        "product": "CX Engine",
+        "version": version,
+        "target": target,
+        "package_type": "minimal-starter-runtime",
+        "files": [
+            {
+                "path": path.relative_to(root).as_posix(),
+                "size_bytes": path.stat().st_size,
+                "sha256": sha256(path),
+            }
+            for path in files
         ],
     }
-    (root/"runtime-manifest.json").write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
 
 def verify_manifest(root: Path) -> int:
-    path=root/"runtime-manifest.json"
-    data=json.loads(path.read_text(encoding="utf-8"))
-    listed={entry["path"]:entry for entry in data["files"]}
-    actual={p.relative_to(root).as_posix():p for p in collect_files(root) if p.name!="runtime-manifest.json"}
-    if set(actual)!=set(listed):
-        raise RuntimeError(f"Runtime manifest path mismatch: missing={set(listed)-set(actual)}, extra={set(actual)-set(listed)}")
-    for name,p in actual.items():
-        item=listed[name]
-        if p.stat().st_size!=item["size_bytes"] or sha256(p)!=item["sha256"]:
+    path = root / "CX-Engine" / "runtime-manifest.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    listed = {entry["path"]: entry for entry in data["files"]}
+    actual = {
+        file.relative_to(root).as_posix(): file
+        for file in collect_files(root)
+        if file != path
+    }
+    if set(actual) != set(listed):
+        raise RuntimeError(
+            f"Runtime manifest path mismatch: missing={set(listed)-set(actual)}, "
+            f"extra={set(actual)-set(listed)}"
+        )
+    for name, file in actual.items():
+        item = listed[name]
+        if file.stat().st_size != item["size_bytes"] or sha256(file) != item["sha256"]:
             raise RuntimeError(f"Runtime manifest hash/size mismatch: {name}")
     return len(actual)
-
 
 def archive(root: Path, output: Path, fmt: str) -> None:
     output.parent.mkdir(parents=True,exist_ok=True)
@@ -323,44 +381,51 @@ def archive(root: Path, output: Path, fmt: str) -> None:
 
 
 def main() -> int:
-    parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage",type=Path,required=True,help="CMake install prefix containing bin/")
-    parser.add_argument("--project",type=Path,required=True,help="Minimal starter project folder")
-    parser.add_argument("--build-dir",type=Path,required=True,help="CMake build directory used to configure SFML")
-    parser.add_argument("--sfml-license",type=Path,help="Explicit SFML license file when using a custom installed SDK")
-    parser.add_argument("--source-root",type=Path,default=Path.cwd())
-    parser.add_argument("--target",required=True,help="OS/architecture label, e.g. linux-x86_64")
-    parser.add_argument("--version",default=os.environ.get("CX_VERSION","0.10.14"))
-    parser.add_argument("--output-dir",type=Path,required=True)
-    args=parser.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--stage", type=Path, required=True, help="CMake install prefix containing bin/ and optional lib/")
+    parser.add_argument("--project", type=Path, required=True, help="Minimal starter project folder")
+    parser.add_argument("--build-dir", type=Path, required=True, help="CMake build directory used to configure SFML")
+    parser.add_argument("--sfml-license", type=Path, help="Explicit SFML license file when using a custom installed SDK")
+    parser.add_argument("--source-root", type=Path, default=Path.cwd())
+    parser.add_argument("--target", required=True, help="OS/architecture label, e.g. linux-x86_64")
+    parser.add_argument("--version", default=os.environ.get("CX_VERSION", "0.10.14"))
+    parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args()
     try:
-        exe="cx-engine.exe" if args.target.startswith("windows-") else "cx-engine"
-        cli="cx-cli.exe" if args.target.startswith("windows-") else "cx-cli"
-        if not (args.stage/"bin"/exe).is_file():
+        windows = args.target.startswith("windows-")
+        exe = "cx-engine.exe" if windows else "cx-engine"
+        cli = "cx-cli.exe" if windows else "cx-cli"
+        if not (args.stage / "bin" / exe).is_file():
             raise RuntimeError(f"Graphical runtime executable is missing from install stage: bin/{exe}")
-        if not (args.stage/"bin"/cli).is_file():
+        if not (args.stage / "bin" / cli).is_file():
             raise RuntimeError(f"CLI executable is missing from install stage: bin/{cli}")
-        if not (args.project/"config.json").is_file() or not (args.project/"scripts"/"main.cx").is_file():
+        if not (args.project / "config.json").is_file() or not (args.project / "scripts" / "main.cx").is_file():
             raise RuntimeError("Starter project must contain config.json and scripts/main.cx")
-        with tempfile.TemporaryDirectory(prefix="cx-runtime-package-") as tmp:
-            root=Path(tmp)/"CXEngine"
-            root.mkdir()
-            copy_runtime_stage(args.stage, root, args.target)
-            validate_starter_project(args.project)
-            copy_tree(args.project,root/"project")
-            shutil.copy2(args.source_root/"LICENSE",root/"LICENSE")
-            shutil.copy2(args.source_root/"docs"/"runtime-package.md",root/"README.md")
-            shutil.copy2(args.source_root/"THIRD_PARTY_NOTICES.md",root/"THIRD_PARTY_NOTICES.md")
-            third=root/"third-party-licenses"
-            third.mkdir()
-            shutil.copy2(find_sfml_license(args.build_dir, args.sfml_license),third/"SFML-LICENSE.txt")
-            make_manifest(root,args.target,args.version)
+
+        sfml_license = find_sfml_license(args.build_dir, args.sfml_license)
+        validate_starter_project(args.project)
+        with tempfile.TemporaryDirectory(prefix="cx-runtime-package-") as temporary:
+            root = Path(temporary)
+            runtime_dir = root / "CX-Engine"
+
+            # CX-Engine is a directly runnable project folder: it holds the
+            # executables, shared runtime libraries, and a copy of the starter.
+            copy_tree(args.project, runtime_dir)
+            copy_runtime_stage(args.stage, runtime_dir, args.target)
+
+            # Keep a second clean starter at the archive root so users can copy
+            # or edit it without touching the engine's built-in quickstart.
+            copy_tree(args.project, root / "project")
+            shutil.copy2(args.source_root / "docs" / "runtime-package.md", root / "README.md")
+            write_combined_licenses(args.source_root, sfml_license, root / "LICENSES.txt")
+
+            make_manifest(root, args.target, args.version)
             verify_manifest(root)
-            suffix=".zip" if args.target.startswith(("windows-","macos-")) else ".tar.gz"
-            output=args.output_dir/f"CXEngine-v{args.version}-{args.target}{suffix}"
-            archive(root,output,"zip" if suffix==".zip" else "tar.gz")
-    except (OSError,RuntimeError,ValueError,json.JSONDecodeError,tarfile.TarError,zipfile.BadZipFile) as exc:
-        parser.exit(1,f"ERROR: {exc}\n")
+            suffix = ".zip" if args.target.startswith(("windows-", "macos-")) else ".tar.gz"
+            output = args.output_dir / f"CXEngine-v{args.version}-{args.target}{suffix}"
+            archive(root, output, "zip" if suffix == ".zip" else "tar.gz")
+    except (OSError, RuntimeError, ValueError, json.JSONDecodeError, tarfile.TarError, zipfile.BadZipFile) as exc:
+        parser.exit(1, f"ERROR: {exc}\n")
     return 0
 
 if __name__=="__main__":

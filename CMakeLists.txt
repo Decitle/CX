@@ -258,9 +258,11 @@ endif()
 # Install only the native runtime executables and their non-system shared
 # dependencies. CMake's runtime dependency scanner keeps bundled SFML shared
 # libraries beside the binaries while excluding operating-system libraries.
-set(CX_INSTALL_RPATH "$ORIGIN/../lib")
+# The runtime packager flattens bin/ and lib/ into CX-Engine/ so
+# redistributable shared libraries sit beside the executables.
+set(CX_INSTALL_RPATH "$ORIGIN")
 if(APPLE)
-    set(CX_INSTALL_RPATH "@loader_path/../lib")
+    set(CX_INSTALL_RPATH "@loader_path;@loader_path/Frameworks")
 endif()
 set_target_properties(cx-cli PROPERTIES INSTALL_RPATH "${CX_INSTALL_RPATH}")
 install(TARGETS cx-cli
@@ -286,15 +288,15 @@ install(RUNTIME_DEPENDENCY_SET cx_runtime_dependencies
         "^api-ms-.*"
         "^ext-ms-.*"
         # CMake lowercases Windows DLL names before PRE_EXCLUDE_REGEXES matching.
-        "^(azureattestmanager|azureattestnormal|hvsifiletrust|pdmutilities|wpaxholder)\\.dll$"
+        "^(azureattestmanager|azureattestnormal|hvsifiletrust|pdmutilities|wpaxholder|shell32|shlwapi|dbgeng|d2d1|uiautomationcore|esent|coreuicomponents|certenroll|setupapi|windows\\.storage)\\.dll$"
         "^/lib/.*"
         "^/usr/lib/.*"
-        "^[A-Za-z]:[/\\\\]Windows[/\\\\]System32[/\\\\].*"
+        "^[A-Za-z]:[/\\\\]Windows[/\\\\](System32|SysWOW64|SysArm32|WinSxS)[/\\\\].*"
     POST_EXCLUDE_REGEXES
         "^/System/Library/.*"
         "^/usr/lib/.*"
         "^/lib/.*"
-        "^[A-Za-z]:[/\\\\]Windows[/\\\\]System32[/\\\\].*"
+        "^[A-Za-z]:[/\\\\]Windows[/\\\\](System32|SysWOW64|SysArm32|WinSxS)[/\\\\].*"
         "^[A-Za-z]:[/\\\\]Windows[/\\\\]SysWOW64[/\\\\].*"
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib

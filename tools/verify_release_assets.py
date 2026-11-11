@@ -18,12 +18,13 @@ TARGETS = {
     "macos-x86_64": ".zip",
     "macos-arm64": ".zip",
 }
-MANIFEST_NAME = "runtime-manifest.json"
+MANIFEST_NAME = "CX-Engine/runtime-manifest.json"
 REQUIRED_COMMON = {
-    "LICENSE",
+    "LICENSES.txt",
     "README.md",
-    "THIRD_PARTY_NOTICES.md",
-    "third-party-licenses/SFML-LICENSE.txt",
+    "CX-Engine/README.md",
+    "CX-Engine/config.json",
+    "CX-Engine/scripts/main.cx",
     "project/config.json",
     "project/scripts/main.cx",
 }
@@ -118,8 +119,41 @@ def verify_runtime_archive(path: Path, target: str, version: str) -> None:
             raise RuntimeError(f"{path.name}: SHA-256 mismatch for {name}")
 
     executable_suffix = ".exe" if target.startswith("windows-") else ""
+    legacy_license_paths = {"LICENSE", "THIRD_PARTY_NOTICES.md"}
+    if legacy_license_paths.intersection(actual) or any(
+        name.startswith("third-party-licenses/") for name in actual
+    ):
+        raise RuntimeError(
+            f"{path.name}: runtime package must consolidate license material in LICENSES.txt"
+        )
+    if any(PurePosixPath(name).parts[0] in {"bin", "lib"} for name in actual):
+        raise RuntimeError(
+            f"{path.name}: executable and shared runtime files must be under CX-Engine/"
+        )
+    if target.startswith("windows-"):
+        windows_system_names = {
+            "advapi32.dll", "bcrypt.dll", "combase.dll", "dbghelp.dll",
+            "d2d1.dll", "dbgeng.dll", "esent.dll", "gdi32.dll", "kernel32.dll",
+            "kernelbase.dll", "ole32.dll", "oleaut32.dll", "rpcrt4.dll",
+            "sechost.dll", "shell32.dll", "shlwapi.dll", "ucrtbase.dll",
+            "user32.dll", "uiautomationcore.dll", "windows.storage.dll",
+            "win32u.dll", "wintrust.dll", "ws2_32.dll", "coreuicomponents.dll",
+            "certenroll.dll", "setupapi.dll",
+        }
+        unexpected_system_dlls = sorted(
+            name for name in actual
+            if PurePosixPath(name).name.lower() in windows_system_names
+            or PurePosixPath(name).name.lower().startswith(("api-ms-", "ext-ms-"))
+        )
+        if unexpected_system_dlls:
+            raise RuntimeError(
+                f"{path.name}: Windows operating-system DLLs must not be redistributed: {unexpected_system_dlls}"
+            )
     required = set(REQUIRED_COMMON)
-    required.update({f"bin/cx-engine{executable_suffix}", f"bin/cx-cli{executable_suffix}"})
+    required.update({
+        f"CX-Engine/cx-engine{executable_suffix}",
+        f"CX-Engine/cx-cli{executable_suffix}",
+    })
     missing = sorted(required - set(actual))
     if missing:
         raise RuntimeError(f"{path.name}: missing required runtime files: {missing}")

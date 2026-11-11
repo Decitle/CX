@@ -68,3 +68,15 @@
 - Inspected the 100 MB Windows ARM64 runtime archive. It contains numerous Windows OS components (including `shell32.dll`, `windows.storage.dll`, and `d2d1.dll`) that should not be redistributed as application dependencies. It is excluded from the manual preview.7 asset set and requires a separate packaging-filter correction before a future release.
 - Verified the Windows x86_64, Linux x86_64, and Linux ARM64 runtime archives: each contains both expected executables, a valid internal manifest with matching file sizes and SHA-256 hashes, and a matching external checksum sidecar.
 - Verified the preview.7 standalone HTML reference and its version-pinned guide links. Prepared a manual upload bundle containing only the three validated runtime packages, their three checksum sidecars, and the matching reference.
+
+## 2026-11-10 — simplify runtime archives and consolidate license notices
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request
+
+- Used the user's repackaged Linux runtime archive as the target layout: a CX-Engine folder containing the executables, bundled runtime dependencies, and an in-place quickstart project, plus a separate root project starter.
+- Changed the runtime packager to flatten CMake's bin and lib install payloads into CX-Engine, preserve macOS frameworks under that directory, reject filename collisions, and place the runtime manifest beside the executables.
+- Set Linux and macOS install RPATHs to match the new colocated-library layout; kept the release archives' platform-specific formats and checksum sidecars.
+- Replaced the three-path runtime license presentation with one LICENSES.txt containing the complete CX Engine BSD 3-Clause text and the unmodified SFML zlib/libpng notice as separately labeled sections. The repository's source license files remain available in their normal locations.
+- Updated runtime instructions, third-party disclosure, and release asset verification to require the new layout and reject the old bin structure or duplicate license files.
+- Expanded Windows system-DLL exclusions to cover components found in the oversized preview.7 Windows ARM64 archive and added packaging regression fixtures for those names.
+- Added Linux archive-layout coverage and updated the six-target release verifier fixtures to test the new package contract.

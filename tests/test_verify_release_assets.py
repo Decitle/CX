@@ -25,13 +25,15 @@ class VerifyReleaseAssetsTests(unittest.TestCase):
         for target, suffix in verifier.TARGETS.items():
             executable_suffix = ".exe" if target.startswith("windows-") else ""
             payloads = {
-                f"bin/cx-engine{executable_suffix}": b"engine binary fixture",
-                f"bin/cx-cli{executable_suffix}": b"cli binary fixture",
-                "LICENSE": b"BSD license fixture",
+                f"CX-Engine/cx-engine{executable_suffix}": b"engine binary fixture",
+                f"CX-Engine/cx-cli{executable_suffix}": b"cli binary fixture",
+                "CX-Engine/README.md": b"Quickstart project instructions",
+                "CX-Engine/config.json": b"{}\n",
+                "CX-Engine/scripts/main.cx": b'broadcast "ready"\n',
+                "LICENSES.txt": b"BSD and SFML license sections",
                 "README.md": b"Runtime instructions",
-                "THIRD_PARTY_NOTICES.md": b"Third-party notices",
-                "third-party-licenses/SFML-LICENSE.txt": b"SFML license fixture",
                 "project/config.json": b"{}\n",
+                "project/README.md": b"Quickstart project instructions",
                 "project/scripts/main.cx": b'broadcast "ready"\n',
             }
             manifest = {
