@@ -92,3 +92,5 @@
 - Expanded LICENSES.txt to include the applicable full notices for bundled FreeType, HarfBuzz, SheenBidi, QOI, cpp-unicodelib, glad, and stb_image components when their source is present in the FetchContent build tree. Host-provided dependencies are not treated as bundled files.
 - Corrected the Windows packaging test to normalize CRLF/LF differences instead of assuming Unix line endings.
 - Updated THIRD_PARTY_NOTICES.md and runtime documentation to make the one-project layout and consolidated third-party licensing explicit.
+
+- During the license audit, also included the additional BDF and PCF driver notices and FreeType hash-helper MIT notice that the FreeType license file identifies separately.

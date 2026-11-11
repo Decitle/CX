@@ -241,6 +241,8 @@ class PackageReleaseTests(unittest.TestCase):
                 )
             dependency_licenses = {
                 "_deps/freetype-src/docs/FTL.TXT": "FreeType fixture license",
+                "_deps/freetype-src/src/bdf/README": "BDF fixture license",
+                "_deps/freetype-src/src/pcf/README": "PCF fixture license",
                 "_deps/harfbuzz-src/COPYING": "HarfBuzz fixture license",
                 "_deps/harfbuzz-src/src/ms-use/COPYING": "HarfBuzz Microsoft fixture license",
                 "_deps/sheenbidi-src/LICENSE": "SheenBidi fixture license",
@@ -249,6 +251,20 @@ class PackageReleaseTests(unittest.TestCase):
                 license_path = build / relative
                 license_path.parent.mkdir(parents=True, exist_ok=True)
                 license_path.write_text(body, encoding="utf-8")
+            hash_license = (
+                "/*\\n * Copyright 2000 Computing Research Labs, New Mexico State University\\n"
+                " * Copyright 2001-2015 Francesco Zappa Nardelli\\n"
+                " * Permission is granted, free of charge, to any person obtaining a copy\\n"
+                " * of this software and associated documentation files (the Software)\\n"
+                " */"
+            )
+            for relative in (
+                "_deps/freetype-src/src/base/fthash.c",
+                "_deps/freetype-src/include/freetype/internal/fthash.h",
+            ):
+                license_path = build / relative
+                license_path.parent.mkdir(parents=True, exist_ok=True)
+                license_path.write_text(hash_license, encoding="utf-8")
 
             command = [
                 sys.executable, str(RUNTIME_MODULE_PATH),
@@ -289,6 +305,9 @@ class PackageReleaseTests(unittest.TestCase):
                 self.assertIn("CX license fixture", license_text)
                 self.assertIn("SFML license fixture", license_text)
                 self.assertIn("FreeType fixture license", license_text)
+                self.assertIn("BDF fixture license", license_text)
+                self.assertIn("PCF fixture license", license_text)
+                self.assertIn("FreeType BDF hash helper — MIT LICENSE", license_text)
                 self.assertIn("HarfBuzz fixture license", license_text)
                 self.assertIn("HarfBuzz Microsoft fixture license", license_text)
                 self.assertIn("SheenBidi fixture license", license_text)

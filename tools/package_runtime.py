@@ -329,6 +329,37 @@ def write_combined_licenses(
         if license_path.is_file():
             add_file(heading, license_path)
 
+    freetype_source = build_dir / "_deps" / "freetype-src"
+    if freetype_source.is_dir():
+        # The BDF and PCF drivers have their own notices, documented in these
+        # source README files; retain those notices with the main FTL text.
+        add_file("FreeType BDF driver — LICENSE NOTICE",
+                 freetype_source / "src" / "bdf" / "README")
+        add_file("FreeType PCF driver — LICENSE NOTICE",
+                 freetype_source / "src" / "pcf" / "README")
+
+        # FreeType's BDF hash helper is separately licensed by Computing
+        # Research Labs / New Mexico State University. The .c and .h notices
+        # should match; keep one full copy in the combined license file.
+        hash_paths = (
+            freetype_source / "src" / "base" / "fthash.c",
+            freetype_source / "include" / "freetype" / "internal" / "fthash.h",
+        )
+        hash_notices: list[str] = []
+        for hash_path in hash_paths:
+            if not hash_path.is_file():
+                raise RuntimeError(f"Bundled FreeType hash source is missing: {hash_path}")
+            hash_source = hash_path.read_text(encoding="utf-8", errors="replace")
+            marker = "/*\\n * Copyright 2000"
+            begin = hash_source.find(marker)
+            finish = hash_source.find("*/", begin)
+            if begin < 0 or finish < 0:
+                raise RuntimeError(f"Could not extract the FreeType hash notice from {hash_path}")
+            hash_notices.append(hash_source[begin:finish + 2].strip())
+        if hash_notices[0] != hash_notices[1]:
+            raise RuntimeError("FreeType hash helper source/header license notices differ")
+        sections.append(("FreeType BDF hash helper — MIT LICENSE", hash_notices[0]))
+
     sfml_source = build_dir / "_deps" / "sfml-src"
     if sfml_source.is_dir():
         extlibs = sfml_source / "extlibs" / "headers"
