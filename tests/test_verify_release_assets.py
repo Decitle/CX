@@ -79,6 +79,9 @@ class VerifyReleaseAssetsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "assets"
             self.create_valid_release(root)
+            expected = verifier.expected_asset_names(self.version)
+            self.assertIn(f"0_CX-Docs-v{self.version}.html", expected)
+            self.assertNotIn(f"CXEngine-v{self.version}-reference.html", expected)
             self.assertEqual(verifier.verify_release_directory(root, self.version, self.repository), 13)
 
     def test_rejects_incomplete_asset_set(self) -> None:

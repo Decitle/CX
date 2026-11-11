@@ -200,7 +200,7 @@ def verify_release_directory(directory: Path, version: str, repository: str) -> 
         verify_runtime_archive(archive_path, target, version)
 
     tag = f"v{version}"
-    reference_name = f"CXEngine-v{version}-reference.html"
+    reference_name = f"0_CX-Docs-v{version}.html"
     reference = (directory / reference_name).read_text(encoding="utf-8")
     if "Version-matched reference" not in reference or tag not in reference:
         raise RuntimeError(f"{reference_name}: missing the matching release version banner")
