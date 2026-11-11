@@ -73,7 +73,7 @@ class VerifyReleaseAssetsTests(unittest.TestCase):
                 for guide in ("syntax.md", "engine-settings.md", "world-and-entities.md")
             )
         )
-        (root / f"CXEngine-v{self.version}-reference.html").write_text(reference, encoding="utf-8")
+        (root / f"0_CX-Docs-v{self.version}.html").write_text(reference, encoding="utf-8")
 
     def test_accepts_all_six_runtime_packages_and_versioned_reference(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -102,7 +102,7 @@ class VerifyReleaseAssetsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "assets"
             self.create_valid_release(root)
-            reference = root / f"CXEngine-v{self.version}-reference.html"
+            reference = root / f"0_CX-Docs-v{self.version}.html"
             reference.write_text("Version-matched reference v0.10.14-preview.7", encoding="utf-8")
             with self.assertRaisesRegex(RuntimeError, "not pinned"):
                 verifier.verify_release_directory(root, self.version, self.repository)

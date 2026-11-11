@@ -66,7 +66,7 @@ def build_reference(source: Path, output_dir: Path, version: str, tag: str, repo
         html = html.replace("</style>", css + "</style>", 1)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    output = output_dir / f"CXEngine-v{version}-reference.html"
+    output = output_dir / f"0_CX-Docs-v{version}.html"
     output.write_text(html, encoding="utf-8", newline="\n")
     return output
 

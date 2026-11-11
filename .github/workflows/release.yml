@@ -194,7 +194,7 @@ jobs:
             ## Version-matched documentation
 
             Download or open the standalone HTML reference for this exact release:
-            https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.tag || github.ref_name }}/CXEngine-${{ github.event.inputs.tag || github.ref_name }}-reference.html
+            https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.tag || github.ref_name }}/0_CX-Docs-${{ github.event.inputs.tag || github.ref_name }}.html
 
             The detailed guide links in this file are pinned to the same source tag.
           prerelease: ${{ contains(github.event.inputs.tag || github.ref_name, '-') }}

@@ -29,7 +29,7 @@ class PackageReferenceTests(unittest.TestCase):
                 source, root / "dist", "0.10.14-preview.6", "v0.10.14-preview.6", "Decitle/CX"
             )
             data = output.read_text(encoding="utf-8")
-            self.assertEqual(output.name, "CXEngine-v0.10.14-preview.6-reference.html")
+            self.assertEqual(output.name, "0_CX-Docs-v0.10.14-preview.6.html")
             self.assertIn("https://github.com/Decitle/CX/tree/v0.10.14-preview.6/docs", data)
             self.assertIn("https://github.com/Decitle/CX/blob/v0.10.14-preview.6/docs/syntax.md", data)
             self.assertIn("https://github.com/Decitle/CX/blob/v0.10.14-preview.6/docs/engine-settings.md", data)

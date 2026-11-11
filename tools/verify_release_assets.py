@@ -171,7 +171,7 @@ def verify_runtime_archive(path: Path, target: str, version: str) -> None:
 
 
 def expected_asset_names(version: str) -> set[str]:
-    names = {f"CXEngine-v{version}-reference.html"}
+    names = {f"0_CX-Docs-v{version}.html"}
     for target, suffix in TARGETS.items():
         archive_name = f"CXEngine-v{version}-{target}{suffix}"
         names.add(archive_name)
