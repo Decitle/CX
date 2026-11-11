@@ -1,5 +1,7 @@
 # CX Script syntax guide (reviewed against v0.10.14)
 
+> This page describes syntax accepted by the current v0.10.14 source line. The v0.11.0 language overhaul has a separate [design charter](language-design.md) and [source-backed syntax audit](SKRIPT_SYNTAX_AUDIT.md). Target examples in those documents are not necessarily accepted by this release yet.
+>
 > Feature headings retain the version in which each capability was introduced. They are historical introduction labels, not the version coverage of this whole guide. For detailed lifecycle guarantees, also read the focused feature notes.
 
 CX is designed to read like plain English. Indentation is forgiving: CX auto-detects conventional four-space or two-space style per file, treats a tab as one level in the detected style, and normalizes both styles to the same internal block levels. In a two-space file, four spaces count as two levels. Align sibling statements; if an indentation level is ambiguous, the parser points it out. When a line is malformed, the runtime diagnostic output reports its file and line; the graphical runtime also retains reload diagnostics in the Ctrl+Tab drawer, shows the source and a caret, explains the problem, and suggests a correction.
