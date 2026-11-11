@@ -350,10 +350,10 @@ def write_combined_licenses(
             if not hash_path.is_file():
                 raise RuntimeError(f"Bundled FreeType hash source is missing: {hash_path}")
             hash_source = hash_path.read_text(encoding="utf-8", errors="replace")
-            marker = "/*\\n * Copyright 2000"
+            marker = "/*" + chr(10) + " * Copyright 2000"
             begin = hash_source.find(marker)
             finish = hash_source.find("*/", begin)
-            if begin < 0 or finish < 0:
+            if begin < 0 or finish < 0 or "Copyright 2000" not in hash_source[begin:finish]:
                 raise RuntimeError(f"Could not extract the FreeType hash notice from {hash_path}")
             hash_notices.append(hash_source[begin:finish + 2].strip())
         if hash_notices[0] != hash_notices[1]:

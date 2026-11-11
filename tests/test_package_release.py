@@ -251,13 +251,14 @@ class PackageReleaseTests(unittest.TestCase):
                 license_path = build / relative
                 license_path.parent.mkdir(parents=True, exist_ok=True)
                 license_path.write_text(body, encoding="utf-8")
-            hash_license = (
-                "/*\\n * Copyright 2000 Computing Research Labs, New Mexico State University\\n"
-                " * Copyright 2001-2015 Francesco Zappa Nardelli\\n"
-                " * Permission is granted, free of charge, to any person obtaining a copy\\n"
-                " * of this software and associated documentation files (the Software)\\n"
-                " */"
-            )
+            hash_license = "\\n".join([
+                "/*",
+                " * Copyright 2000 Computing Research Labs, New Mexico State University",
+                " * Copyright 2001-2015 Francesco Zappa Nardelli",
+                " * Permission is granted, free of charge, to any person obtaining a copy",
+                " * of this software and associated documentation files (the Software)",
+                " */",
+            ])
             for relative in (
                 "_deps/freetype-src/src/base/fthash.c",
                 "_deps/freetype-src/include/freetype/internal/fthash.h",
