@@ -1,4 +1,11 @@
+## 2026-11-10 — correct the FreeType packaging regression fixture
 
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request
+
+- Investigated the six-target CI failure after the FreeType hash-helper notice extractor was changed to recognize a real newline after the C comment opener. All six jobs reached CTest; the same Windows-package regression test failed in each environment while the other tests passed.
+- Found that the synthetic C source fixture used a double-escaped Python \\n sequence, writing literal backslash-n characters instead of the real line breaks present in FreeType's source files. Corrected it to construct a realistic multiline comment and added fixture assertions that require separate comment lines.
+- Improved the Windows package regression test so a failed packager subprocess prints its stdout and stderr, rather than hiding the actionable error behind a generic subprocess traceback.
+- The production license extractor and package layout are unchanged by this correction; CI must verify the corrected test across all six native targets before Preview.8 is tagged.
 
 ## 2026-11-09 — release readiness and documentation accuracy review
 

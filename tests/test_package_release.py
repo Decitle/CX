@@ -251,7 +251,7 @@ class PackageReleaseTests(unittest.TestCase):
                 license_path = build / relative
                 license_path.parent.mkdir(parents=True, exist_ok=True)
                 license_path.write_text(body, encoding="utf-8")
-            hash_license = "\\n".join([
+            hash_license = "\n".join([
                 "/*",
                 " * Copyright 2000 Computing Research Labs, New Mexico State University",
                 " * Copyright 2001-2015 Francesco Zappa Nardelli",
@@ -259,6 +259,8 @@ class PackageReleaseTests(unittest.TestCase):
                 " * of this software and associated documentation files (the Software)",
                 " */",
             ])
+            self.assertEqual(hash_license.splitlines()[0], "/*")
+            self.assertIn(" * Copyright 2000", hash_license.splitlines()[1])
             for relative in (
                 "_deps/freetype-src/src/base/fthash.c",
                 "_deps/freetype-src/include/freetype/internal/fthash.h",
@@ -277,7 +279,12 @@ class PackageReleaseTests(unittest.TestCase):
                 "--version", "0.10.14-test",
                 "--output-dir", str(output),
             ]
-            subprocess.run(command, check=True, capture_output=True, text=True)
+            package_result = subprocess.run(command, capture_output=True, text=True)
+            self.assertEqual(
+                package_result.returncode,
+                0,
+                f"Runtime package builder failed:\n{package_result.stdout}\n{package_result.stderr}",
+            )
 
             archive = output / "CXEngine-v0.10.14-test-windows-x86_64.zip"
             sidecar = archive.with_suffix(archive.suffix + ".sha256")
