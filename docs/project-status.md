@@ -1,51 +1,41 @@
 # Project status
 
 **Current published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
-**Release validation:** [six-target build and test](https://github.com/Decitle/CX/actions/runs/42959350359) and [tagged package/publish workflow](https://github.com/Decitle/CX/actions/runs/42961733306) both succeeded.  
-**Post-Preview.8 changes:** release-reference filename automation, the guided download page, updated first-run instructions and the beginner-first roadmap are committed to `main`. The Pages deployment for the current documentation set has succeeded. The corrected six-platform CI run is queued behind an earlier native matrix; do not tag another release until the current `main` head has a successful run.
+**Last verified six-target CI baseline:** [run 42969227408](https://github.com/Decitle/CX/actions/runs/42969227408)  
+**Last verified Pages baseline:** [run 42969227621](https://github.com/Decitle/CX/actions/runs/42969227621)
 
-## Published runtime state
+## Main conclusion: language drift requires a v0.11.0 overhaul
 
-Preview.8 includes six native runtime archives:
+The defining CX goal is a readable, Skript-like language for portable 2D games. The v0.10.14 codebase has a broad and useful feature foundation, but later APIs drifted toward function-call syntax and command-specific property forms. The random-number example exposed that the language no longer consistently meets its original usability goal.
 
-- Windows x86_64 and ARM64
-- Linux x86_64 and ARM64
-- macOS x86_64 and ARM64
+The current release does **not** accept `set {_roll} to a random integer between 1 and 10` as a random expression. It documents `random_int("stream", minimum, maximum)` instead. The natural English form is now a P0 acceptance requirement for v0.11.0, with existing helper syntax retained as an optional alias.
 
-The tagged release workflow verified the six archives, their SHA-256 sidecars, internal runtime manifests, package paths and the version-matched HTML reference before publishing. GitHub also provides its automatic source-code ZIP and TAR.GZ snapshots.
+The new [language design charter](language-design.md) and [Skript syntax audit](SKRIPT_SYNTAX_AUDIT.md) record the governing philosophy and source-backed current inventory. The full overhaul—not a single alias patch—is the next priority. No v0.11.0 tag should be created until its acceptance gate passes.
 
-The Preview.8 HTML asset currently has the filename `0_CX-Docs-v0.10.14-preview.8.html` because the project owner manually renamed it after publication. Commit `917a43b` changes the reference generator, release verifier, tests and release-note URL so future releases generate and require the `0_CX-Docs-v{version}.html` convention automatically. For stable versions, the full version identifier naturally omits the `-preview.N` suffix.
+## Verified implementation inventory
 
-## Implemented foundation
+The searchable reference contains 128 catalogue entries. The parser currently defines 13 event kinds, 55 statement kinds and 64 named regular-expression patterns. The public catalogue categories include events, seven variable forms, expression groups, conditions, effects, functions, loops, world/project/UI/graphics/audio/settings/debug APIs.
 
-CX currently has a C++20 core, source-aware parser and runtime, three variable lifetimes, conditions and expressions, functions, lists, loops, non-blocking waits and periodic handlers, transactional reload, project scaffolding, data-driven rooms, asset discovery, sprites/entities/hitboxes, collision channels and specialized collision paths, triggers, interaction focus, projectiles, tweens, animation clips, screen-space canvas UI, lighting meshes, textured beams, deterministic seeded random streams, persistent-variable recovery, a separate CLI, and a localhost Room Studio tool.
+Random streams are already implemented: named streams support deterministic float, inclusive integer and option selection. Their current expression surface is function-style and requires an explicit seed. The new grammar must make ordinary random values work naturally while retaining the named deterministic facility.
 
-The random API is already implemented and documented. Scripts can seed independent named streams and call `random_float`, inclusive unbiased `random_int`, and `random_choice`. It is deterministic pseudo-randomness, not a security RNG; stream state is process-local and not yet serialized with saved games.
+## Confirmed design gaps
 
-## Current user-facing download work
+- The current random expression does not accept the expected plain-English grammar.
+- Common math helpers are also function-call based.
+- Sprite setters currently accept only a small fixed property set (position, size, texture, visibility and speed); x-coordinate and rotation forms are not implemented.
+- The `Value` type holds only none, bool, number and string. First-class object handles are not available, so variable-targeted object properties need a deliberate typed-reference contract.
+- Newer event headers often embed named objects and multiple clauses rather than using a short event header plus context values.
+- Screen fade/opacity and named audio track/bus systems are not currently implemented. They are future capabilities, not syntax aliases waiting to be enabled.
 
-- The README now has a direct Download route next to Documentation and GitHub.
-- `docs/downloads.html` selects the newest published release that contains all six runtime targets, suggests an OS/architecture using browser hints when available, and allows manual overrides.
-- The primary page links directly to the runtime archive. SHA-256 sidecars stay accessible on the full release page but are not presented as download choices.
-- The Getting Started guide now matches the actual package layout: the graphical executable, CLI and single starter project are all under `CX-Engine/`; there is no old `bin/` plus separate `project/` structure.
+## Current user-facing downloads and docs
 
-These changes still need their current CI and Pages runs to finish, plus browser-level testing of the live download page.
+The README links to the dedicated [download page](https://decitle.github.io/CX/downloads.html), which selects a complete six-platform runtime release and provides manual OS/architecture selectors. The release reference generator uses the `0_CX-Docs-v{version}.html` convention for future releases. The new Jekyll stylesheet makes rendered Markdown documentation use the same dark theme as the custom HTML reference, download page and home page; verify the deployment after the current docs changes.
 
-## Next milestone: beginner-first onboarding and first-project success
+## Next priorities
 
-The immediate priority is to prove that a Skript-familiar beginner can download CX, extract and launch it, find and edit the starter script, make a small game behavior change, validate it with `cx-cli`, run it, and recover from a syntax error using the diagnostic. This should be demonstrated by one annotated, complete mini-game project and tested from a clean runtime package, not only from a developer build.
+1. Complete the v0.11.0 Skript-like syntax overhaul using the design charter and audit.
+2. Rework examples and the guided first-game experience to use the canonical English grammar.
+3. Audit collision/motion stability and physical-device UI behavior.
+4. Design richer audio track/bus control and screen fades only after core language consistency is established.
 
-See the [roadmap](roadmap.md) for the ordered tasks and acceptance gates.
-
-## Important unfinished areas
-
-- General moving-body physics and broad collision response are not complete; current collision systems have narrower documented contracts.
-- Named/cancellable task handles, module/import boundaries and stronger data/type/schema semantics remain future scripting work.
-- Consistent logical UI coordinates and physical DPI/aspect-ratio behavior need broader testing.
-- Room Studio is a useful local helper, not a full visual editor.
-- SFML audio playback is disabled in current release builds; practical multi-voice mixing and automation are not complete.
-- Performance profiling and repeatable benchmarks on modest physical hardware are still needed.
-- Linux currently uses the SFML X11/XWayland window backend; Wayland desktops need XWayland. A native Wayland backend is not implemented.
-- CI native build success does not replace physical-device graphics, input, focus, DPI or packaging QA.
-
-CX is a substantial experimental foundation, not yet v1.0 feature-complete. The next priority is first-project success, followed by the scripting, gameplay, audio and platform gates in the roadmap.
+CX remains an experimental pre-release, not a v1.0-complete engine. The next version number is acceptance-gated by the complete language overhaul, all-platform validation and consistent documentation.
