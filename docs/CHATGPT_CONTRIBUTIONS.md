@@ -123,3 +123,15 @@
 - The Linux CI jobs caught the inconsistency in `cx-release-assets-verifier-tests`: the fixture created `0_CX-Docs-v{version}.html`, while the verifier still attempted to read the legacy `CXEngine-v{version}-reference.html` filename.
 - Updated that final reference path and added explicit test assertions that the new name is required and the old name is absent.
 - The Pages deployment succeeded. The corrected six-target CI run is queued behind an earlier run because the workflow intentionally does not cancel a running native matrix; no green result is claimed until that current-head run completes.
+
+
+## 2026-11-10 — establish the v0.11.0 Skript-like syntax overhaul
+
+**Pushed by:** ChatGPT (OpenAI), at Decitle's request
+
+- Reassessed the original product purpose against the actual v0.10.14 parser, runtime value type and searchable language reference after the project owner identified that ordinary random-number syntax required a function call instead of Skript's English expression form.
+- Verified the current source inventory: 13 event kinds, 55 statement kinds and 64 named regular-expression patterns; the public reference groups 128 catalogue entries across events, variables, expressions, conditions, effects, loops, world/project/UI/graphics/audio/settings/debug APIs.
+- Compared the random expression with official Skript 2.17.1 documentation, which explicitly documents `a random integer between 1 and 10` and `random integer from 1 to 6` forms. Recorded the current CX mismatch as a P0 language gap.
+- Found that the C++ `Value` currently stores only none, bool, number and string; variable-based object property syntax therefore needs typed object handles, not a parser-only alias.
+- Added the language design charter, source-backed syntax audit, v0.11.0 roadmap gate and current status correction. The full overhaul is now the next priority; no v0.11.0 tag is authorized by this documentation work alone.
+- Added a Jekyll SCSS override so Markdown guide pages use the same dark palette as the custom HTML documentation, reference and download pages.
