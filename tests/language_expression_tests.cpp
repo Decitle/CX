@@ -86,6 +86,18 @@ set {log_custom_base} to log(81, 3)
 set {natural_log} to ln(exp(1))
 set {root} to root(3, -8)
 set {root_skript_order} to root(2, 4)
+set {factorial_five} to factorial(5)
+set {combinations_five_two} to combinations(5, 2)
+set {permutations_five_two} to permutations(5, 2)
+set {hex_text} to toBase(32, 16)
+set {hex_value} to fromBase("20", 16)
+set {formatted_number} to formatNumber(1234567.891, "#,##0.00")
+set {joined_text} to concat("score: ", 42, " pts")
+set {positive_mod} to mod(-1, 10)
+set {mod_zero_is_nan} to isNaN(mod(1, 0))
+set {log_zero_is_nan} to isNaN(log(0))
+set {log_zero_is_finite} to isFinite(log(0))
+set {overflow_is_finite} to isFinite(factorial(171))
 set {values::*} to 1, 2, 3, 4
 set {mean_values} to mean({values::*})
 set {median_values} to median({values::*})
@@ -125,6 +137,18 @@ set {interpolated} to lerp(10, 20, 0.25)
     expect(std::abs(number("natural_log") - 1.0) < 1e-12, "natural logarithm and exponential should be inverses");
     expect(std::abs(number("root") + 2.0) < 1e-12, "odd roots of negative values should remain real");
     expect(std::abs(number("root_skript_order") - 2.0) < 1e-12, "root accepts the Skript argument order: degree, value");
+    expect(std::abs(number("factorial_five") - 120.0) < 1e-12, "factorial should return exact small factorials");
+    expect(std::abs(number("combinations_five_two") - 10.0) < 1e-12, "combinations counts unordered selections");
+    expect(std::abs(number("permutations_five_two") - 20.0) < 1e-12, "permutations counts ordered selections");
+    expect(runtime.getGlobal("hex_text").toString() == "20", "toBase converts a decimal integer to hexadecimal text");
+    expect(std::abs(number("hex_value") - 32.0) < 1e-12, "fromBase converts hexadecimal text to a decimal number");
+    expect(runtime.getGlobal("formatted_number").toString() == "1,234,567.89", "formatNumber groups thousands and rounds decimal places");
+    expect(runtime.getGlobal("joined_text").toString() == "score: 42 pts", "concat joins text and numeric values");
+    expect(std::abs(number("positive_mod") - 9.0) < 1e-12, "mod always returns a positive remainder like Skript");
+    expect(runtime.getGlobal("mod_zero_is_nan").truthy(), "mod with a zero divisor returns NaN instead of aborting execution");
+    expect(!runtime.getGlobal("log_zero_is_nan").truthy() && !runtime.getGlobal("log_zero_is_finite").truthy(),
+           "log of zero is negative infinity, not NaN");
+    expect(!runtime.getGlobal("overflow_is_finite").truthy(), "factorial overflow remains Infinity and can be inspected");
     expect(std::abs(number("mean_values") - 2.5) < 1e-12, "mean accepts a list variable");
     expect(std::abs(number("median_values") - 2.5) < 1e-12, "median accepts a list variable and averages its middle pair");
     expect(std::abs(number("average_values") - 2.5) < 1e-12, "natural average form accepts a list variable");
@@ -210,13 +234,15 @@ if {items::*} does not contain "red":
 
 void testMathDomainResultsCanBeCheckedAsNaN() {
     const auto root = fixture("math-domain", R"CX(
-set {^bad_root} to sqrt(-1)
-set {^bad_log} to ln(-1)
-set {^bad_inverse} to asin(2)
-set {root_is_nan} to isNaN({^bad_root})
-set {log_is_nan} to isNaN({^bad_log})
-set {inverse_is_nan} to isNaN({^bad_inverse})
+set {_bad_root} to sqrt(-1)
+set {_bad_log} to ln(-1)
+set {_bad_inverse} to asin(2)
+set {root_is_nan} to isNaN({_bad_root})
+set {log_is_nan} to isNaN({_bad_log})
+set {inverse_is_nan} to isNaN({_bad_inverse})
 set {normal_is_finite} to isFinite(3.5)
+set {log_zero_is_not_nan} to isNaN(log(0))
+set {log_zero_is_infinite} to isFinite(log(0))
 )CX");
     cx::Runtime runtime(root);
     const bool loaded = runtime.loadScripts();
@@ -225,11 +251,13 @@ set {normal_is_finite} to isFinite(3.5)
             std::cerr << "MATH FIXTURE DIAGNOSTIC: " << diagnostic.message << '\n';
     }
     expect(loaded, "out-of-domain math results should remain numeric NaN values instead of aborting script execution");
-    expect(!runtime.hasErrors(), "valid NaN-producing math operations should not emit runtime diagnostics");
+    expect(!runtime.hasErrors(), "valid NaN and infinity math results should not emit runtime diagnostics");
     expect(runtime.getGlobal("root_is_nan").truthy(), "isNaN should detect sqrt of a negative value");
-    expect(runtime.getGlobal("log_is_nan").truthy(), "isNaN should detect logarithm domain results");
+    expect(runtime.getGlobal("log_is_nan").truthy(), "isNaN should detect negative logarithm inputs");
     expect(runtime.getGlobal("inverse_is_nan").truthy(), "inverse trig outside its real domain should return NaN");
     expect(runtime.getGlobal("normal_is_finite").truthy(), "isFinite should distinguish ordinary finite numbers");
+    expect(!runtime.getGlobal("log_zero_is_not_nan").truthy(), "log(0) should be negative infinity, not NaN");
+    expect(!runtime.getGlobal("log_zero_is_infinite").truthy(), "isFinite should detect the negative infinity result");
     std::filesystem::remove_all(root);
 }
 }

@@ -5,9 +5,13 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cctype>
 #include <cmath>
+#include <iomanip>
 #include <limits>
+#include <locale>
+#include <sstream>
 #include <numeric>
 #include <functional>
 #include <initializer_list>
@@ -586,14 +590,7 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             case '*': return Value(a * b);
             case '/': return Value(a / b);
             case '%': return Value(std::fmod(a, b));
-            case '^': {
-                const double result = std::pow(a, b);
-                if (!std::isfinite(result)) {
-                    error = "That power operation is outside the supported finite numeric range.";
-                    return {};
-                }
-                return Value(result);
-            }
+            case '^': return Value(std::pow(a, b));
             default: break;
         }
     }
@@ -739,6 +736,123 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             return evaluateValue(rawArgs[selected + 1], context, error);
         }
 
+        if (function == "concat") {
+            std::string combined;
+            for (const auto& rawArg : rawArgs) {
+                if (rawArg.empty()) continue;
+                const Value value = evaluateValue(rawArg, context, error);
+                if (!error.empty()) return {};
+                combined += value.toString();
+            }
+            return Value(std::move(combined));
+        }
+        if (function == "frombase") {
+            if (rawArgs.size() != 2) {
+                error = "fromBase(text, base) expects exactly two arguments.";
+                return {};
+            }
+            const Value textValue = evaluateValue(rawArgs[0], context, error);
+            if (!error.empty()) return {};
+            const Value baseValue = evaluateValue(rawArgs[1], context, error);
+            if (!error.empty()) return {};
+            const double baseNumber = baseValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+            if (!textValue.isString() || !std::isfinite(baseNumber) || std::trunc(baseNumber) != baseNumber ||
+                baseNumber < 2.0 || baseNumber > 36.0) {
+                error = "fromBase needs text and a whole-number base from 2 to 36.";
+                return {};
+            }
+            const std::string digits = trim(textValue.toString());
+            if (digits.empty()) return {};
+            bool negative = false;
+            std::size_t position = 0;
+            if (digits.front() == '-' || digits.front() == '+') {
+                negative = digits.front() == '-';
+                position = 1;
+            }
+            if (position == digits.size()) return {};
+            std::uint64_t magnitude = 0;
+            const auto base = static_cast<std::uint32_t>(baseNumber);
+            constexpr std::uint64_t maximumSafeInteger = 9007199254740991ULL;
+            for (; position < digits.size(); ++position) {
+                const unsigned char ch = static_cast<unsigned char>(digits[position]);
+                unsigned int digit = 99;
+                if (ch >= '0' && ch <= '9') digit = ch - '0';
+                else if (ch >= 'a' && ch <= 'z') digit = 10U + ch - 'a';
+                else if (ch >= 'A' && ch <= 'Z') digit = 10U + ch - 'A';
+                if (digit >= base || magnitude > (maximumSafeInteger - digit) / base) return {};
+                magnitude = magnitude * base + digit;
+            }
+            return Value(static_cast<double>(magnitude) * (negative ? -1.0 : 1.0));
+        }
+        if (function == "formatnumber") {
+            if (rawArgs.empty() || rawArgs.size() > 2) {
+                error = "formatNumber(number[, format]) expects one or two arguments.";
+                return {};
+            }
+            const Value numberValue = evaluateValue(rawArgs[0], context, error);
+            if (!error.empty()) return {};
+            if (!numberValue.isNumber()) {
+                error = "formatNumber expects a numeric first argument.";
+                return {};
+            }
+            const double number = numberValue.numberOr();
+            std::string pattern;
+            if (rawArgs.size() == 2) {
+                const Value patternValue = evaluateValue(rawArgs[1], context, error);
+                if (!error.empty()) return {};
+                if (!patternValue.isString()) return {};
+                pattern = patternValue.toString();
+            } else {
+                pattern = std::isfinite(number) && std::trunc(number) != number ? "###,###.##" : "###,###";
+            }
+            if (std::isnan(number)) return Value("NaN");
+            if (std::isinf(number)) return Value(number < 0.0 ? "-Infinity" : "Infinity");
+            const auto decimalPoint = pattern.find('.');
+            if (decimalPoint != std::string::npos && pattern.find('.', decimalPoint + 1) != std::string::npos) return {};
+            const std::string integerPattern = pattern.substr(0, decimalPoint);
+            const std::string fractionPattern = decimalPoint == std::string::npos ? std::string{} : pattern.substr(decimalPoint + 1);
+            if (integerPattern.empty() || (decimalPoint != std::string::npos && fractionPattern.empty())) return {};
+            const auto validInteger = std::all_of(integerPattern.begin(), integerPattern.end(),
+                [](char ch) { return ch == '#' || ch == '0' || ch == ','; });
+            const auto validFraction = std::all_of(fractionPattern.begin(), fractionPattern.end(),
+                [](char ch) { return ch == '#' || ch == '0'; });
+            if (!validInteger || !validFraction) return {};
+            const bool grouping = integerPattern.find(',') != std::string::npos;
+            if (grouping) {
+                std::size_t previousComma = std::string::npos;
+                for (std::size_t i = 0; i < integerPattern.size(); ++i) {
+                    if (integerPattern[i] != ',') continue;
+                    const std::size_t groupLength = i - (previousComma == std::string::npos ? 0U : previousComma + 1U);
+                    if ((previousComma == std::string::npos && (groupLength < 1U || groupLength > 3U)) ||
+                        (previousComma != std::string::npos && groupLength != 3U) ||
+                        i + 1U == integerPattern.size()) return {};
+                    previousComma = i;
+                }
+                if (integerPattern.size() - previousComma - 1U != 3U) return {};
+            }
+            const auto minimumIntegerDigits = static_cast<std::size_t>(std::count(integerPattern.begin(), integerPattern.end(), '0'));
+            const auto minimumFractionDigits = static_cast<std::size_t>(std::count(fractionPattern.begin(), fractionPattern.end(), '0'));
+            const auto maximumFractionDigits = fractionPattern.size();
+            if (maximumFractionDigits > 12U) return {};
+            std::ostringstream stream;
+            stream.imbue(std::locale::classic());
+            stream << std::fixed << std::setprecision(static_cast<int>(maximumFractionDigits)) << std::abs(number);
+            std::string rendered = stream.str();
+            const auto point = rendered.find('.');
+            std::string integerPart = rendered.substr(0, point);
+            std::string fractionalPart = point == std::string::npos ? std::string{} : rendered.substr(point + 1);
+            while (fractionalPart.size() > minimumFractionDigits && !fractionalPart.empty() && fractionalPart.back() == '0')
+                fractionalPart.pop_back();
+            while (integerPart.size() < minimumIntegerDigits) integerPart.insert(integerPart.begin(), '0');
+            if (grouping && integerPart.size() > 3U) {
+                for (std::ptrdiff_t pos = static_cast<std::ptrdiff_t>(integerPart.size()) - 3; pos > 0; pos -= 3)
+                    integerPart.insert(static_cast<std::size_t>(pos), 1, ',');
+            }
+            std::string result = (std::signbit(number) ? "-" : "") + integerPart;
+            if (!fractionalPart.empty()) result += "." + fractionalPart;
+            return Value(std::move(result));
+        }
+
         std::vector<double> args;
         for (const auto& rawArg : rawArgs) {
             if (rawArg.empty()) { error = "Function `" + function + "` has an empty argument."; return {}; }
@@ -748,8 +862,8 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             if (rawArg.front() == '{' && rawArg.back() == '}' && rawArg.find("::*") != std::string::npos) {
                 const auto entries = listEntries(canonicalVariableName(rawArg), context);
                 for (const auto& entry : entries) {
-                    if (!entry.value.isNumber() || !std::isfinite(entry.value.numberOr())) {
-                        error = "Function `" + function + "` expects every list item to be a finite number.";
+                    if (!entry.value.isNumber()) {
+                        error = "Function `" + function + "` expects every list item to be a number.";
                         return {};
                     }
                     args.push_back(entry.value.numberOr());
@@ -760,7 +874,7 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             const Value arg = evaluateValue(rawArg, context, argError);
             if (!argError.empty()) { error = argError; return {}; }
             const double argumentNumber = arg.numberOr(std::numeric_limits<double>::quiet_NaN());
-            if (!arg.isNumber() || !std::isfinite(argumentNumber)) { error = "Function `" + function + "` expects numeric arguments."; return {}; }
+            if (!arg.isNumber()) { error = "Function `" + function + "` expects numeric arguments."; return {}; }
             args.push_back(argumentNumber);
         }
         auto require = [&](std::size_t count) { if (args.size() != count) { error = "Function `" + function + "` expects " + std::to_string(count) + " argument(s)."; return false; } return true; };
@@ -808,11 +922,12 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
                 return {};
             }
             const double scale = std::pow(10.0, places);
+            if (!std::isfinite(args[0])) return Value(args[0]);
             const double scaled = args[0] * scale;
-            if (!std::isfinite(scaled)) { error = "That rounding precision is outside the finite numeric range."; return {}; }
+            if (!std::isfinite(scaled)) return Value(scaled);
             return Value(std::round(scaled) / scale);
         }
-        if (function == "exp") { if (!require(1)) return {}; const double v = std::exp(args[0]); if (!std::isfinite(v)) { error = "exp result is outside the finite numeric range."; return {}; } return Value(v); }
+        if (function == "exp") { if (!require(1)) return {}; return Value(std::exp(args[0])); }
         if (function == "ln") {
             if (!require(1)) return {};
             return Value(std::log(args[0]));
@@ -820,24 +935,67 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         if (function == "log" || function == "log10") {
             if (args.empty() || args.size() > 2) { error = "log(number[, base]) expects one or two arguments."; return {}; }
             const double base = args.size() == 2 ? args[1] : 10.0;
-            if (args[0] <= 0.0 || base <= 0.0 || base == 1.0)
+            if (args[0] < 0.0 || base <= 0.0 || base == 1.0)
                 return Value(std::numeric_limits<double>::quiet_NaN());
             return Value(std::log(args[0]) / std::log(base));
         }
         if (function == "root") {
             if (!require(2)) return {};
             const double degree = args[0], radicand = args[1];
-            if (degree == 0.0) { error = "A root degree cannot be zero."; return {}; }
+            if (degree == 0.0) return Value(std::numeric_limits<double>::quiet_NaN());
             if (radicand < 0.0 && std::trunc(degree) == degree && std::fmod(std::abs(degree), 2.0) == 1.0)
                 return Value(-std::pow(-radicand, 1.0 / degree));
-            if (radicand < 0.0) { error = "A negative value only has a real root for an odd whole-number degree."; return {}; }
+            if (radicand < 0.0) return Value(std::numeric_limits<double>::quiet_NaN());
             return Value(std::pow(radicand, 1.0 / degree));
         }
         if (function == "pow") {
             if (!require(2)) return {};
-            const double v = std::pow(args[0], args[1]);
-            if (!std::isfinite(v)) { error = "pow result is outside the finite real-number range."; return {}; }
-            return Value(v);
+            return Value(std::pow(args[0], args[1]));
+        }
+        if (function == "factorial") {
+            if (!require(1)) return {};
+            if (args[0] < 0.0 || std::trunc(args[0]) != args[0])
+                return Value(std::numeric_limits<double>::quiet_NaN());
+            return Value(std::tgamma(args[0] + 1.0));
+        }
+        if (function == "combinations" || function == "permutations") {
+            if (!require(2)) return {};
+            constexpr double maxSafeInteger = 9007199254740991.0;
+            const double n = args[0], selected = args[1];
+            if (!std::isfinite(n) || !std::isfinite(selected) || n < 0.0 || selected < 0.0 ||
+                std::trunc(n) != n || std::trunc(selected) != selected ||
+                n > maxSafeInteger || selected > maxSafeInteger)
+                return Value(std::numeric_limits<double>::quiet_NaN());
+            if (selected > n) return Value(0.0);
+            const double logarithm = function == "combinations"
+                ? std::lgamma(n + 1.0) - std::lgamma(selected + 1.0) - std::lgamma(n - selected + 1.0)
+                : std::lgamma(n + 1.0) - std::lgamma(n - selected + 1.0);
+            if (logarithm > std::log(std::numeric_limits<double>::max()))
+                return Value(std::numeric_limits<double>::infinity());
+            return Value(std::exp(logarithm));
+        }
+        if (function == "toBase") {
+            if (!require(2)) return {};
+            constexpr double maxSafeInteger = 9007199254740991.0;
+            if (!std::isfinite(args[0]) || std::trunc(args[0]) != args[0] ||
+                std::abs(args[0]) > maxSafeInteger || !std::isfinite(args[1]) ||
+                std::trunc(args[1]) != args[1] || args[1] < 2.0 || args[1] > 36.0)
+                return {};
+            static constexpr char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+            const auto base = static_cast<std::uint32_t>(args[1]);
+            const auto signedValue = static_cast<std::int64_t>(args[0]);
+            const bool negative = signedValue < 0;
+            std::uint64_t magnitude = negative
+                ? static_cast<std::uint64_t>(-(signedValue + 1)) + 1ULL
+                : static_cast<std::uint64_t>(signedValue);
+            std::string result;
+            do {
+                result.push_back(digits[magnitude % base]);
+                magnitude /= base;
+            } while (magnitude != 0);
+            if (negative) result.push_back('-');
+            std::reverse(result.begin(), result.end());
+            return Value(std::move(result));
         }
         if (function == "min" || function == "max" || function == "mean" || function == "median" ||
             function == "sum" || function == "product") {
@@ -875,8 +1033,11 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         }
         if (function == "mod") {
             if (!require(2)) return {};
-            if (args[1] == 0.0) { error = "mod divisor cannot be zero."; return {}; }
-            return Value(std::fmod(args[0], args[1]));
+            if (args[1] == 0.0) return Value(std::numeric_limits<double>::quiet_NaN());
+            const double divisor = std::abs(args[1]);
+            double remainder = std::fmod(args[0], divisor);
+            if (remainder < 0.0) remainder += divisor;
+            return Value(remainder == 0.0 ? 0.0 : remainder);
         }
         if (function == "clamp") {
             if (!require(3)) return {};
@@ -884,7 +1045,7 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             return Value(std::clamp(args[0], args[1], args[2]));
         }
         if (function == "lerp") { if (!require(3)) return {}; return Value(std::lerp(args[0], args[1], args[2])); }
-        error = "Unknown function `" + function + "`. Built-ins: abs, sqrt, floor, ceil, round, exp, ln, log, root, pow, min, max, mean, median, sum, product, mod, isNaN, isFinite, sin, cos, tan, asin, acos, atan, atan2, sin_radians, cos_radians, tan_radians, sine, noise2d, fbm2d, random_float, random_int, random_choice, clamp, lerp. You can define reusable script functions with `function name(parameters):`.";
+        error = "Unknown function `" + function + "`. Built-ins: abs, sqrt, floor, ceil, round, exp, ln, log, root, pow, factorial, combinations, permutations, toBase, fromBase, formatNumber, concat, min, max, mean, median, sum, product, mod, isNaN, isFinite, sin, cos, tan, asin, acos, atan, atan2, sin_radians, cos_radians, tan_radians, sine, noise2d, fbm2d, random_float, random_int, random_choice, clamp, lerp. You can define reusable script functions with `function name(parameters):`.";
         return {};
     }
     if (expression.find('{') != std::string::npos || expression.find('}') != std::string::npos) {
