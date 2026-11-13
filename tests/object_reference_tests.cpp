@@ -104,10 +104,9 @@ on load:
     expect(runtime.getGlobal("read_health_clamped").numberOr(-1.0) == 9.0,
            "lowering max health should clamp current health to the new maximum");
     expect(runtime.getGlobal("read_health").numberOr(-1.0) == 6.0, "health getter should observe the possessive entity-handle setter");
-           "health getter should read the live entity health value");
     expect(runtime.getGlobal("read_max_health").numberOr(-1.0) == 14.0,
            "max health getter should read the live entity maximum health");
-    expect(runtime.getGlobal("read_health_global").numberOr(-1.0) == 10.0,
+    expect(runtime.getGlobal("read_health_global").numberOr(-1.0) == 6.0,
            "entity health property writes should keep the public health variable synchronized");
     expect(runtime.getGlobal("read_max_health_global").numberOr(-1.0) == 14.0,
            "entity max-health property writes should keep the public max-health variable synchronized");
