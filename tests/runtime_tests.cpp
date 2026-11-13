@@ -97,9 +97,9 @@ void testSyntaxSuggestions() {
     expect(malformed.diagnostics.front().suggestion.find("set {score} to 10") != std::string::npos,
            "set syntax error should show the correct command shape");
 
-    const auto badComparison = parser.parseText("on load:\n    if {score} greater than 10:\n        broadcast \"oops\"\n", "<memory>");
-    expect(cx::hasErrors(badComparison.diagnostics), "a comparison missing `is` should be rejected");
-    expect(badComparison.diagnostics.front().column == 12, "comparison caret should point at `greater`, not the start of the condition");
+    const auto naturalComparison = parser.parseText("on load:\n    if {score} greater than 10:\n        broadcast \"natural\"\n    if {score} is greater than 10:\n        broadcast \"explicit\"\n", "<memory>");
+    expect(!cx::hasErrors(naturalComparison.diagnostics),
+           "Skript-style greater-than conditions should accept both concise and explicit English forms");
 
     const auto leakedLocal = parser.parseText("set {score} to {_temporary}\n", "<memory>");
     expect(cx::hasErrors(leakedLocal.diagnostics), "an event-local read at top level should be rejected");

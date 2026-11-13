@@ -1115,18 +1115,24 @@ bool Runtime::evaluateCondition(std::string_view rawExpression, const ExecutionC
         {" == ", "=="}, {" > ", ">"}, {" < ", "<"}, {" is ", "=="}
     };
     if (const auto op = findOperator(expression, compareOps)) {
-        std::string leftError, rightError;
-        const Value left = evaluateValue(std::string_view(expression).substr(0, op->position), context, leftError);
-        const Value right = evaluateValue(std::string_view(expression).substr(op->position + op->length), context, rightError);
-        if (!leftError.empty()) { error = leftError; return false; }
-        if (!rightError.empty()) { error = rightError; return false; }
-        const double leftNumber = left.numberOr(std::numeric_limits<double>::quiet_NaN());
-        const double rightNumber = right.numberOr(std::numeric_limits<double>::quiet_NaN());
+        const std::string_view leftText = std::string_view(expression).substr(0, op->position);
+        const std::string_view rightText = std::string_view(expression).substr(op->position + op->length);
         const auto isListExpression = [](std::string_view text) {
             const std::string value = trim(text);
             return value.size() >= 4 && value.front() == '{' && value.back() == '}' &&
                    value.find("::*") != std::string::npos;
         };
+        // A list wildcard is a collection expression, not a scalar Value. Do not
+        // pass it through evaluateValue before the collection membership branch.
+        const bool rightIsMembershipList = (op->op == "in" || op->op == "not_in") && isListExpression(rightText);
+        const bool leftIsMembershipList = (op->op == "contains" || op->op == "not_contains") && isListExpression(leftText);
+        std::string leftError, rightError;
+        const Value left = leftIsMembershipList ? Value{} : evaluateValue(leftText, context, leftError);
+        const Value right = rightIsMembershipList ? Value{} : evaluateValue(rightText, context, rightError);
+        if (!leftError.empty()) { error = leftError; return false; }
+        if (!rightError.empty()) { error = rightError; return false; }
+        const double leftNumber = left.numberOr(std::numeric_limits<double>::quiet_NaN());
+        const double rightNumber = right.numberOr(std::numeric_limits<double>::quiet_NaN());
         auto listContains = [&](std::string_view listExpression, const Value& wanted) {
             const auto entries = listEntries(canonicalVariableName(listExpression), context);
             return std::any_of(entries.begin(), entries.end(), [&](const auto& entry) {

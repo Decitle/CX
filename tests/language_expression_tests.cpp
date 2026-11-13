@@ -182,7 +182,12 @@ if {items::*} does not contain "red":
     set {list_not_contains} to true
 )CX");
     cx::Runtime runtime(root);
-    expect(runtime.loadScripts(), "Skript-style comparison and membership conditions should load");
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics())
+            std::cerr << "CONDITION FIXTURE DIAGNOSTIC: " << diagnostic.message << '\\n';
+    }
+    expect(loaded, "Skript-style comparison and membership conditions should load");
     expect(!runtime.hasErrors(), "valid English comparison and list conditions should not diagnose");
     expect(runtime.getGlobal("plain_greater_than").truthy(), "plain greater-than wording should work");
     expect(runtime.getGlobal("at_least").truthy(), "at least should map to greater-than-or-equal");
