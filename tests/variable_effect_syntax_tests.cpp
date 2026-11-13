@@ -31,16 +31,25 @@ set {items::*} to "potion", "key", "potion", 2
 remove "potion" from {items::*}
 remove all "potion" from {items::*}
 add "gem" to {items::*}
+give 2 to {score}
+give "coin" to {items::*}
+remove every "key" from {items::*}
+set {temporary} to "discard"
+reset {temporary}
 )CX";
     const auto parsed = cx::ScriptParser{}.parseText(script);
     expect(parsed.diagnostics.empty(), "Skript-style variable effects should parse without diagnostics");
-    expect(parsed.bootstrap.size() == 7, "every variable effect should produce one statement");
-    if (parsed.bootstrap.size() == 7) {
+    expect(parsed.bootstrap.size() == 12, "every variable effect should produce one statement");
+    if (parsed.bootstrap.size() == 12) {
         expect(parsed.bootstrap[1].type == cx::StatementType::Add, "increase maps to the numeric/list add effect");
         expect(parsed.bootstrap[2].type == cx::StatementType::Subtract, "decrease maps to the numeric/list subtract effect");
         expect(parsed.bootstrap[4].type == cx::StatementType::Subtract, "remove maps to the list subtraction effect");
         expect(parsed.bootstrap[5].property == "all", "remove all preserves the all-matches intent");
         expect(parsed.bootstrap[6].type == cx::StatementType::Add, "add to list remains supported");
+        expect(parsed.bootstrap[7].type == cx::StatementType::Add, "give amount to variable aliases add");
+        expect(parsed.bootstrap[8].type == cx::StatementType::Add, "give value to list aliases add");
+        expect(parsed.bootstrap[9].property == "all", "remove every aliases remove all");
+        expect(parsed.bootstrap[11].type == cx::StatementType::DeleteVariable, "reset aliases clearing a variable");
     }
 
     const auto root = std::filesystem::temp_directory_path() / "cx-variable-effect-syntax";
@@ -49,11 +58,14 @@ add "gem" to {items::*}
     cx::Runtime runtime(root);
     expect(runtime.loadScripts(), "the variable effect fixture should execute");
     expect(!runtime.hasErrors(), "valid variable effects should not produce runtime errors");
-    expect(runtime.getGlobal("score").numberOr(-1.0) == 5.0, "increase/decrease should produce the expected numeric result");
-    expect(runtime.variableReport().find("potion") == std::string::npos,
-           "remove all should remove every matching item from the resulting list report");
-    expect(runtime.variableReport().find("gem") != std::string::npos,
-           "add should append a value to the list after removal");
+    expect(runtime.getGlobal("score").numberOr(-1.0) == 7.0,
+           "increase/decrease and give should produce the expected numeric result");
+    const std::string report = runtime.variableReport();
+    expect(report.find("potion") == std::string::npos && report.find("key") == std::string::npos,
+           "remove all and remove every should remove all matching list entries");
+    expect(report.find("gem") != std::string::npos && report.find("coin") != std::string::npos,
+           "add and give should append values to the list");
+    expect(runtime.getGlobal("temporary").isNull(), "reset should clear an assigned variable");
     std::filesystem::remove_all(root);
 
     if (failures != 0) {

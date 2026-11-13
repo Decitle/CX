@@ -57,11 +57,13 @@ set {game_started} to true
 set {player_name} to "Player One"
 set {missing_value} to none
 add 1 to {lives}
+give 2 to {lives}
 subtract 2 from {lives}
+reset {player_name}
 toggle {game_started}
 ```
 
-Basic values are numbers, booleans, `none`, quoted text, and variable references. Values inside quoted strings are interpolated. Initialize number variables before using arithmetic for clear behavior.
+Basic values are numbers, booleans, `none`, quoted text, and variable references. Values inside quoted strings are interpolated. Initialize number variables before using arithmetic for clear behavior. `give amount to {variable}` is an alias for `add amount to {variable}`; `reset {variable}` clears one variable or an entire list namespace, like `delete`/`clear`.
 
 ## Conditions
 
@@ -115,16 +117,19 @@ List variables reuse the normal variable syntax. Entries can have integer indexe
 set {_items::*} to "potion", "key", "map"
 set {_items::favorite} to "compass"
 add "torch" to {_items::*}
+give "coin" to {_items::*}
 
 loop {_items::*}:
     broadcast "%loop-index%: %loop-value%"
 
 remove "key" from {_items::*}
+remove every "potion" from {_items::*}
 delete {_items::favorite}
 clear {_items::*}
+reset {_items::*}
 ```
 
-`loop-value` returns the value and `loop-index` returns the original entry key (such as `1` or `favorite`). List loops iterate over a snapshot, so adding/removing entries inside a loop does not alter the current iteration. `set {copy::*} to {source::*}` copies all entries and keeps their keys. `set {_items::*} to "a", "b"` creates sequential numeric entries. `clear {items::*}` or `delete {items::*}` removes every entry; `delete {items::key}` removes one entry. `add value to {items::*}` appends at the next numeric index, and `remove value from {items::*}` removes the first matching value. List entries use the same variable persistence format as other global variables.
+`loop-value` returns the value and `loop-index` returns the original entry key (such as `1` or `favorite`). List loops iterate over a snapshot, so adding/removing entries inside a loop does not alter the current iteration. `set {copy::*} to {source::*}` copies all entries and keeps their keys. `set {_items::*} to "a", "b"` creates sequential numeric entries. `clear {items::*}`, `delete {items::*}`, or `reset {items::*}` removes every entry; `delete {items::key}` removes one entry. `add value to {items::*}` and `give value to {items::*}` append at the next numeric index. `remove value from {items::*}` removes the first matching value; `remove all value from {items::*}` and `remove every value from {items::*}` remove all matches. List entries use the same variable persistence format as other global variables.
 
 ## Reusable functions and expressions
 

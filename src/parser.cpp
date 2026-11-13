@@ -238,8 +238,8 @@ bool referencesEventLocal(const Statement& statement) {
 
 std::string commandHint(std::string_view line) {
     static const std::vector<std::string> commands = {
-        "set {variable} to value", "add amount to {variable}",
-        "subtract amount from {variable}", "toggle {variable}",
+        "set {variable} to value", "add amount to {variable}", "give amount to {variable}",
+        "subtract amount from {variable}", "reset {variable}", "toggle {variable}",
         "broadcast \"message\"", "if condition:", "open canvas \"Name\"",
         "close canvas \"Name\"", "set {entrance1::room1} to an entrance point at (0, 0)",
         "load room \"room_name\"", "unload room \"room_name\"", "reload room \"room_name\"",
@@ -256,7 +256,7 @@ std::string commandHint(std::string_view line) {
     std::string input = trim(line);
     const auto firstSpace = input.find(' ');
     const auto firstWord = lower(input.substr(0, firstSpace));
-    const std::vector<std::string> topWords = {"set", "add", "subtract", "remove", "toggle", "broadcast", "send", "if", "loop", "while", "wait", "open", "close", "stop", "on", "canvas", "function", "return", "delete", "clear", "call"};
+    const std::vector<std::string> topWords = {"set", "add", "give", "subtract", "remove", "reset", "toggle", "broadcast", "send", "if", "loop", "while", "wait", "open", "close", "stop", "on", "canvas", "function", "return", "delete", "clear", "call"};
     int bestDistance = 99;
     std::string closest;
     for (const auto& word : topWords) {
@@ -1084,7 +1084,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         }
         return stmt;
     }
-    const bool addToVariable = startsWithInsensitive(text, "add ");
+    const bool addToVariable = startsWithInsensitive(text, "add ") || startsWithInsensitive(text, "give ");
     const bool increaseVariable = startsWithInsensitive(text, "increase ");
     const bool subtractFromVariable = startsWithInsensitive(text, "subtract ");
     const bool decreaseVariable = startsWithInsensitive(text, "decrease ");
@@ -1092,9 +1092,11 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
     if (addToVariable || increaseVariable || subtractFromVariable || decreaseVariable || removeFromList) {
         const bool adding = addToVariable || increaseVariable;
         const bool reverseOrder = increaseVariable || decreaseVariable;
-        const bool removeAll = startsWithInsensitive(text, "remove all ");
+        const bool removeEvery = startsWithInsensitive(text, "remove every ");
+        const bool removeAll = startsWithInsensitive(text, "remove all ") || removeEvery;
         const std::size_t prefix = addToVariable ? 4U : increaseVariable ? 9U :
-            subtractFromVariable ? 9U : decreaseVariable ? 9U : (removeAll ? 11U : 7U);
+            subtractFromVariable ? 9U : decreaseVariable ? 9U :
+            (removeAll ? (removeEvery ? 13U : 11U) : 7U);
         const std::string_view rest(text.data() + prefix, text.size() - prefix);
         const std::string_view markerText = reverseOrder ? "by" : (adding ? "to" : (removeFromList ? "from" : "from"));
         const auto marker = findPhraseOutsideQuotes(rest, markerText);
@@ -1169,9 +1171,11 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         if (stmt.target.empty()) { error("Close canvas needs a name.", "Example: close canvas \"PauseMenu\""); return std::nullopt; }
         return stmt;
     }
-    if (startsWithInsensitive(text, "delete ") || startsWithInsensitive(text, "clear ")) {
+    if (startsWithInsensitive(text, "delete ") || startsWithInsensitive(text, "clear ") ||
+        startsWithInsensitive(text, "reset ")) {
         stmt.type = StatementType::DeleteVariable;
-        const std::size_t prefix = startsWithInsensitive(text, "delete ") ? 7U : 6U;
+        const std::size_t prefix = startsWithInsensitive(text, "delete ") ? 7U :
+            startsWithInsensitive(text, "clear ") ? 6U : 7U;
         stmt.target = canonicalVariableName(trim(std::string_view(text).substr(prefix)));
         if (stmt.target.empty() || stmt.target.front() == '$' || stmt.target.front() == '@') {
             error("Delete/clear needs a writable variable or list.", "Use `delete {old_value}` or `clear {inventory::*}`.");
@@ -1633,10 +1637,11 @@ ScriptProgram ScriptParser::parseText(const std::string& text, const std::filesy
             continue;
         }
         if (startsWithInsensitive(line.text, "set ") || startsWithInsensitive(line.text, "add ") ||
-            startsWithInsensitive(line.text, "subtract ") || startsWithInsensitive(line.text, "remove ") ||
-            startsWithInsensitive(line.text, "toggle ") || startsWithInsensitive(line.text, "broadcast ") ||
-            startsWithInsensitive(line.text, "send ") || startsWithInsensitive(line.text, "delete ") ||
-            startsWithInsensitive(line.text, "clear ") || startsWithInsensitive(line.text, "return")) {
+            startsWithInsensitive(line.text, "give ") || startsWithInsensitive(line.text, "subtract ") ||
+            startsWithInsensitive(line.text, "remove ") || startsWithInsensitive(line.text, "toggle ") ||
+            startsWithInsensitive(line.text, "broadcast ") || startsWithInsensitive(line.text, "send ") ||
+            startsWithInsensitive(line.text, "delete ") || startsWithInsensitive(line.text, "clear ") ||
+            startsWithInsensitive(line.text, "reset ") || startsWithInsensitive(line.text, "return")) {
             std::vector<Diagnostic> statementDiagnostics;
             auto statement = parseStatement(line, sourceName, statementDiagnostics);
             appendDiagnostics(program.diagnostics, std::move(statementDiagnostics));
