@@ -117,7 +117,7 @@ Possible future APIs such as screen overlays/fades and named audio tracks/buses 
 
 The v0.11.0 branch supports natural single-value expressions such as `a random integer between 1 and 10`, `a random number between 0 and 1`, and `a random item out of {_items::*}`. They use an automatically initialized runtime-local `"default"` stream unless the optional `using random stream "name"` clause selects another stream. The default stream can be explicitly seeded for reproducibility; other named streams must be seeded before use. The compact `random_float`, `random_int`, and `random_choice` forms remain available.
 
-The remaining Skript random-expression gap is the count-prefix/plural form, such as `5 random integers between 5 and 96`, including assignment of the resulting collection to a list variable. This must be designed against CX's scalar `Value` and indexed-list model rather than implemented as a fragile parser-only shortcut. A weighted selector is a later optional extension, not a prerequisite for the first syntax overhaul.
+The count-prefix/plural form is implemented on the development branch for list assignments, such as `set {rolls::*} to 5 random integers between 5 and 96`. The count may be a numeric expression but must resolve to a whole number from 0 through 4096; zero clears the target list without drawing. Each item is evaluated through the existing scalar random expression path, so CX keeps its scalar `Value` model and uses its indexed-list assignment contract rather than introducing an untyped collection value. CI and full example validation remain required. A weighted selector is a later optional extension, not a prerequisite for the first syntax overhaul.
 
 ## Parser and runtime implementation guidance
 

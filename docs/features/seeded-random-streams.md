@@ -24,6 +24,17 @@ Every runtime creates a `"default"` stream automatically. Its initial state mixe
 
 Other named streams do not exist until explicitly seeded; using one too early produces a diagnostic. Natural expressions can select one with `using random stream "name"`; the function forms below name their stream as their first argument.
 
+### Count-prefix random list assignments
+
+```skript
+on load:
+    seed random stream "loot" with 4815
+    set {rolls::*} to 5 random integers between 5 and 96 using random stream "loot"
+    set {fractions::*} to 3 random numbers from 0 to 1
+```
+
+A count-prefix expression is accepted when the assignment target is a list wildcard such as `{rolls::*}`. Its count is evaluated once and must be a numeric whole number from 0 through 4096. Each generated item then uses the ordinary single-value random evaluator, preserving typed integer/number results and consuming the selected stream once per item (integer rejection sampling can use more than one underlying generator output). The generated values occupy sequential numeric list indices. A count of zero clears the destination list and consumes no draws. Single-value expressions such as `a random integer between 1 and 10` remain scalar and may still be assigned to an ordinary variable or used as one list item.
+
 ### Built-ins
 
 | Expression | Result | Stream consumption |

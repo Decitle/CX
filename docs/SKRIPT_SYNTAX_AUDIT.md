@@ -81,9 +81,9 @@ The 55 `StatementType` values cover variable assignment/deletion/mutation, rando
 - The runtime-local `"default"` stream is initialized automatically; other named streams must be seeded explicitly
 - Natural numeric helpers include `the sine of ...`, `the square root of ...`, `the average of ...`, and `clamp value between minimum and maximum`
 
-<badge color="warning">P0 syntax gap</badge>
+<badge color="warning">P0 validation gate</badge>
 
-The v0.11.0 branch has implemented natural **single-value** random integer/number expressions, list item/element selection, and the automatically initialized default stream. The remaining Skript compatibility gap is the count-prefix/plural form (for example, `5 random integers between 5 and 96`) and its assignment into a list variable. CX currently evaluates scalar `Value` expressions and stores lists through indexed variable namespaces, so this needs a deliberate collection-return/assignment contract rather than a regex-only special case.
+Count-prefix/plural random forms are now implemented on the development branch for list assignments, for example `set {rolls::*} to 5 random integers between 5 and 96` and `set {fractions::*} to 3 random numbers from 0 to 1`. A count expression may be a number, variable or arithmetic expression and must evaluate to a whole number from 0 through 4096. Zero clears the target list without drawing. Each generated value reuses the single-value evaluator, preserving integer/number types, inclusive integer bounds, the half-open floating-point range and named-stream behavior. The new runtime tests cover these contracts; the current-head six-target CI run must pass before this gap is considered validated.
 
 The branch already implements natural aliases for common scalar operations (absolute value, square root, floor/ceiling, trigonometry, rounding, averages, min/max and collection aggregates). Natural clamp syntax now accepts `clamp value between minimum and maximum` and reuses the existing range validation. Procedural `noise2d`/`fbm2d` and interpolation `lerp` remain function-call forms for now; they have more technical parameter structures and are not everyday beginner operations. Parentheses remain appropriate for coordinate/vector tuples, grouping and advanced function calls.
 
@@ -166,7 +166,7 @@ Official references:
 
 1. Freeze this inventory as the source audit; resolve every item into canonical syntax, aliases, implementation status and tests.
 2. Design grammar/AST support for English expressions and property access. Avoid implementing the entire overhaul as one-off regex additions.
-3. Complete the random-expression grammar: the single-value natural forms and implicit default stream now exist; design and implement count-prefix/plural results as a well-defined list assignment while retaining the existing function-call API.
+3. Validate the implemented count-prefix/plural random list assignment, including count/range rejection, bounded work, integer/number typing, zero-count semantics and deterministic-stream behavior. Retain the existing function-call API.
 4. Audit the implemented natural math helpers and worded comparisons, adding missing edge-case tests rather than treating them as wholly absent.
 5. Review typed object references and shared property getters/setters; decide and test the possessive alternative and remaining subsystem-specific cases.
 6. Normalize event grammar and event-context values; preserve existing handlers through aliases.

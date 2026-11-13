@@ -24,7 +24,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Settle the typed object-reference and event-context contracts before designing property access.
 - Keep the design charter and audit visible from the public documentation and Library.
 
-**Status:** the design charter and source-backed audit govern the active branch. Natural single-value random expressions, common natural math forms, worded comparisons, typed sprite/entity references, shared property getters/setters, and collection-oriented entity tags are implemented. Count-prefix/plural random list assignment remains the principal P0 gap.
+**Status:** the design charter and source-backed audit govern the active branch. Natural single-value random expressions, common natural math forms, worded comparisons, typed sprite/entity references, shared property getters/setters, and collection-oriented entity tags are implemented. Count-prefix/plural random list assignment has been implemented in the latest development commit; its current-head CI validation is pending.
 
 ### Phase 2 — expressions and common language
 
@@ -32,7 +32,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - [x] Retain deterministic named random streams as an optional reproducibility clause and initialize the default stream automatically.
 - [x] Add English-readable forms for common math operations while retaining compact function aliases.
 - [x] Add natural comparison wording alongside symbolic operators.
-- [ ] Implement count-prefix/plural random expressions, assigning results into a list variable with a documented maximum count and deterministic stream behavior.
+- [ ] Validate count-prefix/plural random list assignment (implemented on the current branch) for its 0–4096 count range, range semantics, typed outputs and deterministic streams.
 - [x] Preserve list syntax, interpolation, function semantics and the current loop/wait foundation; continue the compatibility audit.
 
 ### Phase 3 — object properties and events

@@ -30,13 +30,13 @@ The latest validated code commit before the current documentation corrections pa
 
 ## Remaining v0.11.0 acceptance work
 
-The principal P0 language gap is **count-prefix/plural random expressions** such as:
+The principal P0 language gap, **count-prefix/plural random expressions**, has now been implemented in the current development head. Its new six-target CI run is pending, so this is an implementation checkpoint rather than a validated completion:
 
 ```skript
 set {rolls::*} to 5 random integers between 5 and 96
 ```
 
-That form must expand to a list assignment with bounded work and well-defined count, range, type and random-stream behavior. It should be designed against CX's scalar `Value` plus indexed-list model, not implemented as a parser-only special case.
+The implementation accepts a numeric count expression from 0 through 4096 and expands the results into sequential indexed list entries through the existing scalar `Value` evaluator. It covers integer/number output, `between`/`from`, named streams and zero-count clearing. Current-head CI and example validation are still required.
 
 Other remaining acceptance work includes:
 
@@ -54,7 +54,7 @@ The Pages site continues to represent the published/main documentation until the
 
 ## Next priorities
 
-1. Design and implement count-prefix/plural random list assignment with bounds and deterministic-stream tests.
+1. Validate count-prefix/plural random list assignment on all six CI targets and through the full script/example corpus.
 2. Complete the property/event/subsystem grammar review, preserving compatibility aliases where practical.
 3. Bring examples, beginner materials, feature pages and reference generation into alignment with the accepted language.
 4. Run the full syntax corpus, native six-target CI and clean extraction/launch checks.

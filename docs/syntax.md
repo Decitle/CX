@@ -172,6 +172,8 @@ on tick:
     if random_float("encounters") < 0.002:
         set {next_encounter_kind} to random_choice("encounters", "slime", "bat", "guard")
     set {ambient_roll} to a random integer between 1 and 100
+    set {rolls::*} to 5 random integers between 1 and 6
+    set {drop_fractions::*} to 3 random numbers from 0 to 1 using random stream "loot"
 
 on press key "L":
     set {loot_roll} to a random integer from 1 to 100 using random stream "loot"
@@ -179,7 +181,7 @@ on press key "L":
     set {random_item} to a random item out of {items::*} using random stream "loot"
 ```
 
-Natural expressions such as `a random integer between 1 and 10`, `random number from 0 to 1`, and `a random item out of {items::*}` use the runtime-local `"default"` stream unless they include `using random stream "name"`. The default stream is initialized automatically for each runtime with best-effort runtime entropy, so ordinary random expressions do not need setup but are not reproducible between sessions by default. To make the default stream reproducible, seed it explicitly with `seed random stream "default" with integer`.
+Natural single-value expressions such as `a random integer between 1 and 10`, `random number from 0 to 1`, and `a random item out of {items::*}` return one value. Count-prefix forms such as `5 random integers between 1 and 6` and `3 random numbers from 0 to 1` generate multiple values when assigned to a list variable (`{rolls::*}`). The count is a numeric expression that must evaluate to a whole number from 0 through 4096. A zero count clears the destination list and makes no random draws. Each generated item uses the same typed single-value random expression and appends to the list in index order. Both single-value and count-prefix forms use the runtime-local `"default"` stream unless they include `using random stream "name"`. The default stream is initialized automatically for each runtime with best-effort runtime entropy, so ordinary random expressions do not need setup but are not reproducible between sessions by default. To make the default stream reproducible, seed it explicitly with `seed random stream "default" with integer`.
 
 `seed random stream "name" with integer` creates or resets a case-insensitive stream. Names are trimmed and limited to 64 characters; separate names do not consume one another's sequences. Seeds must be whole numbers in the exact JavaScript-safe integer range `-9007199254740991` through `9007199254740991`. Seed named streams once during startup (typically in `on load:`), not on every tick unless repeatedly restarting a sequence is intentional. Any named stream other than the pre-created `"default"` stream must be seeded before use.
 
