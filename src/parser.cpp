@@ -1124,6 +1124,53 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         stmt.expression = lowered == "return" ? "none" : trim(std::string_view(text).substr(7));
         return stmt;
     }
+    static const std::regex setScreenOpacityPattern(
+        R"SCREEN(^set\s+screen\s+opacity\s+to\s+(.+?)\s*$)SCREEN", std::regex::icase);
+    std::smatch screenMatch;
+    if (std::regex_match(text, screenMatch, setScreenOpacityPattern)) {
+        stmt.type = StatementType::SetScreenOpacity;
+        stmt.expression = trim(screenMatch[1].str());
+        return stmt;
+    }
+
+    static const std::regex fadeScreenPattern(
+        R"SCREEN(^fade\s+screen\s+(to\s+black|from\s+black|to\s+(?:clear|transparent)|in|out)\s+over\s+(.+?)\s*$)SCREEN",
+        std::regex::icase);
+    if (std::regex_match(text, screenMatch, fadeScreenPattern)) {
+        stmt.type = StatementType::FadeScreen;
+        const std::string mode = lower(trim(screenMatch[1].str()));
+        stmt.property = mode == "to black" ? "to_black" :
+            mode == "from black" || mode == "in" ? "from_black" : mode == "out" ? "to_black" : "to_clear";
+        stmt.expression = trim(screenMatch[2].str());
+        return stmt;
+    }
+    static const std::regex fadeScreenOpacityPattern(
+        R"SCREEN(^fade\s+screen\s+to\s+opacity\s+(.+?)\s+over\s+(.+?)\s*$)SCREEN", std::regex::icase);
+    if (std::regex_match(text, screenMatch, fadeScreenOpacityPattern)) {
+        stmt.type = StatementType::FadeScreen;
+        stmt.property = "to_opacity";
+        stmt.expression = trim(screenMatch[1].str());
+        stmt.secondaryExpression = trim(screenMatch[2].str());
+        return stmt;
+    }
+
+    static const std::regex shakeScreenPattern(
+        R"SCREEN(^shake\s+screen\s+for\s+(.+?)\s+with\s+amplitude\s+(.+?)\s*$)SCREEN", std::regex::icase);
+    if (std::regex_match(text, screenMatch, shakeScreenPattern)) {
+        stmt.type = StatementType::ShakeScreen;
+        stmt.expression = trim(screenMatch[1].str());
+        stmt.secondaryExpression = trim(screenMatch[2].str());
+        return stmt;
+    }
+    static const std::regex shakeScreenDefaultPattern(
+        R"SCREEN(^shake\s+screen\s+for\s+(.+?)\s*$)SCREEN", std::regex::icase);
+    if (std::regex_match(text, screenMatch, shakeScreenDefaultPattern)) {
+        stmt.type = StatementType::ShakeScreen;
+        stmt.expression = trim(screenMatch[1].str());
+        stmt.secondaryExpression = "0.25";
+        return stmt;
+    }
+
     if (lowered == "stop") { stmt.type = StatementType::Stop; return stmt; }
 
     if (startsWithInsensitive(text, "if ") && !endsWithColon(text))

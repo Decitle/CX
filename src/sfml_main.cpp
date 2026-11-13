@@ -929,7 +929,18 @@ int main(int argc, char** argv) {
             }
         }
         sf::View worldView(sf::FloatRect({0.0F, 0.0F}, {worldViewWidth, logicalHeight}));
-        worldView.setCenter({worldCenterX, worldCenterY});
+        float shakeOffsetX = 0.0F;
+        float shakeOffsetY = 0.0F;
+        const auto& screenEffects = runtime.screenEffects();
+        if (screenEffects.shakeRemainingSeconds > 0.0F && screenEffects.shakeDurationSeconds > 0.0F) {
+            constexpr float tau = 6.2831853071795864769F;
+            const float phase = screenEffects.shakeElapsedSeconds * tau * 23.0F;
+            const float fade = std::clamp(screenEffects.shakeRemainingSeconds / screenEffects.shakeDurationSeconds, 0.0F, 1.0F);
+            const float amplitude = screenEffects.shakeAmplitudeTiles * activeTileSize * fade;
+            shakeOffsetX = std::sin(phase) * std::sin(phase * 0.73F) * amplitude;
+            shakeOffsetY = std::cos(phase * 1.13F) * std::sin(phase * 0.61F) * amplitude;
+        }
+        worldView.setCenter({worldCenterX + shakeOffsetX, worldCenterY + shakeOffsetY});
         worldView.setViewport(sf::FloatRect({0.0F, 0.0F}, {1.0F, 1.0F}));
         window.setView(worldView);
         if (currentSettings.showDebugOverlay) {
@@ -1210,6 +1221,14 @@ int main(int argc, char** argv) {
                 }
                 if (logScrollOffset > 0) drawText(window, font, "scrollback", std::max(14.0F, windowW - 92.0F), drawerTop + visibleHeight - 20.0F, 10, sf::Color(130, 150, 175));
             }
+        }
+        const float fadeOpacity = std::clamp(runtime.screenEffects().fadeOpacity, 0.0F, 1.0F);
+        if (fadeOpacity > 0.001F) {
+            sf::RectangleShape fadeOverlay({windowW, windowH});
+            fadeOverlay.setPosition({0.0F, 0.0F});
+            fadeOverlay.setFillColor(sf::Color(0, 0, 0,
+                static_cast<std::uint8_t>(std::lround(fadeOpacity * 255.0F))));
+            window.draw(fadeOverlay);
         }
         window.display();
     }

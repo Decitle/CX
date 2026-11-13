@@ -1575,6 +1575,113 @@ void Runtime::runExecution(ExecutionContext& context) {
                 context.stopped = true;
                 break;
             }
+            case StatementType::SetScreenOpacity: {
+                const Value opacityValue = evaluateValue(statement.expression, context, error);
+                const double opacity = opacityValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                if (!error.empty() || !opacityValue.isNumber() || !std::isfinite(opacity) || opacity < 0.0 || opacity > 1.0) {
+                    runtimeError(statement, "Screen opacity must be a finite number from 0 to 1.",
+                        "Use `set screen opacity to 0.5`. Zero is clear; one is fully black.");
+                    break;
+                }
+                screenEffects_.fadeOpacity = static_cast<float>(opacity);
+                screenFadeStartOpacity_ = screenEffects_.fadeOpacity;
+                screenFadeTargetOpacity_ = screenEffects_.fadeOpacity;
+                screenFadeElapsedSeconds_ = 0.0F;
+                screenFadeDurationSeconds_ = 0.0F;
+                break;
+            }
+            case StatementType::FadeScreen: {
+                const std::string durationText = statement.property == "to_opacity"
+                    ? statement.secondaryExpression : statement.expression;
+                static const std::regex durationPattern(
+                    R"DURATION(^\s*(.+?)\s*(milliseconds?|msecs?|ms|seconds?|secs?|s|ticks?|tick|minutes?|mins?|m|hours?|hrs?|h)\s*$)DURATION",
+                    std::regex::icase);
+                std::smatch durationMatch;
+                if (!std::regex_match(durationText, durationMatch, durationPattern)) {
+                    runtimeError(statement, "A screen fade duration needs a number and a time unit.",
+                        "Use `fade screen to black over 1 second` or `fade screen in over 500 milliseconds`.");
+                    break;
+                }
+                const Value amountValue = evaluateValue(trim(durationMatch[1].str()), context, error);
+                const double amount = amountValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                if (!error.empty() || !amountValue.isNumber() || !std::isfinite(amount) || amount <= 0.0) {
+                    runtimeError(statement, "A screen fade duration must be a positive finite number.",
+                        "Use a duration such as `0.5 seconds` or `250 milliseconds`.");
+                    break;
+                }
+                std::string unit = lower(durationMatch[2].str());
+                double seconds = amount;
+                if (unit == "ms" || unit.starts_with("msec") || unit.starts_with("millisecond")) seconds *= 0.001;
+                else if (unit == "m" || unit.starts_with("min")) seconds *= 60.0;
+                else if (unit == "h" || unit.starts_with("hour") || unit.starts_with("hr")) seconds *= 3600.0;
+                else if (unit == "tick" || unit == "ticks") seconds *= 1.0 / static_cast<double>(std::max(1U, settings_.tickRate));
+                if (!std::isfinite(seconds) || seconds <= 0.0 || seconds > 600.0) {
+                    runtimeError(statement, "A screen fade duration must be no longer than 10 minutes.",
+                        "Use a shorter duration such as `fade screen to black over 1 second`.");
+                    break;
+                }
+                float targetOpacity = 0.0F;
+                if (statement.property == "to_black") targetOpacity = 1.0F;
+                else if (statement.property == "from_black") {
+                    screenEffects_.fadeOpacity = 1.0F;
+                    targetOpacity = 0.0F;
+                } else if (statement.property == "to_opacity") {
+                    const Value opacityValue = evaluateValue(statement.expression, context, error);
+                    const double opacity = opacityValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                    if (!error.empty() || !opacityValue.isNumber() || !std::isfinite(opacity) || opacity < 0.0 || opacity > 1.0) {
+                        runtimeError(statement, "Fade target opacity must be a finite number from 0 to 1.",
+                            "Use `fade screen to opacity 0.5 over 1 second`.");
+                        break;
+                    }
+                    targetOpacity = static_cast<float>(opacity);
+                }
+                screenFadeStartOpacity_ = screenEffects_.fadeOpacity;
+                screenFadeTargetOpacity_ = targetOpacity;
+                screenFadeElapsedSeconds_ = 0.0F;
+                screenFadeDurationSeconds_ = static_cast<float>(seconds);
+                break;
+            }
+            case StatementType::ShakeScreen: {
+                static const std::regex durationPattern(
+                    R"DURATION(^\s*(.+?)\s*(milliseconds?|msecs?|ms|seconds?|secs?|s|ticks?|tick|minutes?|mins?|m|hours?|hrs?|h)\s*$)DURATION",
+                    std::regex::icase);
+                std::smatch durationMatch;
+                if (!std::regex_match(statement.expression, durationMatch, durationPattern)) {
+                    runtimeError(statement, "A screen shake duration needs a number and a time unit.",
+                        "Use `shake screen for 3.5 seconds with amplitude 0.35`.");
+                    break;
+                }
+                const Value amountValue = evaluateValue(trim(durationMatch[1].str()), context, error);
+                const double amount = amountValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                if (!error.empty() || !amountValue.isNumber() || !std::isfinite(amount) || amount <= 0.0) {
+                    runtimeError(statement, "A screen shake duration must be a positive finite number.",
+                        "Use a duration such as `3.5 seconds` or `200 milliseconds`.");
+                    break;
+                }
+                const Value amplitudeValue = evaluateValue(statement.secondaryExpression, context, error);
+                const double amplitude = amplitudeValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                if (!error.empty() || !amplitudeValue.isNumber() || !std::isfinite(amplitude) || amplitude <= 0.0 || amplitude > 4.0) {
+                    runtimeError(statement, "Screen shake amplitude must be greater than 0 and at most 4 tiles.",
+                        "Use an amplitude such as `0.35`, measured in fractions of the active room tile size.");
+                    break;
+                }
+                std::string unit = lower(durationMatch[2].str());
+                double seconds = amount;
+                if (unit == "ms" || unit.starts_with("msec") || unit.starts_with("millisecond")) seconds *= 0.001;
+                else if (unit == "m" || unit.starts_with("min")) seconds *= 60.0;
+                else if (unit == "h" || unit.starts_with("hour") || unit.starts_with("hr")) seconds *= 3600.0;
+                else if (unit == "tick" || unit == "ticks") seconds *= 1.0 / static_cast<double>(std::max(1U, settings_.tickRate));
+                if (!std::isfinite(seconds) || seconds <= 0.0 || seconds > 600.0) {
+                    runtimeError(statement, "A screen shake duration must be no longer than 10 minutes.",
+                        "Use a shorter duration such as `shake screen for 0.25 seconds with amplitude 0.15`.");
+                    break;
+                }
+                screenEffects_.shakeAmplitudeTiles = static_cast<float>(amplitude);
+                screenEffects_.shakeElapsedSeconds = 0.0F;
+                screenEffects_.shakeDurationSeconds = static_cast<float>(seconds);
+                screenEffects_.shakeRemainingSeconds = static_cast<float>(seconds);
+                break;
+            }
             case StatementType::Stop:
                 context.stopped = true;
                 break;

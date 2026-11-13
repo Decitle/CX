@@ -282,6 +282,11 @@ void Runtime::resetRuntimeState(bool resetGlobals) {
     projectileLimitDiagnosticIssued_ = false;
     projectileLimitRequiredCapacity_ = 1;
     keysDown_.clear();
+    screenEffects_ = ScreenEffectsState{};
+    screenFadeStartOpacity_ = 0.0F;
+    screenFadeTargetOpacity_ = 0.0F;
+    screenFadeElapsedSeconds_ = 0.0F;
+    screenFadeDurationSeconds_ = 0.0F;
     audio_.reset();
     std::string audioWarning;
     if (!audio_.discoverAssets(projectRoot_, audioWarning) && !audioWarning.empty()) {
@@ -432,6 +437,25 @@ void Runtime::tick() {
     resumeScheduledExecutions();
     fire(EventType::Tick);
     const float effectDt = 1.0F / static_cast<float>(std::max(1U, settings_.tickRate));
+    if (screenFadeDurationSeconds_ > 0.0F) {
+        screenFadeElapsedSeconds_ = std::min(screenFadeDurationSeconds_, screenFadeElapsedSeconds_ + effectDt);
+        const float progress = screenFadeElapsedSeconds_ / screenFadeDurationSeconds_;
+        screenEffects_.fadeOpacity = std::clamp(
+            screenFadeStartOpacity_ + (screenFadeTargetOpacity_ - screenFadeStartOpacity_) * progress,
+            0.0F, 1.0F);
+        if (progress >= 1.0F) screenFadeDurationSeconds_ = 0.0F;
+    }
+    if (screenEffects_.shakeRemainingSeconds > 0.0F) {
+        screenEffects_.shakeElapsedSeconds = std::min(
+            screenEffects_.shakeDurationSeconds, screenEffects_.shakeElapsedSeconds + effectDt);
+        screenEffects_.shakeRemainingSeconds = std::max(
+            0.0F, screenEffects_.shakeDurationSeconds - screenEffects_.shakeElapsedSeconds);
+        if (screenEffects_.shakeRemainingSeconds <= 0.0F) {
+            screenEffects_.shakeAmplitudeTiles = 0.0F;
+            screenEffects_.shakeDurationSeconds = 0.0F;
+            screenEffects_.shakeElapsedSeconds = 0.0F;
+        }
+    }
     bool expiredBeam = false;
     for (auto it = beams_.begin(); it != beams_.end();) {
         BeamEffect& beam = it->second;

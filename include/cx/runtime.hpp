@@ -25,6 +25,14 @@ namespace cx {
 // EngineSettings contains the defaults the host window/renderer reads. Script
 // assignments to `engine::...` are validated by Runtime::applySetting before they
 // update these fields.
+struct ScreenEffectsState {
+    float fadeOpacity{0.0F};          // 0 = clear, 1 = fully black.
+    float shakeAmplitudeTiles{0.0F};  // Camera shake amplitude measured in tile units.
+    float shakeElapsedSeconds{0.0F};
+    float shakeDurationSeconds{0.0F};
+    float shakeRemainingSeconds{0.0F};
+};
+
 struct EngineSettings {
     std::string windowTitle{"CX Engine | .cx Runtime"};
     unsigned int windowWidth{1280};
@@ -246,6 +254,7 @@ public:
     // Read-only access to parsed program definitions and the settings consumed by the host.
     [[nodiscard]] const ScriptProgram& program() const noexcept { return program_; }
     [[nodiscard]] const EngineSettings& settings() const noexcept { return settings_; }
+    [[nodiscard]] const ScreenEffectsState& screenEffects() const noexcept { return screenEffects_; }
     [[nodiscard]] const std::map<std::string, LightSource>& lights() const noexcept { return lights_; }
     [[nodiscard]] const std::map<std::string, BeamEffect>& beams() const noexcept { return beams_; }
     [[nodiscard]] std::size_t beamsRevision() const noexcept { return beamsRevision_; }
@@ -408,6 +417,11 @@ private:
     std::size_t lightsRevision_{0};
     std::size_t beamsRevision_{0};
     EngineSettings settings_;
+    ScreenEffectsState screenEffects_;
+    float screenFadeStartOpacity_{0.0F};
+    float screenFadeTargetOpacity_{0.0F};
+    float screenFadeElapsedSeconds_{0.0F};
+    float screenFadeDurationSeconds_{0.0F};
     std::size_t tickCount_{0};
     // Bounds stored message records; individual strings may contain embedded newlines.
     std::size_t maximumLogEntries_{500};

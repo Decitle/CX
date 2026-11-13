@@ -21,7 +21,8 @@ enum class StatementType {
     CreatePath, SetEntityPath, SetEntityProperty, DefineAnimation, PlayAnimation, StopAnimation,
     SpawnProjectile, SpawnProjectilePattern, MoveEntityInput, TweenEntity, CancelEntityTween, Add, Subtract, Toggle, Broadcast,
     If, LoopTimes, LoopList, While, Wait, ExitLoop, ContinueLoop, Return, OpenCanvas, CloseCanvas, CreateWave, AddWaveLayer, SetWaveEnvelope,
-    NormalizeWave, SaveWave, VisualizeWave, PlaySound, Stop
+    NormalizeWave, SaveWave, VisualizeWave, PlaySound, Stop,
+    SetScreenOpacity, FadeScreen, ShakeScreen
 };
 enum class CanvasElementType { Panel, Text, Button, ProgressBar };
 enum class CanvasLayoutMode { Absolute, Grid, Relative };
