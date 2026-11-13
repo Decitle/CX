@@ -141,7 +141,7 @@ The reference adds 23 world/entity entries, 6 project-structure entries, 7 UI en
 |---|---|---|
 | P0 | Multi-count random expressions are not implemented | Support Skript-style count prefixes and plural random number forms in list assignments without weakening CX's scalar/list value contracts. |
 | P1 | Advanced math helpers retain function-call forms | Common scalar operations now have natural-English forms; technical procedural helpers such as `noise2d`, `fbm2d`, and `lerp` remain function calls by design. |
-| P1 | Property grammar refinements remain | Typed sprite/entity references and the shared `set <property> of <object> to <value>` grammar are implemented for supported properties; review the possessive alternative and remaining subsystem-specific properties. |
+| P1 | Property grammar refinements remain | Typed sprite/entity references, the shared `set <property> of <object> to <value>` grammar, and its natural possessive setter alias are implemented for supported properties; review remaining subsystem-specific properties. |
 | P1 | Typed object references currently cover sprites/entities | Live-instance-safe sprite/entity handles are implemented. Review whether room handles are needed and keep object-reference lifetime rules consistent. |
 | P1 | Event headers are inconsistent and sometimes over-specific | Define a short event vocabulary plus standard event-context expressions/locals and filtering conditions. |
 | P1 | English comparison aliases are incomplete | Support common worded comparisons alongside symbols with identical semantics. |
@@ -168,7 +168,7 @@ Official references:
 2. Design grammar/AST support for English expressions and property access. Avoid implementing the entire overhaul as one-off regex additions.
 3. Validate the implemented count-prefix/plural random list assignment, including count/range rejection, bounded work, integer/number typing, zero-count semantics and deterministic-stream behavior. Retain the existing function-call API.
 4. Audit the implemented natural math helpers and worded comparisons, adding missing edge-case tests rather than treating them as wholly absent.
-5. Review typed object references and shared property getters/setters; decide and test the possessive alternative and remaining subsystem-specific cases.
+5. Typed object references, shared property getters/setters and the possessive setter alias are implemented; continue auditing remaining subsystem-specific properties and edge cases.
 6. Normalize event grammar and event-context values; preserve existing handlers through aliases.
 7. Normalize UI/graphics/audio/settings command wording and document the limits of currently unavailable screen/audio capabilities.
 8. Run all examples and a dedicated syntax corpus through `cx-cli --check`; add positive tests for every alias and negative tests for ambiguity, invalid types and missing context.

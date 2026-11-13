@@ -41,7 +41,7 @@ The implementation accepts a numeric count expression from 0 through 4096 and ex
 Other remaining acceptance work includes:
 
 - Complete the subsystem-by-subsystem grammar audit. Some APIs intentionally retain technical arguments or specialized commands; their language surface still needs a consistency review.
-- Review natural possessive property aliases and event grammar/context values. Typed sprite/entity handles and the main property grammar are already implemented; these are refinement/audit tasks, not a claim that object references are absent.
+- The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage. Event grammar/context values and remaining subsystem-specific properties still need review.
 - Run the advertised syntax corpus and all repository examples through the CLI; add negative tests for ambiguous, invalid and out-of-context forms.
 - Update the beginner learning path, complete-first-game example, subsystem pages and versioned generated reference to match the accepted v0.11.0 grammar.
 - Pass CI and release/package verification on the final accepted branch head.

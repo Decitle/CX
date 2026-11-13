@@ -67,11 +67,12 @@ The preferred form is `set <property> of <object> to <value>`, with a possessive
 
 ```skript
 set x-coordinate of sprite "player" to 15
+set sprite "player"'s x-coordinate to 15
 set rotation of sprite "player" to 90
 set health of entity "guard" to 25
 ```
 
-The `set entity "guard" health to 25` family remains accepted as a compatibility form; the shared property grammar also supports `set health of entity "guard" to 25`. The development branch stores sprite/entity references as typed values with live-instance identity in local and temporary variables. Ordinary strings never silently become object references, and stale handles are rejected after an object is removed or replaced.
+The `set entity "guard" health to 25` family remains accepted as a compatibility form; the shared property grammar also supports `set health of entity "guard" to 25` and the equivalent possessive `set entity "guard"'s health to 25`. The development branch stores sprite/entity references as typed values with live-instance identity in local and temporary variables. Ordinary strings never silently become object references, and stale handles are rejected after an object is removed or replaced.
 
 ### 5. Events describe what happened; context values describe who/what
 

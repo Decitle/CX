@@ -37,7 +37,9 @@ on load:
     set y-coordinate of sprite {_object} to 25
     set position of object {_object} to (30, 40)
     set size of object {_object} to (24, 28)
+    set sprite "hero"'s x-coordinate to 35
     set rotation of sprite {_object} to 90
+    set sprite "hero"'s rotation to 45
     set rotation of entity {_entity} to 180
     set speed of entity {_entity} to 125
     set kind of entity {_entity} to "boss"
@@ -52,6 +54,7 @@ on load:
     set {read_health_clamped} to health of entity {_entity}
     set max-health of entity {_entity} to 14
     set the health of {_entity} to {_target_health}
+    set entity {_entity}'s health to 6
     set {read_health} to health of entity {_entity}
     set {read_max_health} to the max health of {_entity}
     set {read_health_global} to {entity::npc::health}
@@ -74,20 +77,20 @@ on load:
     expect(!runtime.hasErrors(), "valid object handles and property setters should not report errors");
     if (runtime.sprites().contains("hero")) {
         const auto& hero = runtime.sprites().at("hero");
-        expect(hero.x == 30.0F && hero.y == 40.0F, "position setter should update both coordinates");
+        expect(hero.x == 35.0F && hero.y == 40.0F, "canonical position and possessive x-coordinate setters should share runtime behavior");
         expect(hero.width == 24.0F && hero.height == 28.0F, "size setter should update both dimensions");
-        expect(hero.rotationDegrees == 90.0F, "rotation setter should update live sprite rotation");
+        expect(hero.rotationDegrees == 45.0F, "possessive rotation setter should update the live sprite property");
         expect(!hero.visible, "visibility should accept a boolean expression");
     } else expect(false, "hero sprite should exist");
     if (runtime.sprites().contains("npc")) {
         const auto& npc = runtime.sprites().at("npc");
         expect(npc.rotationDegrees == 180.0F, "entity handle should support rotation");
         expect(npc.moveSpeedPixelsPerSecond == 125.0F, "entity speed should remain accessible through a handle");
-        expect(npc.health == 10 && npc.maxHealth == 14, "entity health properties should preserve the existing health/max-health rules");
+        expect(npc.health == 6 && npc.maxHealth == 14, "possessive entity-handle health setter should preserve health/max-health rules");
     } else expect(false, "npc entity should exist");
-    expect(runtime.getGlobal("read_x").numberOr(-1.0) == 30.0, "x-coordinate getter should read the current live object property");
+    expect(runtime.getGlobal("read_x").numberOr(-1.0) == 35.0, "x-coordinate getter should read the current value after a possessive setter");
     expect(runtime.getGlobal("read_y").numberOr(-1.0) == 40.0, "property getters should work with a local object handle");
-    expect(runtime.getGlobal("read_rotation").numberOr(-1.0) == 90.0, "rotation getter should read the renderer-facing degree value");
+    expect(runtime.getGlobal("read_rotation").numberOr(-1.0) == 45.0, "rotation getter should read the value assigned by the possessive form");
     expect(runtime.getGlobal("read_speed").numberOr(-1.0) == 125.0, "speed getter should work for entity handles");
     expect(!runtime.getGlobal("read_visibility").truthy(), "visibility getter should return the live boolean property");
     expect(runtime.getGlobal("read_width").numberOr(-1.0) == 24.0, "width getter should expose the live horizontal size");
@@ -100,7 +103,7 @@ on load:
            "team getter should return the entity's registered team");
     expect(runtime.getGlobal("read_health_clamped").numberOr(-1.0) == 9.0,
            "lowering max health should clamp current health to the new maximum");
-    expect(runtime.getGlobal("read_health").numberOr(-1.0) == 10.0,
+    expect(runtime.getGlobal("read_health").numberOr(-1.0) == 6.0, "health getter should observe the possessive entity-handle setter");
            "health getter should read the live entity health value");
     expect(runtime.getGlobal("read_max_health").numberOr(-1.0) == 14.0,
            "max health getter should read the live entity maximum health");

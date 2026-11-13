@@ -855,10 +855,17 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
     // Minimal renderer-neutral sprite objects. Coordinates and sizes are in pixels.
     static const std::regex createSpritePattern(R"SPRITE(^create\s+(sprite|entity)\s+"([^"\n]+)"\s+with\s+texture\s+(\{\$[^{}]+\})\s*$)SPRITE", std::regex::icase);
     static const std::regex setSpritePropertyPattern(R"PROPERTY(^set\s+(?:the\s+)?(x-coordinate|y-coordinate|position|size|rotation|texture|visible|visibility|speed|health|max(?:imum)?[ _-]health|kind|team)\s+of\s+((?:sprite|entity|object)\s+)?("[^"\n]+"|\{[^{}]+\})\s+to\s+(.+?)\s*$)PROPERTY", std::regex::icase);
+    static const std::regex setSpritePossessivePattern(R"PROPERTY(^set\s+(?:the\s+)?((?:sprite|entity|object)\s+)?("[^"\n]+"|\{[^{}]+\})'s\s+(x-coordinate|y-coordinate|position|size|rotation|texture|visible|visibility|speed|health|max(?:imum)?[ _-]health|kind|team)\s+to\s+(.+?)\s*$)PROPERTY", std::regex::icase);
+    std::string normalizedPropertyText = text;
+    if (std::regex_match(text, roomMatch, setSpritePossessivePattern)) {
+        const std::string objectKind = roomMatch[1].matched ? lower(trim(roomMatch[1].str())) : "object";
+        normalizedPropertyText = "set " + trim(roomMatch[3].str()) + " of " + objectKind + " " +
+            trim(roomMatch[2].str()) + " to " + trim(roomMatch[4].str());
+    }
     static const std::regex setSpritePattern(R"SPRITE(^set\s+(sprite|entity)\s+"([^"\n]+)"\s+(position|size|texture|visible|speed)\s+to\s+(.+?)\s*$)SPRITE", std::regex::icase);
     static const std::regex moveSpritePattern(R"SPRITE(^move\s+(sprite|entity)\s+"([^"\n]+)"\s+by\s+\((.*)\)\s*$)SPRITE", std::regex::icase);
     static const std::regex deleteSpritePattern(R"SPRITE(^(?:delete|remove)\s+(?:sprite|entity)\s+"([^"\n]+)"\s*$)SPRITE", std::regex::icase);
-    if (std::regex_match(text, roomMatch, setSpritePropertyPattern)) {
+    if (std::regex_match(normalizedPropertyText, roomMatch, setSpritePropertyPattern)) {
         stmt.type = StatementType::SetSprite;
         const std::string objectKind = roomMatch[2].matched ? lower(trim(roomMatch[2].str())) : "object";
         stmt.target = objectKind + " " + trim(roomMatch[3].str());

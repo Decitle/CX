@@ -39,7 +39,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 
 - [x] Define typed sprite/entity references so local and temporary variables can hold live object handles with instance identity.
 - [x] Standardize `set <property> of <object> to <value>` and matching property getters for the currently supported object properties.
-- [ ] Review the natural possessive property alternative and apply it consistently where it improves readability.
+- [x] Add a natural possessive property setter alias that normalizes to the shared object-property operation.
 - [ ] Introduce short, consistent event headers with standard event-context values. Preserve old header spellings as compatibility aliases where possible.
 - [x] Keep coordinates as conventional tuples; use English around them rather than removing parentheses.
 
