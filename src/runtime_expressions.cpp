@@ -974,7 +974,7 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
                 return Value(std::numeric_limits<double>::infinity());
             return Value(std::exp(logarithm));
         }
-        if (function == "toBase") {
+        if (function == "tobase") {
             if (!require(2)) return {};
             constexpr double maxSafeInteger = 9007199254740991.0;
             if (!std::isfinite(args[0]) || std::trunc(args[0]) != args[0] ||
