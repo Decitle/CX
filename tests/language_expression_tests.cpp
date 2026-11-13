@@ -282,6 +282,68 @@ set {value} to clamp 5 between 10 and 0
     expect(hasRangeDiagnostic, "natural clamp should report the existing clamp range diagnostic");
     std::filesystem::remove_all(root);
 }
+void testSkriptStyleCountedRandomListAssignment() {
+    const auto root = fixture("counted-random-list", R"CX(
+on load:
+    seed random stream "batch_a" with 4815
+    seed random stream "batch_b" with 4815
+    set {_count} to 5
+    set {integers_a::*} to {_count} random integers between 5 and 96 using random stream "batch_a"
+    set {integers_b::*} to 5 random integers from 5 to 96 using random stream "batch_b"
+    set {fractions::*} to 3 random numbers from 0 to 1 using random stream "batch_a"
+    set {one_random::*} to a random integer between 7 and 7
+    set {empty_random::*} to 0 random integers between 1 and 5
+)CX");
+    cx::Runtime runtime(root);
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics())
+            std::cerr << "COUNTED RANDOM DIAGNOSTIC: " << diagnostic.message << '\\n';
+    }
+    expect(loaded, "count-prefix random integer/number expressions should load as list assignments");
+    expect(!runtime.hasErrors(), "valid counted random list assignments should not emit diagnostics");
+    for (int i = 1; i <= 5; ++i) {
+        const std::string firstName = "integers_a::" + std::to_string(i);
+        const std::string secondName = "integers_b::" + std::to_string(i);
+        const Value first = runtime.getGlobal(firstName);
+        const Value second = runtime.getGlobal(secondName);
+        const double value = first.numberOr(-1.0);
+        expect(first.isNumber() && value >= 5.0 && value <= 96.0 && std::trunc(value) == value,
+               "counted random integers should append exactly bounded whole-number values");
+        expect(second.isNumber() && second.numberOr(-2.0) == value,
+               "counted random expressions should preserve seeded stream sequences across between/from aliases");
+    }
+    for (int i = 1; i <= 3; ++i) {
+        const Value sample = runtime.getGlobal("fractions::" + std::to_string(i));
+        const double value = sample.numberOr(-1.0);
+        expect(sample.isNumber() && value >= 0.0 && value < 1.0,
+               "counted random numbers should append fractional values in the requested range");
+    }
+    expect(runtime.getGlobal("one_random::1").numberOr(-1.0) == 7.0,
+           "assigning one ordinary random expression to a list should retain scalar-list behavior");
+    expect(runtime.getGlobal("one_random::2").isNull(),
+           "a single random expression should create exactly one list entry");
+    expect(runtime.getGlobal("empty_random::1").isNull(),
+           "a zero-count random assignment should clear the destination list without drawing values");
+    std::filesystem::remove_all(root);
+}
+
+void testCountedRandomListRejectsUnsafeCounts() {
+    const auto rejects = [](const std::string& name, const std::string& countExpression) {
+        const auto root = fixture(name, "set {rolls::*} to " + countExpression + " random integers between 1 and 10\\n");
+        cx::Runtime runtime(root);
+        expect(!runtime.loadScripts(), "invalid random batch count should fail validation: " + countExpression);
+        const bool hasCountDiagnostic = std::any_of(runtime.diagnostics().begin(), runtime.diagnostics().end(),
+            [](const cx::Diagnostic& diagnostic) {
+                return diagnostic.message.find("A random batch count must be a whole number from 0 to 4096") != std::string::npos;
+            });
+        expect(hasCountDiagnostic, "invalid random batch count should explain the permitted range: " + countExpression);
+        std::filesystem::remove_all(root);
+    };
+    rejects("counted-random-fractional-count", "1.5");
+    rejects("counted-random-negative-count", "-1");
+    rejects("counted-random-excessive-count", "4097");
+}
 void testMathDomainResultsCanBeCheckedAsNaN() {
     const auto root = fixture("math-domain", R"CX(
 on load:
@@ -319,6 +381,8 @@ int main() {
     testNaturalComparisonAndListConditions();
     testMathDomainResultsCanBeCheckedAsNaN();
     testNaturalClampRejectsInvalidRange();
+    testSkriptStyleCountedRandomListAssignment();
+    testCountedRandomListRejectsUnsafeCounts();
     if (failures != 0) {
         std::cerr << "CX_LANGUAGE_EXPRESSION_TESTS_FAILED failures=" << failures << '\n';
         return 1;

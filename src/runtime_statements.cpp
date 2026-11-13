@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <regex>
 #include <string>
 #include <string_view>
@@ -38,6 +39,62 @@ std::vector<std::string> splitTopLevelComma(std::string_view text) {
         start = i + 1;
     }
     return parts;
+}
+struct CountedRandomListExpression {
+    std::string countExpression;
+    std::string singleValueExpression;
+};
+
+// Find a grammar phrase without mistaking text inside strings, variable references,
+// or nested calls for the boundary between a count and its random expression.
+std::optional<std::size_t> findPhraseOutsideNested(std::string_view text, std::string_view phrase) {
+    const std::string lowered = lower(text);
+    const std::string wanted = lower(phrase);
+    bool quoted = false, escaped = false;
+    int braces = 0, parentheses = 0;
+    for (std::size_t i = 0; i + wanted.size() <= text.size(); ++i) {
+        const char c = text[i];
+        if (escaped) { escaped = false; continue; }
+        if (c == '\\\\' && quoted) { escaped = true; continue; }
+        if (c == '\"') { quoted = !quoted; continue; }
+        if (quoted) continue;
+        if (c == '{') { ++braces; continue; }
+        if (c == '}' && braces > 0) { --braces; continue; }
+        if (braces > 0) continue;
+        if (c == '(') { ++parentheses; continue; }
+        if (c == ')' && parentheses > 0) { --parentheses; continue; }
+        if (parentheses > 0) continue;
+        if (lowered.compare(i, wanted.size(), wanted) == 0) return i;
+    }
+    return std::nullopt;
+}
+
+std::optional<CountedRandomListExpression> parseCountedRandomListExpression(std::string_view expression) {
+    struct Form { std::string_view phrase; std::string_view kind; std::string_view range; };
+    static constexpr std::array<Form, 8> forms{{
+        {\" random integer between \", \"integer\", \"between\"},
+        {\" random integers between \", \"integer\", \"between\"},
+        {\" random number between \", \"number\", \"between\"},
+        {\" random numbers between \", \"number\", \"between\"},
+        {\" random integer from \", \"integer\", \"from\"},
+        {\" random integers from \", \"integer\", \"from\"},
+        {\" random number from \", \"number\", \"from\"},
+        {\" random numbers from \", \"number\", \"from\"}
+    }};
+    for (const auto& form : forms) {
+        const auto position = findPhraseOutsideNested(expression, form.phrase);
+        if (!position) continue;
+        const std::string count = trim(expression.substr(0, *position));
+        // `a random integer ...` remains the ordinary scalar expression form.
+        if (count.empty() || lower(count) == \"a\" || lower(count) == \"an\") return std::nullopt;
+        const std::string boundsAndStream = trim(expression.substr(*position + form.phrase.size()));
+        if (boundsAndStream.empty()) return std::nullopt;
+        return CountedRandomListExpression{
+            count,
+            \"a random \" + std::string(form.kind) + \" \" + std::string(form.range) + \" \" + boundsAndStream
+        };
+    }
+    return std::nullopt;
 }
 bool isListWildcard(std::string_view name) {
     return name.ends_with("::*");
@@ -1305,9 +1362,39 @@ void Runtime::runExecution(ExecutionContext& context) {
                     std::vector<ListEntry> sourceEntries;
                     const bool copyingList = isListWildcard(sourceName);
                     if (copyingList) sourceEntries = listEntries(sourceName, context); // snapshot before clearing, including self-copy
+
+                    const auto countedRandom = copyingList ? std::optional<CountedRandomListExpression>{}
+                                                            : parseCountedRandomListExpression(statement.expression);
+                    std::size_t randomCount = 0;
+                    if (countedRandom) {
+                        Value countValue = evaluateValue(countedRandom->countExpression, context, error);
+                        const double count = countValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                        constexpr double maximumRandomBatchCount = 4096.0;
+                        if (!error.empty()) {
+                            runtimeError(statement, error, "The random batch count must be a numeric expression.");
+                            break;
+                        }
+                        if (!countValue.isNumber() || !std::isfinite(count) || std::trunc(count) != count ||
+                            count < 0.0 || count > maximumRandomBatchCount) {
+                            runtimeError(statement, "A random batch count must be a whole number from 0 to 4096.",
+                                "Use a bounded list assignment such as `set {rolls::*} to 5 random integers between 1 and 10`.");
+                            break;
+                        }
+                        randomCount = static_cast<std::size_t>(count);
+                    }
+
                     clearList(target, context, &statement);
                     if (copyingList) {
                         for (const auto& entry : sourceEntries) setVariable(target.substr(0, target.size() - 1) + entry.index, entry.value, context, &statement);
+                    } else if (countedRandom) {
+                        for (std::size_t i = 0; i < randomCount; ++i) {
+                            Value value = evaluateValue(countedRandom->singleValueExpression, context, error);
+                            if (!error.empty()) {
+                                runtimeError(statement, error, "Check the random range and seed the named stream before using it.");
+                                break;
+                            }
+                            appendListValue(target, std::move(value), context, &statement);
+                        }
                     } else if (lower(trim(statement.expression)) != "none" && lower(trim(statement.expression)) != "null") {
                         for (const auto& part : splitTopLevelComma(statement.expression)) {
                             if (part.empty()) { runtimeError(statement, "A list literal contains an empty item.", "Use `set {items::*} to \"first\", \"second\"` with no trailing comma."); break; }
