@@ -125,7 +125,7 @@ Numeric helpers should offer natural aliases such as “the sine of …”, “n
 
 - `function name(parameters):`
 - `return value`
-- Counted loops, list loops, `while`, `wait`/`halt`, loop exit, loop continue, and loop-number/value/index context values
+- Counted loops, list loops, `while`, `wait`/`halt`, loop exit, loop continue, and loop-number/counter/iteration/value/index context values
 
 **Audit result:** these are already close to Skript's readable block model. Preserve them, test scope and scheduler lifecycle, and improve error messages/aliases rather than rewriting them without a reason. Functions are synchronous today and cannot suspend with `wait`; this limitation must stay explicit until task semantics change.
 

@@ -102,7 +102,7 @@ on press key "SPACE":
     send "Countdown over!"
 ```
 
-`loop 5 times:` runs its body five times. `loop {_count} times:` accepts a variable containing a non-negative whole number. Inside a counted loop, `loop-number` and `loop-value` both refer to the current iteration number (starting at 1). In strings, use Skript-style interpolation such as `"%{_num}%"` or `"%loop-number%"`.
+`loop 5 times:` runs its body five times. `loop {_count} times:` accepts a variable containing a non-negative whole number. Inside a counted, list, or while loop, `loop-number`, `loop-counter`, and `loop-iteration` refer to the current one-based iteration count. The aliases also accept a space instead of a hyphen and an optional leading `the` (for example, `the loop counter`). In a counted loop, `loop-value` also refers to the iteration number; in a list loop it refers to the current list value, while `loop-index` preserves that entry's key. The counter aliases work as expressions and inside Skript-style interpolation such as `"%loop-counter%"` or `"%the loop iteration%"`.
 
 `while condition:` re-checks its condition after each iteration. Use `exit loop` (also `stop loop`) to leave the nearest active loop, or `continue loop` (also `continue`) to skip the remainder of that iteration and move to the next one. Every active loop must have a reachable exit condition unless it intentionally runs over time with a wait.
 

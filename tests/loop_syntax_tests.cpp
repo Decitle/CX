@@ -22,12 +22,16 @@ on load:
     set {counter} to 0
     repeat 3 times:
         add 1 to {counter}
+        set {counted_loop_counter} to loop-counter
+        set {counted_loop_iteration} to the loop iteration
+        set {counted_loop_text} to "counter %loop counter%; iteration %the loop-iteration%"
 
     set {items::*} to "red", "green", "blue"
     set {inner_items::*} to "inner-a", "inner-b"
     for each item in {items::*}:
         add 1 to {counter}
         set {last_value} to loop-value
+        set {list_loop_iteration} to loop-iteration
     loop over {items::*}:
         add 1 to {counter}
         set {last_index} to loop-index
@@ -47,6 +51,12 @@ on load:
         set {last_named_value} to {_value}
     set {restored_index} to {_index}
     set {restored_value} to {_value}
+
+    set {_while_count} to 0
+    while {_while_count} < 2:
+        add 1 to {_while_count}
+        set {while_loop_counter} to loop counter
+        set {while_loop_iteration} to the loop-iteration
 
     set {_comma_key} to "old-key"
     set {_comma_value} to "old-value"
@@ -71,6 +81,12 @@ on load:
         for (const auto& d : runtime.diagnostics()) std::cerr << d.message << '\n';
     const bool correct = loaded && !runtime.hasErrors() &&
         runtime.getGlobal("counter").numberOr(-1.0) == 9.0 &&
+        runtime.getGlobal("counted_loop_counter").numberOr(-1.0) == 3.0 &&
+        runtime.getGlobal("counted_loop_iteration").numberOr(-1.0) == 3.0 &&
+        runtime.getGlobal("counted_loop_text").toString() == "counter 3; iteration 3" &&
+        runtime.getGlobal("list_loop_iteration").numberOr(-1.0) == 3.0 &&
+        runtime.getGlobal("while_loop_counter").numberOr(-1.0) == 2.0 &&
+        runtime.getGlobal("while_loop_iteration").numberOr(-1.0) == 2.0 &&
         runtime.getGlobal("last_value").toString() == "blue" &&
         runtime.getGlobal("last_index").toString() == "3" &&
         runtime.getGlobal("last_named_item").toString() == "blue" &&

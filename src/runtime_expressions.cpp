@@ -57,6 +57,17 @@ bool isQuoted(std::string_view value) {
     return value.size() >= 2 && value.front() == '"' && value.back() == '"';
 }
 
+// Skript exposes the active loop iteration as loop-counter/loop-iteration.
+// Accept both separator styles and its optional leading "the" article.
+bool isLoopCounterAlias(std::string_view value) {
+    std::string normalized = lower(trim(value));
+    if (startsWithInsensitive(normalized, "the "))
+        normalized = trim(std::string_view(normalized).substr(4));
+    std::replace(normalized.begin(), normalized.end(), '-', ' ');
+    normalized = lower(trim(normalized));
+    return normalized == "loop counter" || normalized == "loop iteration";
+}
+
 // SplitMix64 is a small, fully specified integer generator. Its output does not
 // depend on a standard-library distribution implementation or platform RNG. Each
 // named stream stores only its own 64-bit state.
@@ -227,7 +238,8 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         interpolated.reserve(value.size());
         auto interpolateReference = [&](std::string_view rawReference) -> std::optional<std::string> {
             const std::string plain = lower(trim(rawReference));
-            if (plain == "loop-number" && !context.loopNumbers.empty()) return std::to_string(context.loopNumbers.back());
+            if ((plain == "loop-number" || isLoopCounterAlias(plain)) && !context.loopNumbers.empty())
+                return std::to_string(context.loopNumbers.back());
             if (plain == "loop-value" && !context.loopValues.empty()) return context.loopValues.back().toString();
             if (plain == "loop-index" && !context.loopIndexes.empty()) return context.loopIndexes.back();
             const std::string name = resolveVariableName(canonicalVariableName(rawReference), context);
@@ -262,7 +274,8 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
                     bool recognized = false;
                     std::optional<std::string> replacement;
                     if ((token.size() >= 2 && token.front() == '{' && token.back() == '}') ||
-                        lower(token) == "loop-number" || lower(token) == "loop-value" || lower(token) == "loop-index") {
+                        lower(token) == "loop-number" || isLoopCounterAlias(token) ||
+                        lower(token) == "loop-value" || lower(token) == "loop-index") {
                         replacement = interpolateReference(token);
                         recognized = replacement.has_value();
                     } else if (!token.empty()) {
@@ -335,7 +348,8 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         return getVariable(name, context);
     }
     const auto lowered = lower(expression);
-    if (lowered == "loop-number" && !context.loopNumbers.empty()) return Value(static_cast<double>(context.loopNumbers.back()));
+    if ((lowered == "loop-number" || isLoopCounterAlias(lowered)) && !context.loopNumbers.empty())
+        return Value(static_cast<double>(context.loopNumbers.back()));
     if (lowered == "loop-value" && !context.loopValues.empty()) return context.loopValues.back();
     if (lowered == "loop-index" && !context.loopIndexes.empty()) return Value(context.loopIndexes.back());
     if (lowered == "true") return Value(true);
