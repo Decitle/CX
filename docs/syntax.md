@@ -76,7 +76,7 @@ on load:
     set {hero_texture} to texture of sprite "hero"
 ```
 
-Sprite/entity references stored in event/function locals or temporary variables identify a particular live object instance. Property expressions use the same `<property> of <object>` shape as the setters. Scalar getters currently include `x`/`x-coordinate`, `y`/`y-coordinate`, `width`, `height`, `texture`, `rotation`, `speed`, and `visible`/`visibility`. Compound position and size values remain coordinate pairs in setters; read their components through the scalar coordinate/dimension getters.
+Sprite/entity references stored in event/function locals or temporary variables identify a particular live object instance. Property expressions use the same `<property> of <object>` shape as the setters. Scalar getters include `x`/`x-coordinate`, `y`/`y-coordinate`, `width`, `height`, `texture`, `rotation`, `speed`, and `visible`/`visibility`. Entity references also expose `health` and `max health` (also written `max-health` or `max_health`); these properties are not available on sprites. Compound position and size values remain coordinate pairs in setters; read their components through the scalar coordinate/dimension getters.
 
 ## Conditions
 
@@ -474,14 +474,14 @@ on load:
     set entity "player" animation sheet to (32, 32) columns 4 rows 8
     set entity "player" hitbox to (15, 12) offset (8, 17)
     set entity "player" avoids solid tiles to true
-    set entity "player" health to 6
-    set entity "player" max_health to 6
+    set max health of entity "player" to 6
+    set health of entity "player" to 6
 
 on tick:
     move entity "player" using WASD at speed 170
 ```
 
-The movement speed is in world pixels per second and diagonal movement is normalized. A spritesheet declaration gives frame width/height in pixels and the frame grid dimensions. This build advances the frame while moving and uses eight directional rows. Hitboxes are AABBs; hitbox dimensions are followed by an offset from the entity origin. Health values are exposed through `{entity::name::health}` and `{entity::name::max_health}` for UI bars or conditions.
+The movement speed is in world pixels per second and diagonal movement is normalized. A spritesheet declaration gives frame width/height in pixels and the frame grid dimensions. This build advances the frame while moving and uses eight directional rows. Hitboxes are AABBs; hitbox dimensions are followed by an offset from the entity origin. Health can be read with `health of entity "player"` and `max health of entity "player"`, and can be assigned with the matching `set <property> of entity <object> to <number>` form. Both setters keep `{entity::name::health}` and `{entity::name::max_health}` synchronized for existing UI scripts. The legacy `set entity "player" health/max_health to ...` form remains supported.
 
 ### NPC paths and obstacle avoidance
 
