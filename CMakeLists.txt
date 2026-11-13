@@ -317,6 +317,9 @@ install(RUNTIME_DEPENDENCY_SET cx_runtime_dependencies
         "^ext-ms-.*"
         # CMake lowercases Windows DLL names before PRE_EXCLUDE_REGEXES matching.
         "^(azureattestmanager|azureattestnormal|hvsifiletrust|pdmutilities|wpaxholder|shell32|shlwapi|dbgeng|d2d1|uiautomationcore|esent|coreuicomponents|certenroll|setupapi|windows\\.storage)\\.dll$"
+        "^(authz|bcd|contactactivation|coremessaging|credui|cryptdll|cryptngc|cryptxml|d3d11|d3d11on12|d3d12|d3dscache|dcomp|declaredconfiguration|diagnosticdatasettings|dmcmnutils|dmenrollengine|dmenterprisediagnostics|dmpushproxy|dmxmlhelputils|drvstore|dsclient|dsreg|dsrole|dxgi|edpauditapi|edpcsp|edputil)\\.dll$"
+        "^(efscore|efsutil|efswrt|enterpriseresourcemanager|feclient|firewallapi|fveapi|fvecerts|fveskybackup|fwbase|fwpolicyiomgr|gmsaclient|hid|iertutil|iri|kerb3961|ktmw32|lsaadt|lsasrv|mdmregistration|microsoft\\.internal\\.warppal|msvcp110_win|netlogon|ngcrecovery|ngcutils|noise|ntdsapi|omadmapi)\\.dll$"
+        "^(pcrpf|policymanager|policymanagerprecheck|popkeycli|samcli|samsrv|schannel|setupcl|srpapi|tpmcoreprovisioning|twinapi\\.appcore|unenrollhook|urlmon|userdatatypehelperutil|vaultcli|vbsapi|virtdisk|w32topl|webauthn|webservices|wevtapi|winbrand|wininet|winipcfile|winmsipc|wldp|wtdccm|wuceffects)\\.dll$"
         "^/lib/.*"
         "^/usr/lib/.*"
         "^[A-Za-z]:[/\\\\]Windows[/\\\\](System32|SysWOW64|SysArm32|WinSxS)[/\\\\].*"
