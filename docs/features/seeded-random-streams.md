@@ -10,12 +10,10 @@ CX Script supports ordinary English random expressions through an automatically 
 on load:
     seed random stream "loot" with 4815
     seed random stream "encounters" with 90210
-
-set {ordinary_roll} to a random integer between 1 and 100
-set {repeatable_roll} to a random integer between 1 and 100 using random stream "loot"
-set {drop_count} to random_int("loot", 1, 4)
-set {drop_variant} to random_choice("loot", "coin", "gem", "key")
-set {decoration_roll} to random_float("decoration") # error until decoration is seeded
+    set {ordinary_roll} to a random integer between 1 and 100
+    set {repeatable_roll} to a random integer between 1 and 100 using random stream "loot"
+    set {drop_count} to random_int("loot", 1, 4)
+    set {drop_variant} to random_choice("loot", "coin", "gem", "key")
 ```
 
 `seed random stream "name" with integer` seeds or resets one named stream (including `"default"`). Names are trimmed, case-insensitive and 1–64 characters after trimming. Seeds must be whole numbers in the inclusive safe-integer range ±9,007,199,254,740,991. Values outside that range, text seeds and fractional seeds are rejected with a diagnostic. Negative seeds have a defined two's-complement bit pattern after conversion to the generator state.
@@ -24,7 +22,7 @@ set {decoration_roll} to random_float("decoration") # error until decoration is 
 
 Every runtime creates a `"default"` stream automatically. Its initial state mixes the steady clock and runtime instance address with `std::random_device` when that source is available; the clock/address mix is the fallback. This gives ordinary random expressions a usable stream without a setup command, but does not promise cryptographic unpredictability or reproducibility between runs. Calling `seed random stream "default" with integer` replaces that initial state with a reproducible seed.
 
-Other named streams do not exist until explicitly seeded. Natural expressions can select one with `using random stream "name"`; the function forms below name their stream as their first argument.
+Other named streams do not exist until explicitly seeded; using one too early produces a diagnostic. Natural expressions can select one with `using random stream "name"`; the function forms below name their stream as their first argument.
 
 ### Built-ins
 
@@ -40,7 +38,7 @@ Other named streams do not exist until explicitly seeded. Natural expressions ca
 
 - Random draws use the specified SplitMix64 64-bit state transition and mixing constants; the generator output does not rely on `std::uniform_int_distribution` or a platform distribution. The automatically generated default seed may use `std::random_device`, with a portable clock/address fallback.
 - Each `Runtime` owns its own map of named stream states. Names are normalized to lowercase, and separate names advance independently.
-- A successful script reload constructs a candidate runtime and commits the newly seeded stream states only after startup succeeds. Thus successful reload restarts streams from the script seed; failed reload preserves the last-good sequence exactly.
+- A successful script reload constructs a candidate runtime with a fresh default stream, runs bootstrap and startup handlers, and adopts its stream map only after startup succeeds. Explicitly seeded named streams therefore restart from their script seeds (including any startup draws), while an unseeded default stream receives a fresh entropy-derived starting state. A failed reload preserves the last-good runtime and its exact stream positions.
 - Stream states are transient process state. They are not saved in persistent variables. The default stream is regenerated on runtime reset; explicitly seeded named streams are initialized by the project's seed statements. To reproduce a particular gameplay segment after loading a save, a future save-game contract will need to persist stream states or derive subsystem seeds from a saved world seed and stable identifiers.
 - Seed streams once in startup for normal play. Seeding inside `on tick:` resets that stream every tick and is usually a logic error.
 - Use separate named streams for unrelated systems. This limits the cascading effect of inserting a new random choice into one subsystem.
