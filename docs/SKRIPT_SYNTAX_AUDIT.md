@@ -1,6 +1,6 @@
 # CX Script / Skript syntax audit
 
-**Audit baseline:** CX Engine `main` commit `b00b8b6ff851462f58eea3a15ff37e0de419e40f` (v0.10.14-preview.8 source line)  
+**Comparison baseline:** CX Engine `main` commit `b00b8b6ff851462f58eea3a15ff37e0de419e40f` (v0.10.14-preview.8 source line). Implementation status below is rechecked against the active v0.11.0 development branch.  
 **Reference baseline:** official Skript core documentation 2.17.1  
 **Purpose:** establish the current CX language surface, identify syntax drift, and set the work required for the v0.11.0 overhaul.
 
@@ -140,9 +140,9 @@ The reference adds 23 world/entity entries, 6 project-structure entries, 7 UI en
 | Priority | Gap | Required direction |
 |---|---|---|
 | P0 | Multi-count random expressions are not implemented | Support Skript-style count prefixes and plural random number forms in list assignments without weakening CX's scalar/list value contracts. |
-| P0 | Built-in math helpers are function-only | Add English expression forms and keep compact aliases. |
-| P0 | Property setter grammar varies by subsystem | Standardize `set <property> of <object> to <value>` and a natural possessive alias. |
-| P0 | No first-class object references in `Value` | Define typed sprite/entity/room references before accepting `{_object}` as an object target. Current `Value` holds only none, bool, number and string. |
+| P1 | Advanced math helpers retain function-call forms | Common scalar operations now have natural-English forms; technical procedural helpers such as `noise2d`, `fbm2d`, and `lerp` remain function calls by design. |
+| P1 | Property grammar refinements remain | Typed sprite/entity references and the shared `set <property> of <object> to <value>` grammar are implemented for supported properties; review the possessive alternative and remaining subsystem-specific properties. |
+| P1 | Typed object references currently cover sprites/entities | Live-instance-safe sprite/entity handles are implemented. Review whether room handles are needed and keep object-reference lifetime rules consistent. |
 | P1 | Event headers are inconsistent and sometimes over-specific | Define a short event vocabulary plus standard event-context expressions/locals and filtering conditions. |
 | P1 | English comparison aliases are incomplete | Support common worded comparisons alongside symbols with identical semantics. |
 | P1 | UI/graphics/audio phrases are mixed with underscore-style implementation terms | Offer word-spaced canonical syntax; preserve existing forms as aliases. |
@@ -167,8 +167,8 @@ Official references:
 1. Freeze this inventory as the source audit; resolve every item into canonical syntax, aliases, implementation status and tests.
 2. Design grammar/AST support for English expressions and property access. Avoid implementing the entire overhaul as one-off regex additions.
 3. Complete the random-expression grammar: the single-value natural forms and implicit default stream now exist; design and implement count-prefix/plural results as a well-defined list assignment while retaining the existing function-call API.
-4. Add natural math/helper expressions and worded comparisons.
-5. Introduce explicit object references/handles, then standard property getter/setter syntax.
+4. Audit the implemented natural math helpers and worded comparisons, adding missing edge-case tests rather than treating them as wholly absent.
+5. Review typed object references and shared property getters/setters; decide and test the possessive alternative and remaining subsystem-specific cases.
 6. Normalize event grammar and event-context values; preserve existing handlers through aliases.
 7. Normalize UI/graphics/audio/settings command wording and document the limits of currently unavailable screen/audio capabilities.
 8. Run all examples and a dedicated syntax corpus through `cx-cli --check`; add positive tests for every alias and negative tests for ambiguity, invalid types and missing context.

@@ -10,7 +10,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - The six-target build/test workflow passed in [run 42959350359](https://github.com/Decitle/CX/actions/runs/42959350359).
 - The tagged package assembly and publication workflow passed in [run 42961733306](https://github.com/Decitle/CX/actions/runs/42961733306).
 - The README/download route, direct platform-aware download page, release-reference filename automation and dark Pages documentation work are in place.
-- The last verified six-target CI and Pages baseline before this roadmap update passed in [run 42969227408](https://github.com/Decitle/CX/actions/runs/42969227408) and [run 42969227621](https://github.com/Decitle/CX/actions/runs/42969227621).
+- The published Pages baseline remains [run 42969227621](https://github.com/Decitle/CX/actions/runs/42969227621). The active v0.11.0 development branch most recently passed its six-target native CI matrix in [run #91](https://github.com/Decitle/CX/actions/runs/43491377925). These represent different trees: main/Pages remains on v0.10.14 until the draft overhaul is accepted.
 
 ## Active next milestone — Skript-like language overhaul (v0.11.0)
 
@@ -24,22 +24,24 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Settle the typed object-reference and event-context contracts before designing property access.
 - Keep the design charter and audit visible from the public documentation and Library.
 
-**Status:** the design charter and source-backed audit are written. They are the acceptance contract for implementation, not a claim that the planned syntax already works.
+**Status:** the design charter and source-backed audit govern the active branch. Natural single-value random expressions, common natural math forms, worded comparisons, typed sprite/entity references, shared property getters/setters, and collection-oriented entity tags are implemented. Count-prefix/plural random list assignment remains the principal P0 gap.
 
 ### Phase 2 — expressions and common language
 
-- Add natural random number expressions: `a random integer between 1 and 10`, `a random number between 0 and 1`, and a natural random-item/choice form.
-- Retain deterministic named random streams as an optional reproducibility clause; specify and test the implicit default stream.
-- Add English-readable math/helper expressions while retaining compact function aliases.
-- Add natural comparison wording alongside symbolic operators.
-- Preserve list syntax, interpolation, function semantics and the current reliable loop/wait foundation.
+- [x] Add natural single-value random number expressions and random item/element selection from lists.
+- [x] Retain deterministic named random streams as an optional reproducibility clause and initialize the default stream automatically.
+- [x] Add English-readable forms for common math operations while retaining compact function aliases.
+- [x] Add natural comparison wording alongside symbolic operators.
+- [ ] Implement count-prefix/plural random expressions, assigning results into a list variable with a documented maximum count and deterministic stream behavior.
+- [x] Preserve list syntax, interpolation, function semantics and the current loop/wait foundation; continue the compatibility audit.
 
 ### Phase 3 — object properties and events
 
-- Define typed sprite/entity/room references so variables can hold actual object handles rather than only text, numbers, booleans or none.
-- Standardize `set <property> of <object> to <value>`, property getters and possessive aliases.
-- Introduce short, consistent event headers with standard event-context values. Preserve old header spellings as compatibility aliases where possible.
-- Keep coordinates as conventional tuples; use English around them rather than removing parentheses.
+- [x] Define typed sprite/entity references so local and temporary variables can hold live object handles with instance identity.
+- [x] Standardize `set <property> of <object> to <value>` and matching property getters for the currently supported object properties.
+- [ ] Review the natural possessive property alternative and apply it consistently where it improves readability.
+- [ ] Introduce short, consistent event headers with standard event-context values. Preserve old header spellings as compatibility aliases where possible.
+- [x] Keep coordinates as conventional tuples; use English around them rather than removing parentheses.
 
 ### Phase 4 — all subsystem surfaces
 

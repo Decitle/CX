@@ -1,8 +1,8 @@
-# CX Script syntax guide (reviewed against v0.10.14)
+# CX Script syntax guide — v0.11.0 development branch
 
-> This page describes syntax accepted by the current v0.10.14 source line. The v0.11.0 language overhaul has a separate [design charter](language-design.md) and [source-backed syntax audit](SKRIPT_SYNTAX_AUDIT.md). Target examples in those documents are not necessarily accepted by this release yet.
+> This guide describes the syntax currently implemented on the `v0.11.0-language-overhaul` development branch. It is a pre-release guide: these additions are **not** part of the published v0.10.14 release yet. The searchable [`reference.html`](reference.html) and its versioned release snapshot remain intentionally pinned to v0.10.14 until v0.11.0 is accepted and published.
 >
-> Feature headings retain the version in which each capability was introduced. They are historical introduction labels, not the version coverage of this whole guide. For detailed lifecycle guarantees, also read the focused feature notes.
+> Examples in this guide are intended to match the branch parser/runtime and its tests. The [language design charter](language-design.md) describes the target direction, while the [source-backed syntax audit](SKRIPT_SYNTAX_AUDIT.md) identifies remaining gaps. Feature headings retain their historical introduction versions; they do not imply that the entire guide describes that release.
 
 CX is designed to read like plain English. Indentation is forgiving: CX auto-detects conventional four-space or two-space style per file, treats a tab as one level in the detected style, and normalizes both styles to the same internal block levels. In a two-space file, four spaces count as two levels. Align sibling statements; if an indentation level is ambiguous, the parser points it out. When a line is malformed, the runtime diagnostic output reports its file and line; the graphical runtime also retains reload diagnostics in the Ctrl+Tab drawer, shows the source and a caret, explains the problem, and suggests a correction.
 
