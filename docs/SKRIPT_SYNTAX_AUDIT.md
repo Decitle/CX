@@ -51,7 +51,7 @@ The 55 `StatementType` values cover variable assignment/deletion/mutation, rando
 - `on entity "actor" focus enter entity "target":`
 - `on entity "actor" focus exit entity "target":`
 
-**Audit result:** lifecycle and periodic events are already close to Skript. Key press has two word orders, but the event family is narrow: a consistent key/mouse press/release vocabulary, window focus, room lifecycle and standard event-context expressions still need design. Several newer event headers embed concrete entity names and multiple clauses directly in the header. That is more verbose than necessary; event participants should generally be exposed through documented context expressions/locals and filterable inside the body.
+**Audit result:** lifecycle and periodic events are already close to Skript. Key press has two word orders, but the event family is narrow: a consistent key/mouse press/release vocabulary, window focus, and room lifecycle still need design. Existing event payload locals are now catalogued in [event-context.md](event-context.md). Some newer event headers name both entities explicitly; this is intentionally retained for trigger pairs because the runtime checks authored pairs rather than scanning every actor/trigger combination each tick. Review where body-level filtering is practical without introducing unbounded dispatch work.
 
 ### Variables — 7
 
@@ -169,7 +169,7 @@ Official references:
 3. Validate the implemented count-prefix/plural random list assignment, including count/range rejection, bounded work, integer/number typing, zero-count semantics and deterministic-stream behavior. Retain the existing function-call API.
 4. Audit the implemented natural math helpers and worded comparisons, adding missing edge-case tests rather than treating them as wholly absent.
 5. Typed object references, shared property getters/setters and the possessive setter alias are implemented; continue auditing remaining subsystem-specific properties and edge cases.
-6. Normalize event grammar and event-context values; preserve existing handlers through aliases.
+6. Keep the now-documented event-context values consistent as new event families are added. Review event-header aliases and filter syntax; any generalized trigger/collision form must preserve bounded dispatch work and room/object lifetime guarantees.
 7. Normalize UI/graphics/audio/settings command wording and document the limits of currently unavailable screen/audio capabilities.
 8. CI now runs every standalone `.cx` example and each multi-file example project through `cx-cli --check` via `tools/check_examples.py`. Add a separate dedicated syntax corpus with positive/negative cases for aliases, ambiguity, invalid types and missing event context.
 9. Update the searchable reference, syntax guide, beginner guide, examples, generated release reference and complete-first-project tutorial together.

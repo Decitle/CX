@@ -31,7 +31,7 @@ on tween complete for entity "boulder":
     set {last_boulder_x} to {_tween_x}
 ```
 
-An event header ends with `:`. Its commands are indented under it. `on tick:` uses the fixed logic rate, so avoid file I/O, expensive searches, and unbounded loops there. Use `{^...}` for high-frequency counters that do not need persistence, so they do not trigger unnecessary variable-file writes. Named trigger handlers run once when an actor starts overlapping a trigger area and once when that contact ends. Tween completion handlers run once when a deterministic entity movement finishes; see the trigger and tween sections below for event-local values and lifecycle limits.
+An event header ends with `:`. Its commands are indented under it. `on tick:` uses the fixed logic rate, so avoid file I/O, expensive searches, and unbounded loops there. Use `{^...}` for high-frequency counters that do not need persistence, so they do not trigger unnecessary variable-file writes. Named trigger handlers run once when an actor starts overlapping a trigger area and once when that contact ends. Tween completion handlers run once when a deterministic entity movement finishes. Event-specific local values are catalogued in the [event context reference](event-context.md).
 
 ## Global and event-local variables
 

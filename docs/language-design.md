@@ -76,9 +76,9 @@ The `set entity "guard" health to 25` family remains accepted as a compatibility
 
 ### 5. Events describe what happened; context values describe who/what
 
-Event headers should be short, recognizable and consistent. Event participants and event-specific data should be available through documented event-context expressions/locals. Avoid requiring every object name to be embedded in the event header when a handler can filter on an entity or condition inside its body.
+Event headers should be short, recognizable and consistent. Event participants and event-specific data should be available through documented event-context expressions/locals. Avoid requiring object names in headers when the runtime can perform a bounded filter inside the handler. However, target-specific selectors are appropriate when they keep event dispatch bounded—for example, the current trigger system walks only explicitly authored actor/trigger pairs instead of scanning every possible combination every tick. Any broader event form must preserve predictable per-tick work and room/object lifetime guarantees.
 
-The current key-press, button, trigger, focus, animation, timing and room lifecycle events should be reviewed for a coherent `on <event>:` grammar. Keep readable aliases when they improve clarity.
+The current key-press, button, trigger, focus, animation, timing and room lifecycle events should be reviewed for a coherent `on <event>:` grammar. Keep readable aliases when they improve clarity. Document the existing event-local payload contract in [event-context.md](event-context.md); generic trigger/collision events remain future work until their dispatch cost and filtering semantics are designed.
 
 ### 6. Conditions should read like conditions
 
