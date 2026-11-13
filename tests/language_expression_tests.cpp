@@ -120,6 +120,9 @@ set {negative_exponent} to 2 ^ -2
 set {minimum} to min(5, -2, 9, 4)
 set {maximum} to max(5, -2, 9, 4)
 set {clamped} to clamp(15, 0, 10)
+set {natural_clamp_low} to clamp -5 between 0 and 10
+set {natural_clamp_high} to clamp 15 between 0 and 10
+set {natural_clamp_nested} to clamp (5 + 20) between (2 * 3) and max(10, 30)
 set {interpolated} to lerp(10, 20, 0.25)
 )CX");
 
@@ -169,6 +172,9 @@ set {interpolated} to lerp(10, 20, 0.25)
     expect(std::abs(number("minimum") + 2.0) < 1e-12, "min should accept multiple numeric arguments");
     expect(std::abs(number("maximum") - 9.0) < 1e-12, "max should accept multiple numeric arguments");
     expect(std::abs(number("clamped") - 10.0) < 1e-12, "clamp should constrain a value to the requested range");
+    expect(std::abs(number("natural_clamp_low") - 0.0) < 1e-12, "natural clamp syntax should enforce its lower bound");
+    expect(std::abs(number("natural_clamp_high") - 10.0) < 1e-12, "natural clamp syntax should enforce its upper bound");
+    expect(std::abs(number("natural_clamp_nested") - 25.0) < 1e-12, "natural clamp should respect nested arithmetic and function expressions when finding its separators");
     expect(std::abs(number("interpolated") - 12.5) < 1e-12, "lerp should interpolate between endpoints");
     expect(!runtime.hasErrors(), "valid math expressions should not emit diagnostics");
     std::filesystem::remove_all(root);
@@ -262,6 +268,19 @@ if {items::*} does not contain "red":
     std::filesystem::remove_all(root);
 }
 
+void testNaturalClampRejectsInvalidRange() {
+    const auto root = fixture("natural-clamp-invalid-range", R"CX(
+set {value} to clamp 5 between 10 and 0
+)CX");
+    cx::Runtime runtime(root);
+    expect(!runtime.loadScripts(), "natural clamp should reject a minimum greater than its maximum");
+    const bool hasRangeDiagnostic = std::any_of(runtime.diagnostics().begin(), runtime.diagnostics().end(),
+        [](const cx::Diagnostic& diagnostic) {
+            return diagnostic.message.find("clamp minimum must not exceed its maximum") != std::string::npos;
+        });
+    expect(hasRangeDiagnostic, "natural clamp should report the existing clamp range diagnostic");
+    std::filesystem::remove_all(root);
+}
 void testMathDomainResultsCanBeCheckedAsNaN() {
     const auto root = fixture("math-domain", R"CX(
 on load:
@@ -298,6 +317,7 @@ int main() {
     testNaturalMathAndSkriptDegreeTrigonometry();
     testNaturalComparisonAndListConditions();
     testMathDomainResultsCanBeCheckedAsNaN();
+    testNaturalClampRejectsInvalidRange();
     if (failures != 0) {
         std::cerr << "CX_LANGUAGE_EXPRESSION_TESTS_FAILED failures=" << failures << '\n';
         return 1;

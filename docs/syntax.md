@@ -159,7 +159,7 @@ on load:
     set {double_score} to ({score} + 3) * 2
 ```
 
-Function parameters become event-like locals named `{_value}`, `{_minimum}`, and `{_maximum}`. A function returns a value with `return`; calls can be used where a value is expected. Functions are synchronous and cannot use `wait`. Recursion is limited to 64 nested calls. Arithmetic uses parentheses and conventional precedence: `*`, `/`, `%` before `+` and `-`. `+` concatenates values when either operand is text. Numeric functions include `sin`, `cos`, `tan`, `sine`, `noise2d`, `fbm2d`, `clamp`, and `lerp`. Seeded random functions are documented in the next section.
+Function parameters become event-like locals named `{_value}`, `{_minimum}`, and `{_maximum}`. A function returns a value with `return`; calls can be used where a value is expected. Functions are synchronous and cannot use `wait`. Recursion is limited to 64 nested calls. Arithmetic uses parentheses and conventional precedence: `*`, `/`, `%` before `+` and `-`. `+` concatenates values when either operand is text. Common numeric operations have English-first forms, including `the sine of 90`, `the square root of 81`, `the average of {scores::*}`, and `clamp 15 between 0 and 10`. `sin`, `cos`, `tan`, `sine`, `noise2d`, `fbm2d`, `clamp`, and `lerp` function calls remain available as compact/technical forms. Seeded random functions are documented in the next section.
 
 ### Random expressions and streams
 

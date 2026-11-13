@@ -12,7 +12,7 @@ The natural single-value forms `a random integer between 1 and 10`, `a random nu
 
 Typed sprite/entity references on this branch now share a natural property grammar: `<property> of <object>` for reads and `set <property> of <object> to <value>` for writes. In addition to transform/render properties, entity-only `health`, `max health`, `kind`, and `team` are supported. The health setters preserve the existing integer limits, max-health clamp and `{entity::name::...}` compatibility variables. Kind/team use the existing interned classification IDs; values must be quoted text. Older `set entity "id" health/kind/team to ...` forms remain accepted. Tags are collection operations: replace with `set entity "id" tags to ...`, add with `add tag "name" to entity "id"`, remove with `remove tag "name" from entity "id"`, or clear with `clear tags of entity "id"`. Collision-layer/mask configuration still uses specialized commands.
 
-The current engine already has familiar variable scopes, list variables, event blocks, `if`/`else`, loops, `wait`, periodic handlers, functions and return values. Those should be preserved while their complete grammar and edge cases are audited.
+Common math operations now include natural forms such as `the sine of 90`, `the square root of 81`, `the average of {scores::*}`, and `clamp 15 between 0 and 10`; compact function spellings remain available. Procedural `noise2d`, `fbm2d`, and `lerp` remain function-call forms. The current engine also has familiar variable scopes, list variables, event blocks, `if`/`else`, loops, `wait`, periodic handlers, functions and return values. Those should be preserved while their complete grammar and edge cases are audited.
 
 ## Compatibility boundary
 

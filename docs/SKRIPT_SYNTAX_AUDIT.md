@@ -79,13 +79,13 @@ The 55 `StatementType` values cover variable assignment/deletion/mutation, rando
 - Random selection from list variables: `a random element/item out of {items::*}`
 - Optional `using random stream "name"` clause for natural forms
 - The runtime-local `"default"` stream is initialized automatically; other named streams must be seeded explicitly
-- `clamp(value, min, max)` and `lerp(a, b, t)`
+- Natural numeric helpers include `the sine of ...`, `the square root of ...`, `the average of ...`, and `clamp value between minimum and maximum`
 
 <badge color="warning">P0 syntax gap</badge>
 
 The v0.11.0 branch has implemented natural **single-value** random integer/number expressions, list item/element selection, and the automatically initialized default stream. The remaining Skript compatibility gap is the count-prefix/plural form (for example, `5 random integers between 5 and 96`) and its assignment into a list variable. CX currently evaluates scalar `Value` expressions and stores lists through indexed variable namespaces, so this needs a deliberate collection-return/assignment contract rather than a regex-only special case.
 
-Numeric helpers should offer natural aliases such as “the sine of …”, “noise at (x, y) using seed …” and “clamp … between …” while compact function aliases remain available. Parentheses remain appropriate for coordinate/vector tuples, grouping and advanced function calls.
+The branch already implements natural aliases for common scalar operations (absolute value, square root, floor/ceiling, trigonometry, rounding, averages, min/max and collection aggregates). Natural clamp syntax now accepts `clamp value between minimum and maximum` and reuses the existing range validation. Procedural `noise2d`/`fbm2d` and interpolation `lerp` remain function-call forms for now; they have more technical parameter structures and are not everyday beginner operations. Parentheses remain appropriate for coordinate/vector tuples, grouping and advanced function calls.
 
 ### Conditions — 10 groups
 
