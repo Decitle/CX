@@ -224,6 +224,10 @@ if(CX_BUILD_TESTS)
     target_link_libraries(cx-variable-effect-syntax-tests PRIVATE cx_core)
     add_test(NAME cx-variable-effect-syntax-tests COMMAND cx-variable-effect-syntax-tests)
 
+    add_executable(cx-room-transition-syntax-tests tests/room_transition_syntax_tests.cpp)
+    target_link_libraries(cx-room-transition-syntax-tests PRIVATE cx_core)
+    add_test(NAME cx-room-transition-syntax-tests COMMAND cx-room-transition-syntax-tests)
+
     # Keep delayed-continuation and room-context lifecycle regressions independent
     # from the large general runtime test translation unit.
     add_executable(cx-task-lifecycle-tests tests/task_lifecycle_tests.cpp)

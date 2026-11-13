@@ -244,17 +244,43 @@ void Runtime::runExecution(ExecutionContext& context) {
                 break;
             }
             case StatementType::EnterRoom: {
-                std::string valueError;
-                const Value value = evaluateValue(statement.expression, context, valueError);
-                if (!valueError.empty()) {
-                    runtimeError(statement, valueError, R"HINT(Use a point variable, for example: enter room "cave" at {entrance::cave::spawn})HINT");
-                    break;
-                }
                 TilePoint point;
-                if (!RoomManager::parseEntrancePoint(value.toString(), point)) {
-                    runtimeError(statement, "Variable " + statement.expression + " is not an entrance point.",
-                                 "Set it using `set {entrance1::room1} to an entrance point at (0, 0)` or use a named entrance generated from the room file.");
-                    break;
+                const std::string entryExpression = trim(statement.expression);
+                if (entryExpression.size() >= 2 && entryExpression.front() == '(' && entryExpression.back() == ')') {
+                    const auto coordinateExpressions = splitTopLevelComma(
+                        std::string_view(entryExpression).substr(1, entryExpression.size() - 2));
+                    if (coordinateExpressions.size() != 2) {
+                        runtimeError(statement, "A room entry coordinate pair needs exactly two values.",
+                            "Use: enter room \"cave\" at (5, 3). Coordinates are tile positions.");
+                        break;
+                    }
+                    Value xValue = evaluateValue(coordinateExpressions[0], context, error);
+                    if (!error.empty()) { runtimeError(statement, error, "Room x-coordinate must be a whole tile number."); break; }
+                    Value yValue = evaluateValue(coordinateExpressions[1], context, error);
+                    if (!error.empty()) { runtimeError(statement, error, "Room y-coordinate must be a whole tile number."); break; }
+                    const double x = xValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                    const double y = yValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                    if (!xValue.isNumber() || !yValue.isNumber() || !std::isfinite(x) || !std::isfinite(y) ||
+                        std::trunc(x) != x || std::trunc(y) != y ||
+                        x < static_cast<double>(std::numeric_limits<int>::min()) || x > static_cast<double>(std::numeric_limits<int>::max()) ||
+                        y < static_cast<double>(std::numeric_limits<int>::min()) || y > static_cast<double>(std::numeric_limits<int>::max())) {
+                        runtimeError(statement, "Room entry coordinates must be finite whole tile numbers.",
+                            "Use coordinates such as (5, 3), not fractional positions.");
+                        break;
+                    }
+                    point = {static_cast<int>(x), static_cast<int>(y)};
+                } else {
+                    std::string valueError;
+                    const Value value = evaluateValue(statement.expression, context, valueError);
+                    if (!valueError.empty()) {
+                        runtimeError(statement, valueError, R"HINT(Use a point variable, for example: enter room "cave" at {entrance::cave::spawn})HINT");
+                        break;
+                    }
+                    if (!RoomManager::parseEntrancePoint(value.toString(), point)) {
+                        runtimeError(statement, "Variable " + statement.expression + " is not an entrance point.",
+                                     "Set it using `set {entrance1::room1} to an entrance point at (0, 0)` or use a named entrance generated from the room file.");
+                        break;
+                    }
                 }
                 const std::string previous = rooms_.activeRoomName();
                 std::string roomError;

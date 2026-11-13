@@ -460,7 +460,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
 
     static const std::regex entranceSetPattern(R"REGEX(^set\s+(\{[^{}]+\})\s+to\s+an\s+entrance\s+point\s+at\s+\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*$)REGEX", std::regex::icase);
     static const std::regex roomActionPattern(R"REGEX(^(load|unload|reload)\s+room\s+"([^"\n]+)"\s*$)REGEX", std::regex::icase);
-    static const std::regex enterRoomPattern(R"REGEX(^enter\s+room\s+"([^"\n]+)"\s+at\s+(\{[^{}]+\})\s*$)REGEX", std::regex::icase);
+    static const std::regex enterRoomPattern(R"REGEX(^(?:enter|go\s+to|switch\s+to)\s+room\s+"([^"\n]+)"\s+at\s+(\{[^{}]+\}|\(\s*.+\s*\))\s*$)REGEX", std::regex::icase);
     std::smatch roomMatch;
     if (std::regex_match(text, roomMatch, entranceSetPattern)) {
         stmt.type = StatementType::SetEntrance;
@@ -487,6 +487,15 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
             error("An entrance point used to enter a room must be stored in a global variable.",
                   "Use {entrance::room_name::entrance_name} or set a global such as {entrance1::room1}.");
             return std::nullopt;
+        }
+        const auto entry = trim(stmt.expression);
+        if (!entry.empty() && entry.front() == '(' && entry.back() == ')') {
+            const auto coordinates = splitComma(std::string_view(entry).substr(1, entry.size() - 2));
+            if (coordinates.size() != 2) {
+                error("A room entry coordinate pair needs exactly an x and y tile coordinate.",
+                      "Use: enter room \"cave\" at (5, 3)");
+                return std::nullopt;
+            }
         }
         return stmt;
     }
