@@ -134,12 +134,15 @@ class PackageReleaseTests(unittest.TestCase):
         )
         self.assertIsNotNone(block, "CMake runtime dependency exclusion block must exist")
         patterns = re.findall(r'"([^"]+)"', block.group(1))
-        dll_pattern = next((pattern for pattern in patterns if "azureattest" in pattern), None)
-        self.assertIsNotNone(dll_pattern, "CMake must explicitly filter the Windows runner-only system components")
-        assert dll_pattern is not None
         # CMake quoted arguments unescape each doubled source backslash before regex matching.
-        dll_pattern = dll_pattern.replace("\\\\", "\\")
-        self.assertEqual(dll_pattern, dll_pattern.lower(), "CMake matches lowercased Windows DLL names")
+        dll_patterns = [
+            re.compile(pattern.replace("\\\\", "\\"))
+            for pattern in patterns
+            if "\\\\.dll$" in pattern
+        ]
+        self.assertTrue(dll_patterns, "CMake must explicitly filter Windows runner-only system DLLs")
+        for pattern in dll_patterns:
+            self.assertEqual(pattern.pattern, pattern.pattern.lower(), "CMake matches lowercased Windows DLL names")
 
         system_names = (
             "AzureAttestManager.dll",
@@ -157,10 +160,14 @@ class PackageReleaseTests(unittest.TestCase):
             "certenroll.dll",
             "setupapi.dll",
             "windows.storage.dll",
+            "fwpuclnt.dll",
         )
         for name in system_names:
             with self.subTest(name=name):
-                self.assertRegex(name.lower(), dll_pattern)
+                self.assertTrue(
+                    any(pattern.fullmatch(name.lower()) for pattern in dll_patterns),
+                    f"{name} must be excluded by a CMake DLL pattern",
+                )
 
     def test_windows_runtime_zip_contains_executables_dependencies_and_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -205,6 +212,7 @@ class PackageReleaseTests(unittest.TestCase):
                 "d3dscache.dll",
                 "diagnosticdatasettings.dll",
                 "firewallapi.dll",
+                "fwpuclnt.dll",
                 "microsoft.internal.warppal.dll",
                 "tpmcoreprovisioning.dll",
                 "userdatatypehelperutil.dll",

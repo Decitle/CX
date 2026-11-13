@@ -105,6 +105,7 @@ WINDOWS_SYSTEM_DLLS = frozenset({
     "fveskybackup.dll",
     "fwbase.dll",
     "fwpolicyiomgr.dll",
+    "fwpuclnt.dll",
     "gdi32.dll",
     "glu32.dll",
     "gmsaclient.dll",
