@@ -47,6 +47,9 @@ on load:
     set {read_rotation} to rotation of {_object}
     set {read_speed} to speed of entity {_entity}
     set {read_visibility} to visibility of {_object}
+    set {read_width} to width of {_object}
+    set {read_height} to height of sprite {_object}
+    set {read_texture} to texture of sprite "hero"
     if {_object} is sprite "hero":
         set {object_identity_matches} to true
 )CX");
@@ -70,6 +73,10 @@ on load:
     expect(runtime.getGlobal("read_rotation").numberOr(-1.0) == 90.0, "rotation getter should read the renderer-facing degree value");
     expect(runtime.getGlobal("read_speed").numberOr(-1.0) == 125.0, "speed getter should work for entity handles");
     expect(!runtime.getGlobal("read_visibility").truthy(), "visibility getter should return the live boolean property");
+    expect(runtime.getGlobal("read_width").numberOr(-1.0) == 24.0, "width getter should expose the live horizontal size");
+    expect(runtime.getGlobal("read_height").numberOr(-1.0) == 28.0, "height getter should expose the live vertical size");
+    expect(runtime.getGlobal("read_texture").toString() == runtime.sprites().at("hero").textureId,
+           "texture getter should return the active texture identifier");
     expect(runtime.getGlobal("object_identity_matches").truthy(), "expressions resolving to the same object should compare by identity");
     std::filesystem::remove_all(root);
 }

@@ -65,6 +65,19 @@ toggle {game_started}
 
 Basic values are numbers, booleans, `none`, quoted text, and variable references. Values inside quoted strings are interpolated. Initialize number variables before using arithmetic for clear behavior. `give amount to {variable}` is an alias for `add amount to {variable}`; `reset {variable}` clears one variable or an entire list namespace, like `delete`/`clear`.
 
+### Object references and property getters
+
+```skript
+on load:
+    set {_hero} to sprite "hero"
+    set {hero_x} to x-coordinate of {_hero}
+    set {hero_width} to width of {_hero}
+    set {hero_height} to height of sprite {_hero}
+    set {hero_texture} to texture of sprite "hero"
+```
+
+Sprite/entity references stored in event/function locals or temporary variables identify a particular live object instance. Property expressions use the same `<property> of <object>` shape as the setters. Scalar getters currently include `x`/`x-coordinate`, `y`/`y-coordinate`, `width`, `height`, `texture`, `rotation`, `speed`, and `visible`/`visibility`. Compound position and size values remain coordinate pairs in setters; read their components through the scalar coordinate/dimension getters.
+
 ## Conditions
 
 ```skript

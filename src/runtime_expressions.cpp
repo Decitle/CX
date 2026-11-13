@@ -345,7 +345,7 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
     // "set x-coordinate of {_player} to 15" pairs with
     // "x-coordinate of {_player}" in an expression or condition.
     static const std::regex objectPropertyPattern(
-        R"PROPERTY(^\s*(?:the\s+)?(x-coordinate|y-coordinate|x|y|rotation|speed|visible|visibility)\s+of\s+(?:(sprite|entity|object)\s+)?(.+?)\s*$)PROPERTY",
+        R"PROPERTY(^\s*(?:the\s+)?(x-coordinate|y-coordinate|x|y|width|height|texture|rotation|speed|visible|visibility)\s+of\s+(?:(sprite|entity|object)\s+)?(.+?)\s*$)PROPERTY",
         std::regex::icase);
     std::smatch propertyMatch;
     if (std::regex_match(expression, propertyMatch, objectPropertyPattern)) {
@@ -369,6 +369,9 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         const auto& object = found->second;
         if (property == "x" || property == "x-coordinate") return Value(static_cast<double>(object.x));
         if (property == "y" || property == "y-coordinate") return Value(static_cast<double>(object.y));
+        if (property == "width") return Value(static_cast<double>(object.width));
+        if (property == "height") return Value(static_cast<double>(object.height));
+        if (property == "texture") return Value(object.textureId);
         if (property == "rotation") return Value(static_cast<double>(object.rotationDegrees));
         if (property == "speed") return Value(static_cast<double>(object.moveSpeedPixelsPerSecond));
         return Value(object.visible);
