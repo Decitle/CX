@@ -292,6 +292,11 @@ public:
 private:
     using VariableMap = std::unordered_map<std::string, Value>;
     struct ListEntry { std::string index; Value value; };
+    struct LoopLocalBackup {
+        std::string name;
+        bool existed{false};
+        Value previousValue{};
+    };
     struct ExecutionFrame {
         const std::vector<Statement>* statements{nullptr};
         std::size_t nextIndex{0};
@@ -302,6 +307,11 @@ private:
         const Statement* owner{nullptr};
         bool listLoop{false};
         std::vector<ListEntry> listEntries;
+        // Named Skript-style for-each locals are frame-scoped and restored when
+        // this loop exits. Backups remain with the frame across waits.
+        std::string listValueVariable;
+        std::string listIndexVariable;
+        std::vector<LoopLocalBackup> localVariableBackups;
     };
     struct ExecutionContext {
         VariableMap locals;

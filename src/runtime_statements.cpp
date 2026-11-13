@@ -61,6 +61,18 @@ bool sameValue(const Value& a, const Value& b) {
 
 void Runtime::runExecution(ExecutionContext& context) {
     context.suspended = false;
+    const auto restoreLoopLocals = [&](const ExecutionFrame& frame) {
+        for (auto it = frame.localVariableBackups.rbegin(); it != frame.localVariableBackups.rend(); ++it) {
+            if (it->existed) context.locals[it->name] = it->previousValue;
+            else context.locals.erase(it->name);
+        }
+    };
+    const auto bindListEntry = [&](ExecutionFrame& frame) {
+        if (!frame.listLoop || frame.iteration == 0 || frame.iteration > frame.listEntries.size()) return;
+        const auto& entry = frame.listEntries[frame.iteration - 1];
+        if (!frame.listValueVariable.empty()) context.locals[frame.listValueVariable] = entry.value;
+        if (!frame.listIndexVariable.empty()) context.locals[frame.listIndexVariable] = Value(entry.index);
+    };
     std::size_t instructionCount = 0;
     while (!context.frames.empty() && !context.stopped) {
         if (++instructionCount > maximumInstructionsPerResume_) {
@@ -110,6 +122,7 @@ void Runtime::runExecution(ExecutionContext& context) {
                         if (activeFrame.listLoop && activeFrame.iteration <= activeFrame.listEntries.size()) {
                             context.loopValues.back() = activeFrame.listEntries[activeFrame.iteration - 1].value;
                             if (!context.loopIndexes.empty()) context.loopIndexes.back() = activeFrame.listEntries[activeFrame.iteration - 1].index;
+                            bindListEntry(activeFrame);
                         } else {
                             context.loopValues.back() = Value(static_cast<double>(activeFrame.iteration));
                             if (!context.loopIndexes.empty()) context.loopIndexes.back() = std::to_string(activeFrame.iteration);
@@ -117,6 +130,7 @@ void Runtime::runExecution(ExecutionContext& context) {
                     }
                     continue;
                 }
+                restoreLoopLocals(activeFrame);
                 context.frames.pop_back();
                 if (!context.loopNumbers.empty()) context.loopNumbers.pop_back();
                 if (!context.loopValues.empty()) context.loopValues.pop_back();
@@ -1463,12 +1477,25 @@ void Runtime::runExecution(ExecutionContext& context) {
                 }
                 auto entries = listEntries(wildcard, context);
                 if (!entries.empty() && !statement.body.empty()) {
-                    context.loopNumbers.push_back(1);
-                    context.loopValues.push_back(entries.front().value);
-                    context.loopIndexes.push_back(entries.front().index);
                     ExecutionFrame frame{&statement.body, 0, entries.size(), 1, true, false, &statement, true, entries};
                     frame.listLoop = true;
                     frame.listEntries = std::move(entries);
+                    frame.listValueVariable = statement.target;
+                    frame.listIndexVariable = statement.property;
+                    auto rememberLocal = [&](const std::string& name) {
+                        if (name.empty()) return;
+                        const auto found = context.locals.find(name);
+                        frame.localVariableBackups.push_back({
+                            name, found != context.locals.end(),
+                            found != context.locals.end() ? found->second : Value{}
+                        });
+                    };
+                    rememberLocal(frame.listValueVariable);
+                    rememberLocal(frame.listIndexVariable);
+                    context.loopNumbers.push_back(1);
+                    context.loopValues.push_back(frame.listEntries.front().value);
+                    context.loopIndexes.push_back(frame.listEntries.front().index);
+                    bindListEntry(frame);
                     context.frames.push_back(std::move(frame));
                 }
                 break;
@@ -1530,6 +1557,7 @@ void Runtime::runExecution(ExecutionContext& context) {
                 }
                 while (context.frames.size() > loopFrameIndex) {
                     if (context.frames.back().loopFrame) {
+                        restoreLoopLocals(context.frames.back());
                         if (!context.loopNumbers.empty()) context.loopNumbers.pop_back();
                         if (!context.loopValues.empty()) context.loopValues.pop_back();
                         if (!context.loopIndexes.empty()) context.loopIndexes.pop_back();
@@ -1548,7 +1576,15 @@ void Runtime::runExecution(ExecutionContext& context) {
                         "Place it inside `loop N times:` or `while condition:`.");
                     break;
                 }
-                while (context.frames.size() > loopFrameIndex + 1) context.frames.pop_back();
+                while (context.frames.size() > loopFrameIndex + 1) {
+                    if (context.frames.back().loopFrame) {
+                        restoreLoopLocals(context.frames.back());
+                        if (!context.loopNumbers.empty()) context.loopNumbers.pop_back();
+                        if (!context.loopValues.empty()) context.loopValues.pop_back();
+                        if (!context.loopIndexes.empty()) context.loopIndexes.pop_back();
+                    }
+                    context.frames.pop_back();
+                }
                 auto& loopFrame = context.frames[loopFrameIndex];
                 if (loopFrame.statements) loopFrame.nextIndex = loopFrame.statements->size();
                 break;

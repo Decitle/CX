@@ -904,19 +904,78 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         }
         return stmt;
     }
+    // Named list-loop variables follow Skript's grammar. The key/value bindings
+    // are local variables whose previous values are restored after the loop.
+    static const std::regex keyValueLoopPattern(
+        R"FOREACH(^(?:for|loop)\s+(?:each\s+)?(?:key|index)\s+(\{[^{}]+\})\s+(?:and\s+)?(?:value\s+)?(\{[^{}]+\})\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
+        std::regex::icase);
+    static const std::regex keyOnlyLoopPattern(
+        R"FOREACH(^(?:for|loop)\s+(?:each\s+)?(?:key|index)\s+(\{[^{}]+\})\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
+        std::regex::icase);
+    static const std::regex keyValueCommaLoopPattern(
+        R"FOREACH(^(?:for|loop)\s+(?:each\s+)?(\{[^{}]+\})\s*,\s*(?:value\s+)?(\{[^{}]+\})\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
+        std::regex::icase);
+    static const std::regex namedValueLoopPattern(
+        R"FOREACH(^(?:for|loop)\s+(?:each\s+)?(?:value\s+)?(\{[^{}]+\})\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
+        std::regex::icase);
+    std::smatch listLoopMatch;
+    auto acceptListLoop = [&](const std::string& valueVariable, const std::string& indexVariable,
+                              const std::string& listExpression) -> bool {
+        const std::string listName = canonicalVariableName(listExpression);
+        const std::string valueName = valueVariable.empty() ? std::string{} : canonicalVariableName(valueVariable);
+        const std::string indexName = indexVariable.empty() ? std::string{} : canonicalVariableName(indexVariable);
+        if (!listName.ends_with("::*")) {
+            error("A for-each loop needs a list variable ending in double-colon star.",
+                  "Use: for each {_item} in {inventory::*}:");
+            return false;
+        }
+        const auto isLocalBinding = [](const std::string& name) {
+            return name.empty() || (name.size() > 1 && name.front() == '_' && name.find("::*") == std::string::npos);
+        };
+        if (!isLocalBinding(valueName) || !isLocalBinding(indexName)) {
+            error("List loop variables must be local variables such as {_item} and {_index}.",
+                  "Use: for each {_item} in {inventory::*}: or for each key {_index} and value {_item} in {inventory::*}:");
+            return false;
+        }
+        if (!valueName.empty() && valueName == indexName) {
+            error("A list loop's key variable and value variable must be different.",
+                  "Use separate local variables, for example {_index} and {_item}.");
+            return false;
+        }
+        stmt.type = StatementType::LoopList;
+        stmt.target = valueName;
+        stmt.property = indexName;
+        stmt.expression = listName;
+        return true;
+    };
+    if (std::regex_match(text, listLoopMatch, keyValueLoopPattern)) {
+        if (!acceptListLoop(listLoopMatch[2].str(), listLoopMatch[1].str(), listLoopMatch[3].str()))
+            return std::nullopt;
+        return stmt;
+    }
+    if (std::regex_match(text, listLoopMatch, keyOnlyLoopPattern)) {
+        if (!acceptListLoop({}, listLoopMatch[1].str(), listLoopMatch[2].str()))
+            return std::nullopt;
+        return stmt;
+    }
+    if (std::regex_match(text, listLoopMatch, keyValueCommaLoopPattern)) {
+        if (!acceptListLoop(listLoopMatch[2].str(), listLoopMatch[1].str(), listLoopMatch[3].str()))
+            return std::nullopt;
+        return stmt;
+    }
+    if (std::regex_match(text, listLoopMatch, namedValueLoopPattern)) {
+        if (!acceptListLoop(listLoopMatch[1].str(), {}, listLoopMatch[2].str()))
+            return std::nullopt;
+        return stmt;
+    }
+
+    // Compatibility aliases for the earlier prototype grammar.
     static const std::regex forEachLoopPattern(
         R"FOREACH(^for\s+each\s+(?:item|element|value)\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
         std::regex::icase);
-    std::smatch listLoopMatch;
     if (std::regex_match(text, listLoopMatch, forEachLoopPattern)) {
-        const std::string listExpression = trim(listLoopMatch[1].str());
-        if (listExpression.find("::*") == std::string::npos) {
-            error("A for-each loop needs a list variable ending in `::*`.",
-                  "Use: for each item in {inventory::*}:");
+        if (!acceptListLoop({}, {}, listLoopMatch[1].str()))
             return std::nullopt;
-        }
-        stmt.type = StatementType::LoopList;
-        stmt.expression = canonicalVariableName(listExpression);
         return stmt;
     }
     if (startsWithInsensitive(text, "loop ") && endsWithColon(text)) {
@@ -927,13 +986,14 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
             const auto space = listExpression.find(' ');
             listExpression = trim(std::string_view(listExpression).substr(space + 1));
         }
-        if (listExpression.size() >= 4 && listExpression.front() == '{' && listExpression.back() == '}' && listExpression.find("::*") != std::string::npos) {
-            stmt.type = StatementType::LoopList;
-            stmt.expression = canonicalVariableName(listExpression);
+        if (listExpression.size() >= 4 && listExpression.front() == '{' && listExpression.back() == '}' &&
+            listExpression.find("::*") != std::string::npos) {
+            if (!acceptListLoop({}, {}, listExpression))
+                return std::nullopt;
             return stmt;
         }
         error("This loop form is not supported yet. Use a counted loop or a list wildcard.",
-              "Examples: `loop 5 times:`, `loop over {inventory::*}:`, and `for each item in {inventory::*}:`.");
+              "Examples: loop 5 times:, loop over {inventory::*}:, and for each {_item} in {inventory::*}:");
         return std::nullopt;
     }
     if (startsWithInsensitive(text, "while ") && endsWithColon(text)) {
