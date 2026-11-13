@@ -386,13 +386,20 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
     {
         const std::string loweredExpression = lower(expression);
         struct NaturalMathForm { std::string prefix; std::string function; };
-        static const std::array<NaturalMathForm, 12> naturalMathForms{{
+        static const std::array<NaturalMathForm, 20> naturalMathForms{{
             {"the absolute value of ", "abs"}, {"absolute value of ", "abs"},
             {"the square root of ", "sqrt"}, {"square root of ", "sqrt"},
             {"the floor of ", "floor"}, {"floor of ", "floor"},
             {"the ceiling of ", "ceil"}, {"ceiling of ", "ceil"},
             {"the sine of ", "sin"}, {"sine of ", "sin"},
-            {"the cosine of ", "cos"}, {"cosine of ", "cos"}
+            {"the cosine of ", "cos"}, {"cosine of ", "cos"},
+            {"the average of ", "mean"}, {"average of ", "mean"},
+            {"the mean of ", "mean"}, {"mean of ", "mean"},
+            {"the median of ", "median"}, {"median of ", "median"},
+            {"the sum of ", "sum"}, {"sum of ", "sum"},
+            {"the product of ", "product"}, {"product of ", "product"},
+            {"the minimum of ", "min"}, {"minimum of ", "min"},
+            {"the maximum of ", "max"}, {"maximum of ", "max"}
         }};
         for (const auto& form : naturalMathForms) {
             if (startsWithInsensitive(loweredExpression, form.prefix)) {
@@ -606,6 +613,20 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             }
             return functionContext.returnValue;
         }
+        if (function == "isnan" || function == "isfinite") {
+            if (rawArgs.size() != 1 || rawArgs.front().empty()) {
+                error = function + " expects exactly one numeric argument.";
+                return {};
+            }
+            const Value checked = evaluateValue(rawArgs.front(), context, error);
+            if (!error.empty()) return {};
+            if (!checked.isNumber()) {
+                error = function + " expects a number.";
+                return {};
+            }
+            const double value = checked.numberOr();
+            return Value(function == "isnan" ? std::isnan(value) : std::isfinite(value));
+        }
         auto resolveRandomStream = [&](std::string_view rawName) -> RandomStreamState* {
             std::string streamError;
             const Value streamValue = evaluateValue(rawName, context, streamError);
@@ -687,11 +708,25 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         std::vector<double> args;
         for (const auto& rawArg : rawArgs) {
             if (rawArg.empty()) { error = "Function `" + function + "` has an empty argument."; return {}; }
+            // Skript's collection-oriented math functions accept a list variable as a
+            // single argument. Expand that collection here so the function implementations
+            // below operate on one consistent numeric sequence.
+            if (rawArg.front() == '{' && rawArg.back() == '}' && rawArg.find("::*") != std::string::npos) {
+                const auto entries = listEntries(canonicalVariableName(rawArg), context);
+                for (const auto& entry : entries) {
+                    if (!entry.value.isNumber() || !std::isfinite(entry.value.numberOr())) {
+                        error = "Function `" + function + "` expects every list item to be a finite number.";
+                        return {};
+                    }
+                    args.push_back(entry.value.numberOr());
+                }
+                continue;
+            }
             std::string argError;
             const Value arg = evaluateValue(rawArg, context, argError);
             if (!argError.empty()) { error = argError; return {}; }
             const double argumentNumber = arg.numberOr(std::numeric_limits<double>::quiet_NaN());
-            if (!std::isfinite(argumentNumber)) { error = "Function `" + function + "` expects numeric arguments."; return {}; }
+            if (!arg.isNumber() || !std::isfinite(argumentNumber)) { error = "Function `" + function + "` expects numeric arguments."; return {}; }
             args.push_back(argumentNumber);
         }
         auto require = [&](std::size_t count) { if (args.size() != count) { error = "Function `" + function + "` expects " + std::to_string(count) + " argument(s)."; return false; } return true; };
@@ -712,10 +747,6 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         }
         if (function == "asin" || function == "acos" || function == "atan") {
             if (!require(1)) return {};
-            if ((function == "asin" || function == "acos") && (args[0] < -1.0 || args[0] > 1.0)) {
-                error = function + " expects a value from -1 to 1.";
-                return {};
-            }
             if (function == "asin") return Value(std::asin(args[0]) * radiansToDegrees);
             if (function == "acos") return Value(std::acos(args[0]) * radiansToDegrees);
             return Value(std::atan(args[0]) * radiansToDegrees);
@@ -728,7 +759,8 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         if (function == "abs" || function == "absolute") { if (!require(1)) return {}; return Value(std::abs(args[0])); }
         if (function == "sqrt") {
             if (!require(1)) return {};
-            if (args[0] < 0.0) { error = "The square root of a negative number is not a real number."; return {}; }
+            // Match Skript's numeric semantics: invalid real roots produce NaN, which
+            // authors can explicitly test with isNaN(...), rather than aborting a script.
             return Value(std::sqrt(args[0]));
         }
         if (function == "square") { if (!require(1)) return {}; return Value(args[0] * args[0]); }
@@ -749,13 +781,13 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         if (function == "exp") { if (!require(1)) return {}; const double v = std::exp(args[0]); if (!std::isfinite(v)) { error = "exp result is outside the finite numeric range."; return {}; } return Value(v); }
         if (function == "ln") {
             if (!require(1)) return {};
-            if (args[0] <= 0.0) { error = "ln expects a value greater than zero."; return {}; }
             return Value(std::log(args[0]));
         }
         if (function == "log" || function == "log10") {
             if (args.empty() || args.size() > 2) { error = "log(number[, base]) expects one or two arguments."; return {}; }
             const double base = args.size() == 2 ? args[1] : 10.0;
-            if (args[0] <= 0.0 || base <= 0.0 || base == 1.0) { error = "log needs a positive number and a positive base other than 1."; return {}; }
+            if (args[0] <= 0.0 || base <= 0.0 || base == 1.0)
+                return Value(std::numeric_limits<double>::quiet_NaN());
             return Value(std::log(args[0]) / std::log(base));
         }
         if (function == "root") {
@@ -773,12 +805,23 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             if (!std::isfinite(v)) { error = "pow result is outside the finite real-number range."; return {}; }
             return Value(v);
         }
-        if (function == "min" || function == "max") {
+        if (function == "min" || function == "max" || function == "mean" || function == "median" ||
+            function == "sum" || function == "product") {
             if (args.empty()) { error = function + " expects at least one number."; return {}; }
-            const auto value = function == "min"
-                ? *std::min_element(args.begin(), args.end())
-                : *std::max_element(args.begin(), args.end());
-            return Value(value);
+            if (function == "min") return Value(*std::min_element(args.begin(), args.end()));
+            if (function == "max") return Value(*std::max_element(args.begin(), args.end()));
+            if (function == "sum" || function == "mean") {
+                const double total = std::accumulate(args.begin(), args.end(), 0.0);
+                return Value(function == "mean" ? total / static_cast<double>(args.size()) : total);
+            }
+            if (function == "product") {
+                return Value(std::accumulate(args.begin(), args.end(), 1.0, std::multiplies<double>{}));
+            }
+            std::vector<double> ordered = args;
+            std::sort(ordered.begin(), ordered.end());
+            const std::size_t middle = ordered.size() / 2U;
+            if (ordered.size() % 2U != 0U) return Value(ordered[middle]);
+            return Value((ordered[middle - 1U] + ordered[middle]) * 0.5);
         }
         if (function == "sine") {
             if (args.size() != 2 && args.size() != 3) { error = "sine(hz, seconds[, phase_radians]) expects 2 or 3 arguments."; return {}; }
@@ -796,13 +839,18 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             const auto octaves = args.size() >= 4 ? static_cast<unsigned int>(std::clamp(args[3], 1.0, 12.0)) : 4U;
             return Value(AudioSystem::fbm2d(args[0], args[1], seed, octaves));
         }
+        if (function == "mod") {
+            if (!require(2)) return {};
+            if (args[1] == 0.0) { error = "mod divisor cannot be zero."; return {}; }
+            return Value(std::fmod(args[0], args[1]));
+        }
         if (function == "clamp") {
             if (!require(3)) return {};
             if (args[1] > args[2]) { error = "clamp minimum must not exceed its maximum."; return {}; }
             return Value(std::clamp(args[0], args[1], args[2]));
         }
         if (function == "lerp") { if (!require(3)) return {}; return Value(std::lerp(args[0], args[1], args[2])); }
-        error = "Unknown function `" + function + "`. Built-ins: abs, sqrt, floor, ceil, round, exp, ln, log, root, pow, min, max, sin, cos, tan, asin, acos, atan, atan2, sin_radians, cos_radians, tan_radians, sine, noise2d, fbm2d, random_float, random_int, random_choice, clamp, lerp. You can define reusable script functions with `function name(parameters):`.";
+        error = "Unknown function `" + function + "`. Built-ins: abs, sqrt, floor, ceil, round, exp, ln, log, root, pow, min, max, mean, median, sum, product, mod, isNaN, isFinite, sin, cos, tan, asin, acos, atan, atan2, sin_radians, cos_radians, tan_radians, sine, noise2d, fbm2d, random_float, random_int, random_choice, clamp, lerp. You can define reusable script functions with `function name(parameters):`.";
         return {};
     }
     if (expression.find('{') != std::string::npos || expression.find('}') != std::string::npos) {

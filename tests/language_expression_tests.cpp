@@ -85,6 +85,16 @@ set {log_default_base} to log(1000)
 set {log_custom_base} to log(81, 3)
 set {natural_log} to ln(exp(1))
 set {root} to root(3, -8)
+set {root_skript_order} to root(2, 4)
+set {values::*} to 1, 2, 3, 4
+set {mean_values} to mean({values::*})
+set {median_values} to median({values::*})
+set {average_values} to the average of {values::*}
+set {sum_values} to sum({values::*})
+set {product_values} to product({values::*})
+set {bad_root} to sqrt(-1)
+set {bad_root_is_nan} to isNaN({bad_root})
+set {finite_number} to isFinite(42)
 set {power_right_associative} to 2 ^ 3 ^ 2
 set {power_precedence} to 2 + 3 * 4 ^ 2
 set {negative_product} to 2 * -3
@@ -114,6 +124,14 @@ set {interpolated} to lerp(10, 20, 0.25)
     expect(std::abs(number("log_custom_base") - 4.0) < 1e-12, "log accepts a custom base");
     expect(std::abs(number("natural_log") - 1.0) < 1e-12, "natural logarithm and exponential should be inverses");
     expect(std::abs(number("root") + 2.0) < 1e-12, "odd roots of negative values should remain real");
+    expect(std::abs(number("root_skript_order") - 2.0) < 1e-12, "root accepts the Skript argument order: degree, value");
+    expect(std::abs(number("mean_values") - 2.5) < 1e-12, "mean accepts a list variable");
+    expect(std::abs(number("median_values") - 2.5) < 1e-12, "median accepts a list variable and averages its middle pair");
+    expect(std::abs(number("average_values") - 2.5) < 1e-12, "natural average form accepts a list variable");
+    expect(std::abs(number("sum_values") - 10.0) < 1e-12, "sum accepts a list variable");
+    expect(std::abs(number("product_values") - 24.0) < 1e-12, "product accepts a list variable");
+    expect(runtime.getGlobal("bad_root_is_nan").truthy(), "sqrt of a negative number follows Skript NaN behavior");
+    expect(runtime.getGlobal("finite_number").truthy(), "isFinite recognizes finite values");
     expect(std::abs(number("power_right_associative") - 512.0) < 1e-12, "power operator should be right-associative");
     expect(std::abs(number("power_precedence") - 50.0) < 1e-12, "power should bind more tightly than multiplication and addition");
     expect(std::abs(number("negative_product") + 6.0) < 1e-12, "unary negative values should work after multiplication");
