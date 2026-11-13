@@ -40,6 +40,10 @@ on load:
     set rotation of sprite {_object} to 90
     set rotation of entity {_entity} to 180
     set speed of entity {_entity} to 125
+    set kind of entity {_entity} to "boss"
+    set the team of {_entity} to "hostile"
+    set {read_kind} to kind of entity {_entity}
+    set {read_team} to the team of {_entity}
     set health of entity {_entity} to 8
     set max health of entity {_entity} to 12
     set {_target_health} to 10
@@ -90,6 +94,10 @@ on load:
     expect(runtime.getGlobal("read_height").numberOr(-1.0) == 28.0, "height getter should expose the live vertical size");
     expect(runtime.getGlobal("read_texture").toString() == runtime.sprites().at("hero").textureId,
            "texture getter should return the active texture identifier");
+    expect(runtime.getGlobal("read_kind").toString() == "boss",
+           "kind getter should return the entity's registered classification");
+    expect(runtime.getGlobal("read_team").toString() == "hostile",
+           "team getter should return the entity's registered team");
     expect(runtime.getGlobal("read_health_clamped").numberOr(-1.0) == 9.0,
            "lowering max health should clamp current health to the new maximum");
     expect(runtime.getGlobal("read_health").numberOr(-1.0) == 10.0,
@@ -101,6 +109,34 @@ on load:
     expect(runtime.getGlobal("read_max_health_global").numberOr(-1.0) == 14.0,
            "entity max-health property writes should keep the public max-health variable synchronized");
     expect(runtime.getGlobal("object_identity_matches").truthy(), "expressions resolving to the same object should compare by identity");
+    std::filesystem::remove_all(root);
+}
+void testClassificationPropertiesRejectSprites() {
+    const auto root = makeProject("sprite-classification", R"CX(
+on load:
+    create sprite "hero" with texture {$object}
+    set {bad_kind} to kind of sprite "hero"
+)CX");
+    cx::Runtime runtime(root);
+    expect(!runtime.loadScripts() && runtime.hasErrors(), "sprite objects must not expose entity kind properties");
+    bool found = false;
+    for (const auto& diagnostic : runtime.diagnostics())
+        if (diagnostic.message.find("only available on entities") != std::string::npos) found = true;
+    expect(found, "reading kind from a sprite should explain that it belongs to entities");
+    std::filesystem::remove_all(root);
+}
+void testClassificationSettersRejectSprites() {
+    const auto root = makeProject("sprite-classification-setter", R"CX(
+on load:
+    create sprite "hero" with texture {$object}
+    set team of sprite "hero" to "hostile"
+)CX");
+    cx::Runtime runtime(root);
+    expect(!runtime.loadScripts() && runtime.hasErrors(), "sprite objects must reject entity team setters");
+    bool found = false;
+    for (const auto& diagnostic : runtime.diagnostics())
+        if (diagnostic.message.find("only available on entities") != std::string::npos) found = true;
+    expect(found, "setting team on a sprite should explain that it belongs to entities");
     std::filesystem::remove_all(root);
 }
 void testHealthPropertiesRejectSprites() {
@@ -167,6 +203,8 @@ on load:
 }
 int main() {
     testObjectVariablesAndEnglishProperties();
+    testClassificationPropertiesRejectSprites();
+    testClassificationSettersRejectSprites();
     testHealthPropertiesRejectSprites();
     testHealthSettersRejectSprites();
     testStaleHandleCannotTargetReplacement();
