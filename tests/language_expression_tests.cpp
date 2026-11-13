@@ -213,13 +213,18 @@ void testMathDomainResultsCanBeCheckedAsNaN() {
 set {^bad_root} to sqrt(-1)
 set {^bad_log} to ln(-1)
 set {^bad_inverse} to asin(2)
-set {root_is_nan} to isNaN({_bad_root})
-set {log_is_nan} to isNaN({_bad_log})
-set {inverse_is_nan} to isNaN({_bad_inverse})
+set {root_is_nan} to isNaN({^bad_root})
+set {log_is_nan} to isNaN({^bad_log})
+set {inverse_is_nan} to isNaN({^bad_inverse})
 set {normal_is_finite} to isFinite(3.5)
 )CX");
     cx::Runtime runtime(root);
-    expect(runtime.loadScripts(), "out-of-domain math results should remain numeric NaN values instead of aborting script execution");
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics())
+            std::cerr << "MATH FIXTURE DIAGNOSTIC: " << diagnostic.message << '\n';
+    }
+    expect(loaded, "out-of-domain math results should remain numeric NaN values instead of aborting script execution");
     expect(!runtime.hasErrors(), "valid NaN-producing math operations should not emit runtime diagnostics");
     expect(runtime.getGlobal("root_is_nan").truthy(), "isNaN should detect sqrt of a negative value");
     expect(runtime.getGlobal("log_is_nan").truthy(), "isNaN should detect logarithm domain results");

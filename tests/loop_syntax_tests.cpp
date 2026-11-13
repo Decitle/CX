@@ -18,16 +18,17 @@ void write(const std::filesystem::path& path, const std::string& contents) {
 
 int main() {
     const std::string script = R"CX(
-set {counter} to 0
-repeat 3 times:
-    add 1 to {counter}
-set {items::*} to "red", "green", "blue"
-for each item in {items::*}:
-    add 1 to {counter}
-    set {last_value} to loop-value
-loop over {items::*}:
-    add 1 to {counter}
-    set {last_index} to loop-index
+on load:
+    set {counter} to 0
+    repeat 3 times:
+        add 1 to {counter}
+    set {items::*} to "red", "green", "blue"
+    for each item in {items::*}:
+        add 1 to {counter}
+        set {last_value} to loop-value
+    loop over {items::*}:
+        add 1 to {counter}
+        set {last_index} to loop-index
 )CX";
     const auto parsed = cx::ScriptParser{}.parseText(script);
     if (!parsed.diagnostics.empty()) {
