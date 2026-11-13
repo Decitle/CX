@@ -1175,7 +1175,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         startsWithInsensitive(text, "reset ")) {
         stmt.type = StatementType::DeleteVariable;
         const std::size_t prefix = startsWithInsensitive(text, "delete ") ? 7U :
-            startsWithInsensitive(text, "clear ") ? 6U : 7U;
+            startsWithInsensitive(text, "clear ") ? 6U : 6U;
         stmt.target = canonicalVariableName(trim(std::string_view(text).substr(prefix)));
         if (stmt.target.empty() || stmt.target.front() == '$' || stmt.target.front() == '@') {
             error("Delete/clear needs a writable variable or list.", "Use `delete {old_value}` or `clear {inventory::*}`.");

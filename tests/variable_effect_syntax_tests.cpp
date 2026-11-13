@@ -50,6 +50,7 @@ reset {temporary}
         expect(parsed.bootstrap[8].type == cx::StatementType::Add, "give value to list aliases add");
         expect(parsed.bootstrap[9].property == "all", "remove every aliases remove all");
         expect(parsed.bootstrap[11].type == cx::StatementType::DeleteVariable, "reset aliases clearing a variable");
+        expect(parsed.bootstrap[11].target == "temporary", "reset must preserve the complete target variable name");
     }
 
     const auto root = std::filesystem::temp_directory_path() / "cx-variable-effect-syntax";
