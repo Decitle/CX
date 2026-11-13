@@ -1096,7 +1096,15 @@ int main(int argc, char** argv) {
                 x = foot.x - spriteObject.width * 0.5F;
                 y = foot.y - spriteObject.height;
             }
-            drawnSprite.setPosition({x, y});
+            const float sourceWidth = (spriteObject.frameWidth > 0 && spriteObject.frameHeight > 0 &&
+                spriteObject.frameWidth <= static_cast<int>(textureSize.x) && spriteObject.frameHeight <= static_cast<int>(textureSize.y))
+                ? static_cast<float>(spriteObject.frameWidth) : static_cast<float>(textureSize.x);
+            const float sourceHeight = (spriteObject.frameWidth > 0 && spriteObject.frameHeight > 0 &&
+                spriteObject.frameWidth <= static_cast<int>(textureSize.x) && spriteObject.frameHeight <= static_cast<int>(textureSize.y))
+                ? static_cast<float>(spriteObject.frameHeight) : static_cast<float>(textureSize.y);
+            drawnSprite.setOrigin({sourceWidth * 0.5F, sourceHeight * 0.5F});
+            drawnSprite.setPosition({x + spriteObject.width * 0.5F, y + spriteObject.height * 0.5F});
+            drawnSprite.setRotation(sf::degrees(spriteObject.rotationDegrees));
             if (spriteObject.frameWidth > 0 && spriteObject.frameHeight > 0 &&
                 spriteObject.frameWidth <= static_cast<int>(textureSize.x) && spriteObject.frameHeight <= static_cast<int>(textureSize.y)) {
                 const int cols = std::max(1, spriteObject.frameColumns);

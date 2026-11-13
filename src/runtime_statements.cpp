@@ -43,6 +43,11 @@ bool isListWildcard(std::string_view name) {
     return name.ends_with("::*");
 }
 bool sameValue(const Value& a, const Value& b) {
+    if (a.isObjectReference() || b.isObjectReference()) {
+        const auto* left = a.objectReference();
+        const auto* right = b.objectReference();
+        return left && right && *left == *right;
+    }
     if (a.isNull() || b.isNull()) return a.isNull() && b.isNull();
     if (a.isNumber() || b.isNumber()) {
         const double av = a.numberOr(std::numeric_limits<double>::quiet_NaN());
@@ -951,14 +956,40 @@ void Runtime::runExecution(ExecutionContext& context) {
                 break;
             }
             case StatementType::SetSprite: {
-                const std::string id = lower(trim(statement.target));
+                std::string id;
+                std::uint64_t expectedInstanceId = 0;
+                const bool usesObjectExpression = statement.target.starts_with("sprite ") ||
+                    statement.target.starts_with("entity ") || statement.target.starts_with("object ");
+                if (usesObjectExpression) {
+                    const Value targetValue = evaluateValue(statement.target, context, error);
+                    if (!error.empty()) { runtimeError(statement, error, "Use an object reference such as `sprite \"player\"` or a variable that stores one."); break; }
+                    const auto* reference = targetValue.objectReference();
+                    if (!reference) { runtimeError(statement, "That value is not a sprite or entity reference.", "Set a local variable first, for example: set {_object} to sprite \"player\"."); break; }
+                    id = reference->name;
+                    expectedInstanceId = reference->instanceId;
+                } else {
+                    id = lower(trim(statement.target)); // Preserve the legacy named setter.
+                }
                 auto found = sprites_.find(id);
-                if (found == sprites_.end()) {
-                    runtimeError(statement, "There is no sprite named `" + id + "`.",
-                        "Create it first with `create sprite \"" + id + "\" with texture {$crate}`.");
+                if (found == sprites_.end() || (expectedInstanceId != 0 && found->second.runtimeInstanceId != expectedInstanceId)) {
+                    runtimeError(statement, "There is no current sprite/entity object matching `" + id + "`.",
+                        "Create the object first, or refresh a local reference after replacing it.");
                     break;
                 }
                 SpriteObject& sprite = found->second;
+                if (statement.property == "x-coordinate" || statement.property == "y-coordinate" || statement.property == "rotation") {
+                    Value coordinateValue = evaluateValue(statement.expression, context, error);
+                    const double number = coordinateValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                    if (!error.empty() || !coordinateValue.isNumber() || !std::isfinite(number) || std::abs(number) > 10000000.0) {
+                        runtimeError(statement, "This sprite property needs a finite number within 10,000,000.",
+                            "Use a value such as `15`, `-20`, or `90`.");
+                        break;
+                    }
+                    if (statement.property == "x-coordinate") { entityTweens_.erase(id); sprite.x = static_cast<float>(number); }
+                    else if (statement.property == "y-coordinate") { entityTweens_.erase(id); sprite.y = static_cast<float>(number); }
+                    else sprite.rotationDegrees = static_cast<float>(number);
+                    break;
+                }
                 if (statement.property == "position" || statement.property == "size") {
                     std::string pairText = trim(statement.expression);
                     if (pairText.size() >= 2 && pairText.front() == '(' && pairText.back() == ')')
@@ -1009,8 +1040,11 @@ void Runtime::runExecution(ExecutionContext& context) {
                     }
                     sprite.textureId = textureId;
                 } else if (statement.property == "visible") {
-                    const auto visible = lower(trim(statement.expression));
-                    sprite.visible = visible == "true";
+                    const Value visibleValue = evaluateValue(statement.expression, context, error);
+                    if (!error.empty() || !visibleValue.isBool()) {
+                        runtimeError(statement, "Sprite visibility must evaluate to true or false.",
+                            "Use: set visibility of sprite \"player\" to false.");
+                    } else sprite.visible = visibleValue.truthy();
                 }
                 break;
             }
