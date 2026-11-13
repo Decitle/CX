@@ -3,14 +3,14 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest verified six-target development CI:** [run #91](https://github.com/Decitle/CX/actions/runs/43491377925) — all six native targets passed.
+**Latest verified six-target development CI:** [run #91](https://github.com/Decitle/CX/actions/runs/43491377925) — all six native targets passed. The count-prefix random-list implementation is in [run #94](https://github.com/Decitle/CX/actions/runs/43503305413), currently queued behind an earlier matrix.
 
 ## Repository state
 
 The repository has two branches:
 
 - `main` remains the published v0.10.14 line and has not been modified by the v0.11.0 work.
-- `v0.11.0-language-overhaul` contains the active development work and is the head of draft PR #2. It is 60 commits ahead of `main`, with no commits behind at the time of this status snapshot.
+- `v0.11.0-language-overhaul` contains the active development work and is the head of draft PR #2. It is ahead of `main` with no commits behind at the time of this status snapshot.
 
 The branches are **not merged**. That is intentional. PR #2 must remain a draft until the language acceptance work, documentation, examples, compatibility coverage, release verification and owner review are complete. Do not tag or publish v0.11.0 based on one isolated syntax improvement or a green CI run.
 

@@ -47,7 +47,7 @@ wait 10 seconds
 play sound {@impact}
 ```
 
-The exact syntax for object handles, event context and optional random streams must be finalized in the audit/implementation work before it is advertised as supported.
+Typed sprite/entity handles and the named random-stream grammar are implemented on the development branch. The standard event-context expression contract remains an open audit item; examples involving event context should not be advertised until that contract and its tests are complete.
 
 ### 3. Parentheses are appropriate when they communicate structure
 
@@ -71,7 +71,7 @@ set rotation of sprite "player" to 90
 set health of entity "guard" to 25
 ```
 
-The `set entity "guard" health to 25` family remains accepted as a compatibility form; the shared property grammar also supports `set health of entity "guard" to 25`. Object references stored in variables require an explicit typed-handle/value design; a string variable must not silently become an object.
+The `set entity "guard" health to 25` family remains accepted as a compatibility form; the shared property grammar also supports `set health of entity "guard" to 25`. The development branch stores sprite/entity references as typed values with live-instance identity in local and temporary variables. Ordinary strings never silently become object references, and stale handles are rejected after an object is removed or replaced.
 
 ### 5. Events describe what happened; context values describe who/what
 

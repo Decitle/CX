@@ -74,15 +74,29 @@ function double(value):
 
 Conditions control which block runs. A counted loop repeats its block. Functions let you name a calculation so you can reuse it. Function parameters are available as event-like local variables such as `{_value}`. Functions are synchronous and cannot use `wait` in the current language.
 
-## 6. Make errors useful
+## 6. Generate random values
+
+A single random expression gives you one value. A count-prefix expression generates several values and must be assigned to a list variable:
+
+```skript
+on load:
+    seed random stream "loot" with 90210
+    set {_die_roll} to a random integer between 1 and 6
+    set {loot_rolls::*} to 5 random integers between 1 and 100 using random stream "loot"
+    set {offsets::*} to 3 random numbers from 0 to 1
+```
+
+Ordinary random expressions use an automatically initialized default stream. Seed a named stream when you need repeatable results. A batch count can be a numeric expression from 0 through 4096; zero clears the destination list without drawing values. Each generated number remains a normal typed list entry. See [seeded random streams](features/seeded-random-streams.md) for reproducibility and stream rules.
+
+## 7. Make errors useful
 
 Start with the exact file and line in the diagnostic. Read the error and suggested correction, then check the colon and indentation at that line. For hard-to-find problems, temporarily reduce the script to a small working example and add commands back in short steps. `/reload` uses a candidate runtime; if the new script fails to parse or initialize, the previous working version remains active.
 
-## 7. Keep the language easy to learn
+## 8. Keep the language easy to learn
 
 Prefer the plain-English commands already supported by `syntax.md`. Do not assume that every syntax feature from Minecraft Skript is available just because the syntax looks familiar. The engine's own syntax reference and feature audit are the contracts. A new language feature should include: a short example, a scope/type/lifetime explanation, a helpful error for misuse, and a regression test.
 
-## 8. Where to go next
+## 9. Where to go next
 
 1. `examples/first_steps.cx` — variables, events, conditions.
 2. `examples/list_functions.cx` — lists, functions, and arithmetic.
