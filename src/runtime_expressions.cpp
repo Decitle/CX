@@ -8,6 +8,8 @@
 #include <cctype>
 #include <cmath>
 #include <limits>
+#include <numeric>
+#include <functional>
 #include <initializer_list>
 #include <optional>
 #include <regex>
