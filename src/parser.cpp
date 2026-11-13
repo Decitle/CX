@@ -990,7 +990,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         return stmt;
     }
 
-    if (startsWithInsensitive(text, "set ")) {
+    if (startsWithInsensitive(text, "set ") && !startsWithInsensitive(text, "set screen opacity to ")) {
         const auto rest = std::string_view(text).substr(4);
         const auto to = findPhraseOutsideQuotes(rest, "to");
         if (to == std::string_view::npos) {
