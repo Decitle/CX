@@ -541,9 +541,11 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             return {};
         }
 
-        // Random element out of a CX list follows Skript's collection expression shape.
+        // Random item/element from a CX list follows Skript's collection expression shape.
         // Selected values keep their original number, text, or boolean type.
         if (const auto prefix = findNaturalPrefix(randomText, {
+                "a random item out of ", "random item out of ",
+                "a random item of ", "random item of ",
                 "a random element out of ", "random element out of ",
                 "a random element of ", "random element of "})) {
             const auto source = trim(std::string_view(randomText).substr(*prefix));

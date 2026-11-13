@@ -2,7 +2,7 @@
 
 ## Purpose
 
-CX Script offers deterministic random values for repeatable game logic, scene staging, procedural decoration and tests. It deliberately does not seed itself from the wall clock. A project chooses its seeds explicitly so re-running the same startup script recreates the same sequences.
+CX Script supports ordinary English random expressions through an automatically initialized runtime-local `"default"` stream, plus explicitly seeded streams for repeatable game logic, scene staging, procedural decoration and tests. The default stream is initialized with best-effort runtime entropy; projects that need reproducibility should explicitly seed the default stream or use their own named streams.
 
 ## Script contract
 
@@ -11,12 +11,20 @@ on load:
     seed random stream "loot" with 4815
     seed random stream "encounters" with 90210
 
+set {ordinary_roll} to a random integer between 1 and 100
+set {repeatable_roll} to a random integer between 1 and 100 using random stream "loot"
 set {drop_count} to random_int("loot", 1, 4)
 set {drop_variant} to random_choice("loot", "coin", "gem", "key")
 set {decoration_roll} to random_float("decoration") # error until decoration is seeded
 ```
 
-`seed random stream "name" with integer` seeds or resets one named stream. Names are trimmed, case-insensitive and 1–64 characters after trimming. Seeds must be whole numbers in the inclusive safe-integer range ±9,007,199,254,740,991. Values outside that range, text seeds and fractional seeds are rejected with a diagnostic. Negative seeds have a defined two's-complement bit pattern after conversion to the generator state.
+`seed random stream "name" with integer` seeds or resets one named stream (including `"default"`). Names are trimmed, case-insensitive and 1–64 characters after trimming. Seeds must be whole numbers in the inclusive safe-integer range ±9,007,199,254,740,991. Values outside that range, text seeds and fractional seeds are rejected with a diagnostic. Negative seeds have a defined two's-complement bit pattern after conversion to the generator state.
+
+### The built-in default stream
+
+Every runtime creates a `"default"` stream automatically. Its initial state mixes the steady clock and runtime instance address with `std::random_device` when that source is available; the clock/address mix is the fallback. This gives ordinary random expressions a usable stream without a setup command, but does not promise cryptographic unpredictability or reproducibility between runs. Calling `seed random stream "default" with integer` replaces that initial state with a reproducible seed.
+
+Other named streams do not exist until explicitly seeded. Natural expressions can select one with `using random stream "name"`; the function forms below name their stream as their first argument.
 
 ### Built-ins
 
@@ -30,10 +38,10 @@ set {decoration_roll} to random_float("decoration") # error until decoration is 
 
 ## Determinism and lifecycle
 
-- The implementation uses the specified SplitMix64 64-bit state transition and mixing constants; it does not rely on `std::uniform_int_distribution`, `std::random_device`, or a platform RNG.
+- Random draws use the specified SplitMix64 64-bit state transition and mixing constants; the generator output does not rely on `std::uniform_int_distribution` or a platform distribution. The automatically generated default seed may use `std::random_device`, with a portable clock/address fallback.
 - Each `Runtime` owns its own map of named stream states. Names are normalized to lowercase, and separate names advance independently.
 - A successful script reload constructs a candidate runtime and commits the newly seeded stream states only after startup succeeds. Thus successful reload restarts streams from the script seed; failed reload preserves the last-good sequence exactly.
-- Stream states are transient process state. They are not saved in persistent variables and are initialized by running the project's seed statements at startup. To reproduce a particular gameplay segment after loading a save, a future save-game contract will need to persist stream states or derive subsystem seeds from a saved world seed and stable identifiers.
+- Stream states are transient process state. They are not saved in persistent variables. The default stream is regenerated on runtime reset; explicitly seeded named streams are initialized by the project's seed statements. To reproduce a particular gameplay segment after loading a save, a future save-game contract will need to persist stream states or derive subsystem seeds from a saved world seed and stable identifiers.
 - Seed streams once in startup for normal play. Seeding inside `on tick:` resets that stream every tick and is usually a logic error.
 - Use separate named streams for unrelated systems. This limits the cascading effect of inserting a new random choice into one subsystem.
 

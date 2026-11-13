@@ -74,14 +74,16 @@ The 55 `StatementType` values cover variable assignment/deletion/mutation, rando
 - `sine(hz, seconds[, phase])`
 - `noise2d(x, y[, seed])`
 - `fbm2d(x, y[, seed[, octaves]])`
-- `random_float("stream")`
-- `random_int("stream", minimum, maximum)`
-- `random_choice("stream", option1, option2, ...)`
+- `random_float("stream")`, `random_int("stream", minimum, maximum)` and `random_choice("stream", option1, option2, ...)`
+- Natural single-value forms: `a random integer between 1 and 10` and `a random number from 0 to 1`
+- Random selection from list variables: `a random element/item out of {items::*}`
+- Optional `using random stream "name"` clause for natural forms
+- The runtime-local `"default"` stream is initialized automatically; other named streams must be seeded explicitly
 - `clamp(value, min, max)` and `lerp(a, b, t)`
 
 <badge color="warning">P0 syntax gap</badge>
 
-Common random values and several common mathematical operations are exposed only as function calls. In particular, the requested `set {_var} to a random integer between 1 and 10` is **not accepted as a random expression by the current v0.10.14 grammar**. The implementation documents `random_int("stream", min, max)` and requires an already seeded named stream. A plain-English equivalent should be a first-class expression, with the named deterministic stream retained as an optional clause.
+The v0.11.0 branch has implemented natural **single-value** random integer/number expressions, list item/element selection, and the automatically initialized default stream. The remaining Skript compatibility gap is the count-prefix/plural form (for example, `5 random integers between 5 and 96`) and its assignment into a list variable. CX currently evaluates scalar `Value` expressions and stores lists through indexed variable namespaces, so this needs a deliberate collection-return/assignment contract rather than a regex-only special case.
 
 Numeric helpers should offer natural aliases such as “the sine of …”, “noise at (x, y) using seed …” and “clamp … between …” while compact function aliases remain available. Parentheses remain appropriate for coordinate/vector tuples, grouping and advanced function calls.
 
@@ -137,7 +139,7 @@ The reference adds 23 world/entity entries, 6 project-structure entries, 7 UI en
 
 | Priority | Gap | Required direction |
 |---|---|---|
-| P0 | Random values require function syntax | Add natural `a random integer between ...` and `a random number between ...`; retain named streams as an optional reproducibility extension. |
+| P0 | Multi-count random expressions are not implemented | Support Skript-style count prefixes and plural random number forms in list assignments without weakening CX's scalar/list value contracts. |
 | P0 | Built-in math helpers are function-only | Add English expression forms and keep compact aliases. |
 | P0 | Property setter grammar varies by subsystem | Standardize `set <property> of <object> to <value>` and a natural possessive alias. |
 | P0 | No first-class object references in `Value` | Define typed sprite/entity/room references before accepting `{_object}` as an object target. Current `Value` holds only none, bool, number and string. |
@@ -164,7 +166,7 @@ Official references:
 
 1. Freeze this inventory as the source audit; resolve every item into canonical syntax, aliases, implementation status and tests.
 2. Design grammar/AST support for English expressions and property access. Avoid implementing the entire overhaul as one-off regex additions.
-3. Implement the random expression grammar first, including a carefully specified implicit default stream and optional named deterministic stream. Keep old function-call syntax working as an alias.
+3. Complete the random-expression grammar: the single-value natural forms and implicit default stream now exist; design and implement count-prefix/plural results as a well-defined list assignment while retaining the existing function-call API.
 4. Add natural math/helper expressions and worded comparisons.
 5. Introduce explicit object references/handles, then standard property getter/setter syntax.
 6. Normalize event grammar and event-context values; preserve existing handlers through aliases.

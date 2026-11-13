@@ -115,9 +115,9 @@ Possible future APIs such as screen overlays/fades and named audio tracks/buses 
 
 ## Randomness contract
 
-The current named deterministic streams are valuable and should be retained. The new surface should include natural expressions such as `a random integer between 1 and 10`, `a random number between 0 and 1`, and `a random item out of {_items::*}`. Named streams should remain available as an optional clause for reproducible gameplay. The default-stream seeding rule must be explicitly designed and tested before implementation; a natural expression must not fail merely because it lacks a `random_int()` function call.
+The v0.11.0 branch supports natural single-value expressions such as `a random integer between 1 and 10`, `a random number between 0 and 1`, and `a random item out of {_items::*}`. They use an automatically initialized runtime-local `"default"` stream unless the optional `using random stream "name"` clause selects another stream. The default stream can be explicitly seeded for reproducibility; other named streams must be seeded before use. The compact `random_float`, `random_int`, and `random_choice` forms remain available.
 
-A weighted selector is a useful optional extension after the base random expression grammar is settled. It is not a prerequisite for the first syntax overhaul.
+The remaining Skript random-expression gap is the count-prefix/plural form, such as `5 random integers between 5 and 96`, including assignment of the resulting collection to a list variable. This must be designed against CX's scalar `Value` and indexed-list model rather than implemented as a fragile parser-only shortcut. A weighted selector is a later optional extension, not a prerequisite for the first syntax overhaul.
 
 ## Parser and runtime implementation guidance
 

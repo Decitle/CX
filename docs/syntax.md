@@ -148,7 +148,7 @@ on load:
 
 Function parameters become event-like locals named `{_value}`, `{_minimum}`, and `{_maximum}`. A function returns a value with `return`; calls can be used where a value is expected. Functions are synchronous and cannot use `wait`. Recursion is limited to 64 nested calls. Arithmetic uses parentheses and conventional precedence: `*`, `/`, `%` before `+` and `-`. `+` concatenates values when either operand is text. Numeric functions include `sin`, `cos`, `tan`, `sine`, `noise2d`, `fbm2d`, `clamp`, and `lerp`. Seeded random functions are documented in the next section.
 
-### Deterministic random streams
+### Random expressions and streams
 
 ```skript
 on load:
@@ -158,18 +158,24 @@ on load:
 on tick:
     if random_float("encounters") < 0.002:
         set {next_encounter_kind} to random_choice("encounters", "slime", "bat", "guard")
+    set {ambient_roll} to a random integer between 1 and 100
 
 on press key "L":
-    set {loot_roll} to random_int("loot", 1, 100)
+    set {loot_roll} to a random integer from 1 to 100 using random stream "loot"
+    set {random_number} to a random number between 0 and 1
+    set {random_item} to a random item out of {items::*} using random stream "loot"
 ```
 
-A random stream must be seeded explicitly before it is used. `seed random stream "name" with integer` creates or resets a case-insensitive named stream in the current runtime. Names are trimmed, limited to 64 characters, and separate streams do not consume one another's sequence. The seed must be a whole number in the exact JavaScript-safe integer range `-9007199254740991` through `9007199254740991`. Seed streams once during startup (typically in `on load:`), not on every tick unless repeatedly restarting a sequence is intentional.
+Natural expressions such as `a random integer between 1 and 10`, `random number from 0 to 1`, and `a random item out of {items::*}` use the runtime-local `"default"` stream unless they include `using random stream "name"`. The default stream is initialized automatically for each runtime with best-effort runtime entropy, so ordinary random expressions do not need setup but are not reproducible between sessions by default. To make the default stream reproducible, seed it explicitly with `seed random stream "default" with integer`.
 
-- `random_float("stream")` returns a deterministic number in `[0, 1)` using the high 53 bits of SplitMix64.
+`seed random stream "name" with integer` creates or resets a case-insensitive stream. Names are trimmed and limited to 64 characters; separate names do not consume one another's sequences. Seeds must be whole numbers in the exact JavaScript-safe integer range `-9007199254740991` through `9007199254740991`. Seed named streams once during startup (typically in `on load:`), not on every tick unless repeatedly restarting a sequence is intentional. Any named stream other than the pre-created `"default"` stream must be seeded before use.
+
+- `random_float("stream")` returns a number in `[0, 1)` using the high 53 bits of SplitMix64.
 - `random_int("stream", minimum, maximum)` returns an unbiased integer in the inclusive range. Both bounds must be finite safe integers and `minimum` must not exceed `maximum`. Even an equal-endpoint range consumes one draw.
 - `random_choice("stream", option1, option2, ...)` accepts 1–256 value expressions and returns the selected value without converting its type. With multiple options, one bounded draw selects the option; only that option expression is evaluated. A single-option choice does not advance the stream.
+- Random natural expressions also accept the optional `using random stream "name"` clause. `random item` and `random element` are equivalent list-choice forms.
 
-Each runtime instance owns its stream state. A successful `/reload` rebuilds streams by replaying the new program's seed statements; a failed reload leaves the running program and its exact stream positions unchanged. Stream state is not written to `variables.csv` and is recreated from script seeds on process startup. Use separate stream names for independent systems (for example `"loot"`, `"encounters"`, and `"decoration"`) so adding a draw in one system does not perturb another. This generator is for repeatable game logic, not cryptography or security-sensitive tokens.
+Each runtime instance owns its stream state. A successful `/reload` builds a new default stream and replays the new program's explicit seed statements; a failed reload preserves the last-good runtime and its exact stream positions. Stream states are not written to `variables.csv`. Explicitly seeded streams reproduce their sequences; the automatically initialized default stream is regenerated on runtime reset. SplitMix64 is for game logic, not cryptography or security-sensitive tokens.
 
 
 

@@ -40,6 +40,7 @@ set {between_number} to a random number between 2.7 and -1.5
 set {named_stream} to a random integer between 1 and 10 using random stream "loot"
 set {items::*} to "red", "blue", 42
 set {random_item} to a random element out of {items::*}
+set {random_item_alias} to a random item out of {items::*}
 set {message} to "You rolled %random integer from 1 to 6%!"
 )CX");
 
@@ -57,9 +58,14 @@ set {message} to "You rolled %random integer from 1 to 6%!"
            "natural random expressions can opt into a named deterministic stream");
     expect(betweenNumber >= -1.5 && betweenNumber < 2.7,
            "a random number between accepts reversed decimal endpoints");
-    const auto randomItem = runtime.getGlobal("random_item");
-    expect(randomItem.isString() || (randomItem.isNumber() && randomItem.numberOr(-1.0) == 42.0),
-           "random element out of a list returns one original value without stringifying its type");
+    const auto isValidListChoice = [](const cx::Value& value) {
+        return value.toString() == "red" || value.toString() == "blue" ||
+               (value.isNumber() && value.numberOr(-1.0) == 42.0);
+    };
+    expect(isValidListChoice(runtime.getGlobal("random_item")),
+           "random element out of a list returns one original list value");
+    expect(isValidListChoice(runtime.getGlobal("random_item_alias")),
+           "random item is a natural-language alias for random element");
     const std::string message = runtime.getGlobal("message").toString();
     expect(message.starts_with("You rolled ") && message.ends_with("!") && message.size() > 12,
            "Skript-style percent interpolation evaluates expressions inside text");
