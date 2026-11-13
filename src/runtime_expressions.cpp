@@ -359,7 +359,7 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
     // "set x-coordinate of {_player} to 15" pairs with
     // "x-coordinate of {_player}" in an expression or condition.
     static const std::regex objectPropertyPattern(
-        R"PROPERTY(^\s*(?:the\s+)?(x-coordinate|y-coordinate|x|y|width|height|texture|rotation|speed|visible|visibility)\s+of\s+(?:(sprite|entity|object)\s+)?(.+?)\s*$)PROPERTY",
+        R"PROPERTY(^\s*(?:the\s+)?(x-coordinate|y-coordinate|x|y|width|height|texture|rotation|speed|visible|visibility|health|max(?:imum)?[ _-]health)\s+of\s+(?:(sprite|entity|object)\s+)?(.+?)\s*$)PROPERTY",
         std::regex::icase);
     std::smatch propertyMatch;
     if (std::regex_match(expression, propertyMatch, objectPropertyPattern)) {
@@ -381,6 +381,18 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             return {};
         }
         const auto& object = found->second;
+        std::string normalizedProperty = property;
+        std::replace(normalizedProperty.begin(), normalizedProperty.end(), '-', ' ');
+        std::replace(normalizedProperty.begin(), normalizedProperty.end(), '_', ' ');
+        if (normalizedProperty == "health" || normalizedProperty == "max health" ||
+            normalizedProperty == "maximum health") {
+            if (handle->kind != ObjectKind::Entity) {
+                error = "Health properties are only available on entities.";
+                return {};
+            }
+            if (normalizedProperty == "health") return Value(static_cast<double>(object.health));
+            return Value(static_cast<double>(object.maxHealth));
+        }
         if (property == "x" || property == "x-coordinate") return Value(static_cast<double>(object.x));
         if (property == "y" || property == "y-coordinate") return Value(static_cast<double>(object.y));
         if (property == "width") return Value(static_cast<double>(object.width));
