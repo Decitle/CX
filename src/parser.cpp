@@ -948,27 +948,6 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         stmt.type = StatementType::If;
         stmt.expression = trim(std::string_view(text).substr(3, text.size() - 4));
         if (stmt.expression.empty()) error("The if condition is empty.", "Example: if {score} > 10:", 4, 1);
-        else {
-            const auto low = lower(stmt.expression);
-            auto missingIsBeforePhrase = [&](std::string_view phrase) {
-                const auto pos = low.find(phrase);
-                if (pos == std::string::npos) return false;
-                return !trim(std::string_view(low).substr(0, pos)).ends_with("is");
-            };
-            std::size_t badPhraseStart = std::string::npos;
-            std::size_t badPhraseLength = 0;
-            for (const std::string phrase : {" greater than ", " less than ", " equal to "}) {
-                if (!missingIsBeforePhrase(phrase)) continue;
-                badPhraseStart = low.find(phrase) + 1; // skip the leading space; point at the first word
-                badPhraseLength = phrase.size() - 2;   // omit the surrounding spaces from the underline
-                break;
-            }
-            if (badPhraseStart != std::string::npos) {
-                error("That comparison is missing `is` before the words `greater than`, `less than`, or `equal to`.",
-                      "Use the shorter form, for example: if {score} > 10:",
-                      static_cast<int>(4 + badPhraseStart), static_cast<int>(badPhraseLength));
-            }
-        }
         return stmt;
     }
     if (startsWithInsensitive(text, "seed random stream ")) {
