@@ -10,6 +10,8 @@ The tagged v0.10.14 release and the interactive `reference.html` catalogue descr
 
 The natural single-value forms `a random integer between 1 and 10`, `a random number from 0 to 1`, and `a random item out of {items::*}` are now accepted on this branch. They use an automatically initialized `"default"` stream unless an optional `using random stream "name"` clause selects another stream. Explicitly seeded streams provide reproducible sequences. The older `random_int`, `random_float`, and `random_choice` function forms remain available. Skript's count-prefix/plural random form (such as `5 random integers between 1 and 10`) is still a known compatibility gap.
 
+Typed sprite/entity references on this branch now share a natural property grammar: `<property> of <object>` for reads and `set <property> of <object> to <value>` for writes. In addition to transform/render properties, entity-only `health`, `max health`, `kind`, and `team` are supported. The health setters preserve the existing integer limits, max-health clamp and `{entity::name::...}` compatibility variables. Kind/team use the existing interned classification IDs; values must be quoted text. Older `set entity "id" health/kind/team to ...` forms remain accepted. Tags and collision-layer/mask configuration still use their specialized commands.
+
 The current engine already has familiar variable scopes, list variables, event blocks, `if`/`else`, loops, `wait`, periodic handlers, functions and return values. Those should be preserved while their complete grammar and edge cases are audited.
 
 ## Compatibility boundary
