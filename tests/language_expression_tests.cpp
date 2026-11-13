@@ -144,6 +144,41 @@ set {interpolated} to lerp(10, 20, 0.25)
     std::filesystem::remove_all(root);
 }
 
+void testNaturalComparisonAndListConditions() {
+    const auto root = fixture("condition-language", R"CX(
+set {score} to 8
+set {items::*} to "blue", "green", 3
+if {score} greater than 7:
+    set {plain_greater_than} to true
+if {score} is at least 8:
+    set {at_least} to true
+if {score} at most 8:
+    set {at_most} to true
+if {score} is greater than or equal to 8:
+    set {inclusive_greater} to true
+if {score} is not equal to 9:
+    set {not_equal} to true
+if "blue" is in {items::*}:
+    set {list_membership} to true
+if {items::*} contains "green":
+    set {list_contains} to true
+if {items::*} does not contain "red":
+    set {list_not_contains} to true
+)CX");
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "Skript-style comparison and membership conditions should load");
+    expect(!runtime.hasErrors(), "valid English comparison and list conditions should not diagnose");
+    expect(runtime.getGlobal("plain_greater_than").truthy(), "plain greater-than wording should work");
+    expect(runtime.getGlobal("at_least").truthy(), "at least should map to greater-than-or-equal");
+    expect(runtime.getGlobal("at_most").truthy(), "at most should map to less-than-or-equal");
+    expect(runtime.getGlobal("inclusive_greater").truthy(), "is greater than or equal to should be parsed as one operator");
+    expect(runtime.getGlobal("not_equal").truthy(), "is not equal to should compare unequal values");
+    expect(runtime.getGlobal("list_membership").truthy(), "is in should test typed values against a list");
+    expect(runtime.getGlobal("list_contains").truthy(), "list contains should find a typed list value");
+    expect(runtime.getGlobal("list_not_contains").truthy(), "does not contain should negate list membership");
+    std::filesystem::remove_all(root);
+}
+
 void testMathDomainErrorsAreActionable() {
     const auto root = fixture("math-domain", R"CX(
 set {bad_root} to sqrt(-1)
@@ -158,6 +193,7 @@ set {bad_root} to sqrt(-1)
 int main() {
     testSkriptStyleRandomNumberGrammar();
     testNaturalMathAndSkriptDegreeTrigonometry();
+    testNaturalComparisonAndListConditions();
     testMathDomainErrorsAreActionable();
     if (failures != 0) {
         std::cerr << "CX_LANGUAGE_EXPRESSION_TESTS_FAILED failures=" << failures << '\n';
