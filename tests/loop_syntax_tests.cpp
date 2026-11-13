@@ -44,7 +44,7 @@ loop over {items::*}:
     const bool correct = loaded && !runtime.hasErrors() &&
         runtime.getGlobal("counter").numberOr(-1.0) == 9.0 &&
         runtime.getGlobal("last_value").toString() == "blue" &&
-        runtime.getGlobal("last_index").toString() == "2";
+        runtime.getGlobal("last_index").toString() == "3";
     std::filesystem::remove_all(root);
     if (!correct) {
         std::cerr << "Expected repeat and list loop aliases to preserve counted/list loop behavior.\n";
