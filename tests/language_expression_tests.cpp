@@ -174,6 +174,22 @@ set {score} to 8
 set {items::*} to "blue", "green", 3
 if {score} greater than 7:
     set {plain_greater_than} to true
+if {score} is higher than 7:
+    set {higher_than} to true
+if {score} bigger than 7:
+    set {bigger_than} to true
+if {score} is larger than 7:
+    set {larger_than} to true
+if {score} are more than 7:
+    set {are_more_than} to true
+if {score} is lower than 9:
+    set {lower_than} to true
+if {score} smaller than 9:
+    set {smaller_than} to true
+if {score} is smaller than 9:
+    set {is_smaller_than} to true
+if {score} are lower than 9:
+    set {are_lower_than} to true
 if {score} is at least 8:
     set {at_least} to true
 if {score} at most 8:
@@ -214,6 +230,14 @@ if {items::*} does not contain "red":
     expect(loaded, "Skript-style comparison and membership conditions should load");
     expect(!runtime.hasErrors(), "valid English comparison and list conditions should not diagnose");
     expect(runtime.getGlobal("plain_greater_than").truthy(), "plain greater-than wording should work");
+    expect(runtime.getGlobal("higher_than").truthy(), "higher-than is a greater-than alias");
+    expect(runtime.getGlobal("bigger_than").truthy(), "bigger-than is a greater-than alias");
+    expect(runtime.getGlobal("larger_than").truthy(), "larger-than is a greater-than alias");
+    expect(runtime.getGlobal("are_more_than").truthy(), "are-more-than is a greater-than alias");
+    expect(runtime.getGlobal("lower_than").truthy(), "lower-than is a less-than alias");
+    expect(runtime.getGlobal("smaller_than").truthy(), "smaller-than is a less-than alias");
+    expect(runtime.getGlobal("is_smaller_than").truthy(), "is-smaller-than is a less-than alias");
+    expect(runtime.getGlobal("are_lower_than").truthy(), "are-lower-than is a less-than alias");
     expect(runtime.getGlobal("at_least").truthy(), "at least should map to greater-than-or-equal");
     expect(runtime.getGlobal("at_most").truthy(), "at most should map to less-than-or-equal");
     expect(runtime.getGlobal("inclusive_greater").truthy(), "is greater than or equal to should be parsed as one operator");

@@ -74,7 +74,7 @@ else:
     broadcast "Keep going!"
 ```
 
-Use `>`, `<`, `>=`, `<=`, `is`, `is not`, `equals`, `contains`, `and`, `or`, `not`, and parentheses. Prefer symbols for numeric comparisons, such as `if {score} > 10:`.
+Use `>`, `<`, `>=`, `<=`, `is`, `is not`, `equals`, `contains`, `and`, `or`, `not`, and parentheses. Natural numeric comparisons accept forms such as `is greater than`, `higher than`, `bigger than`, `larger than`, `more than`, `is less than`, `lower than`, and `smaller than`.
 
 
 ## Loops, wait, and scheduled events

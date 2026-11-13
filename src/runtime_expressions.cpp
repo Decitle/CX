@@ -1266,9 +1266,13 @@ bool Runtime::evaluateCondition(std::string_view rawExpression, const ExecutionC
         {" is greater than or equal to ", ">="}, {" is less than or equal to ", "<="},
         {" greater than or equal to ", ">="}, {" less than or equal to ", "<="},
         {" is not equal to ", "!="}, {" does not equal ", "!="}, {" is not in ", "not_in"},
-        {" is greater than ", ">"}, {" is less than ", "<"}, {" is more than ", ">"},
+        {" is greater than ", ">"}, {" is higher than ", ">"}, {" is bigger than ", ">"}, {" is larger than ", ">"},
+        {" are greater than ", ">"}, {" are more than ", ">"}, {" are higher than ", ">"}, {" are bigger than ", ">"}, {" are larger than ", ">"},
+        {" is less than ", "<"}, {" is lower than ", "<"}, {" is smaller than ", "<"},
+        {" are less than ", "<"}, {" are lower than ", "<"}, {" are smaller than ", "<"},
+        {" is more than ", ">"},
         {" is at least ", ">="}, {" is at most ", "<="}, {" is above ", ">"}, {" is below ", "<"},
-        {" greater than ", ">"}, {" less than ", "<"}, {" more than ", ">"},
+        {" greater than ", ">"}, {" higher than ", ">"}, {" bigger than ", ">"}, {" larger than ", ">"}, {" less than ", "<"}, {" lower than ", "<"}, {" smaller than ", "<"}, {" more than ", ">"},
         {" at least ", ">="}, {" at most ", "<="}, {" above ", ">"}, {" below ", "<"},
         {" is equal to ", "=="}, {" equal to ", "=="}, {" is in ", "in"}, {" in ", "in"},
         {" is not ", "!="}, {" does not contain ", "not_contains"}, {" contains ", "contains"},
@@ -1331,9 +1335,11 @@ bool Runtime::evaluateCondition(std::string_view rawExpression, const ExecutionC
 
     // Common malformed comparisons are caught at runtime too, so they are understandable even when entered in the console.
     const auto lowered = lower(expression);
-    if (lowered.find(" greater than ") != std::string::npos || lowered.find(" less than ") != std::string::npos ||
-        lowered.find(" at least ") != std::string::npos || lowered.find(" at most ") != std::string::npos ||
-        lowered.find(" equals ") != std::string::npos) {
+    if (lowered.find(" greater than ") != std::string::npos || lowered.find(" higher than ") != std::string::npos ||
+        lowered.find(" bigger than ") != std::string::npos || lowered.find(" larger than ") != std::string::npos ||
+        lowered.find(" less than ") != std::string::npos || lowered.find(" lower than ") != std::string::npos ||
+        lowered.find(" smaller than ") != std::string::npos || lowered.find(" at least ") != std::string::npos ||
+        lowered.find(" at most ") != std::string::npos || lowered.find(" equals ") != std::string::npos) {
         error = "Unknown comparison operator. Try a natural form such as `is greater than`, `at least`, `contains`, or `is in`, or use `>`, `<`, `>=`, `<=`.";
         return false;
     }
