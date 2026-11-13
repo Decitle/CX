@@ -139,7 +139,7 @@ The reference adds 23 world/entity entries, 6 project-structure entries, 7 UI en
 
 | Priority | Gap | Required direction |
 |---|---|---|
-| P0 | Multi-count random expressions are not implemented | Support Skript-style count prefixes and plural random number forms in list assignments without weakening CX's scalar/list value contracts. |
+| P0 validation gate | Count-prefix random list assignment needs full validation | The syntax/runtime path and regression tests are implemented; pass six-target CI and the expanded example syntax workflow before treating the gap as validated. |
 | P1 | Advanced math helpers retain function-call forms | Common scalar operations now have natural-English forms; technical procedural helpers such as `noise2d`, `fbm2d`, and `lerp` remain function calls by design. |
 | P1 | Property grammar refinements remain | Typed sprite/entity references, the shared `set <property> of <object> to <value>` grammar, and its natural possessive setter alias are implemented for supported properties; review remaining subsystem-specific properties. |
 | P1 | Typed object references currently cover sprites/entities | Live-instance-safe sprite/entity handles are implemented. Review whether room handles are needed and keep object-reference lifetime rules consistent. |
@@ -171,7 +171,7 @@ Official references:
 5. Typed object references, shared property getters/setters and the possessive setter alias are implemented; continue auditing remaining subsystem-specific properties and edge cases.
 6. Normalize event grammar and event-context values; preserve existing handlers through aliases.
 7. Normalize UI/graphics/audio/settings command wording and document the limits of currently unavailable screen/audio capabilities.
-8. Run all examples and a dedicated syntax corpus through `cx-cli --check`; add positive tests for every alias and negative tests for ambiguity, invalid types and missing context.
+8. CI now runs every standalone `.cx` example and each multi-file example project through `cx-cli --check` via `tools/check_examples.py`. Add a separate dedicated syntax corpus with positive/negative cases for aliases, ambiguity, invalid types and missing event context.
 9. Update the searchable reference, syntax guide, beginner guide, examples, generated release reference and complete-first-project tutorial together.
 10. Pass the native six-target CI matrix and all packaging checks before tagging `v0.11.0`.
 

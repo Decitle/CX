@@ -28,7 +28,7 @@ CX is a C++20 graphical 2D game engine with an approachable, Skript-inspired scr
 - [Skript compatibility notes](language-compatibility.md)
 - [Learn the C++ source](understanding-the-cpp-source.md)
 - [Platform support](platform-support.md)
-- [Testing and validation](testing.md)
+- [Testing and validation](testing.md) — CI syntax-checks every `.cx` example; CTest and graphical smoke tests cover separate behavior paths.
 - [Runtime package guide](runtime-package.md)
 - [Release format](release-format.md)
 - [Roadmap](roadmap.md)
@@ -42,6 +42,6 @@ Feature-specific contracts are documented under [features/](features/), includin
 
 The latest published runtime remains [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8). The v0.11.0 Skript-like overhaul is being developed on an open draft branch and is not yet merged or released. Its latest verified development CI matrix passed all six native targets in [run #91](https://github.com/Decitle/CX/actions/runs/43491377925).
 
-The searchable `reference.html` continues to describe v0.10.14 until the v0.11.0 language surface is accepted. The development syntax guide and audit are separate on purpose. For the exact repository/PR state and remaining release gates, see [Project status](project-status.md).
+The searchable `reference.html` continues to describe v0.10.14 until the v0.11.0 language surface is accepted. The development syntax guide and audit are separate on purpose. Recent branch commits added count-prefix random list assignment, possessive property setters, and CI syntax checks for all `.cx` examples; the current-head CI run must pass before those additions are considered validated. For the exact repository/PR state and remaining release gates, see [Project status](project-status.md).
 
 GitHub automatically provides Source code (zip) and Source code (tar.gz) snapshots for each tag. The release workflow uploads native runtime packages and a version-matched HTML reference.

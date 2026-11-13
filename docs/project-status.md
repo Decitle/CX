@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest verified six-target development CI:** [run #91](https://github.com/Decitle/CX/actions/runs/43491377925) — all six native targets passed. The count-prefix random-list implementation is in [run #94](https://github.com/Decitle/CX/actions/runs/43503305413), currently queued behind an earlier matrix.
+**Latest verified six-target development CI:** [run #91](https://github.com/Decitle/CX/actions/runs/43491377925) — all six native targets passed. Later commits added count-prefix random-list assignment, possessive property setters, and automated syntax checks for every example script; validation of the current branch head is pending.
 
 ## Repository state
 
@@ -21,16 +21,17 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Natural single-value random integer and number expressions, plus random item/element selection from CX lists. An automatically initialized default random stream is available, with explicitly seeded named streams as an optional deterministic facility.
 - English-first numeric expressions for common operations, including absolute value, square root, floor/ceiling, sine/cosine/tangent, rounding, average/mean/median, sum/product, minimum/maximum and natural clamp syntax. Technical helpers and compact function forms remain available.
 - Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions.
-- Typed sprite/entity object references with live-instance identity, property getters and the shared `<property> of <object>` setter grammar for supported transform/render/health/classification properties.
+- Typed sprite/entity object references with live-instance identity, property getters, the shared `<property> of <object>` setter grammar, and its equivalent possessive setter form for supported transform/render/health/classification properties.
 - Entity classification and tag collection operations, including whole-set tags, add, remove, clear and has-tag checks.
 - Expanded tests for expressions, loops, events, object references, variable effects, room transitions, screen effects, entity tags, and packaging.
 - Cross-platform runtime packaging fixes and successful six-target validation.
+- CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
 The latest validated code commit before the current documentation corrections passed Linux x86_64/ARM64, Windows x86_64/ARM64 and macOS x86_64/ARM64 in run #91. An earlier CI attempt, run #90, failed to compile an intermediate commit; the reserved-token issue was corrected in the next commit and #91 passed. This is retained here for an honest validation trail, not as a current blocker.
 
 ## Remaining v0.11.0 acceptance work
 
-The principal P0 language gap, **count-prefix/plural random expressions**, has now been implemented in the current development head. Its new six-target CI run is pending, so this is an implementation checkpoint rather than a validated completion:
+The principal P0 random-expression gap, **count-prefix/plural random list assignment**, has now been implemented and covered by runtime tests. Its current-head six-target CI is still pending, so this is an implementation checkpoint rather than a validated completion:
 
 ```skript
 set {rolls::*} to 5 random integers between 5 and 96
@@ -42,7 +43,7 @@ Other remaining acceptance work includes:
 
 - Complete the subsystem-by-subsystem grammar audit. Some APIs intentionally retain technical arguments or specialized commands; their language surface still needs a consistency review.
 - The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage. Event grammar/context values and remaining subsystem-specific properties still need review.
-- Run the advertised syntax corpus and all repository examples through the CLI; add negative tests for ambiguous, invalid and out-of-context forms.
+- Add a dedicated positive/negative syntax corpus for ambiguity, invalid types and missing event context. Every repository `.cx` example is now syntax-checked in CI, but this does not execute game behavior or graphical paths.
 - Update the beginner learning path, complete-first-game example, subsystem pages and versioned generated reference to match the accepted v0.11.0 grammar.
 - Pass CI and release/package verification on the final accepted branch head.
 
@@ -50,7 +51,7 @@ Other remaining acceptance work includes:
 
 `docs/reference.html` is byte-for-byte unchanged from `main`. It is the searchable **v0.10.14 release reference**, and is intentionally not being rewritten as part of an unaccepted development branch. The branch syntax guide, language charter, compatibility notes and audit describe the in-progress v0.11.0 language separately.
 
-The Pages site continues to represent the published/main documentation until the development PR is merged and the site workflow deploys the updated tree. The versioned HTML reference shipped with v0.11.0 must be regenerated only after the final syntax surface is accepted.
+The development documentation changes are still confined to the unmerged branch. They are not part of the published main-branch documentation source yet. The versioned HTML reference shipped with v0.11.0 must be regenerated only after the final syntax surface is accepted.
 
 ## Next priorities
 

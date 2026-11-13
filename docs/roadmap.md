@@ -21,10 +21,10 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Inventory every event, variable form, expression, condition, effect/statement, function, loop and project-facing API.
 - Choose a canonical English form and useful aliases for each supported family.
 - Mark current syntax, accepted aliases, planned syntax and unsupported concepts distinctly.
-- Settle the typed object-reference and event-context contracts before designing property access.
-- Keep the design charter and audit visible from the public documentation and Library.
+- Typed sprite/entity references and shared property getter/setter rules are implemented for supported properties. Continue checking object lifetime/extension cases; the standard event-context contract remains an open audit item.
+- Keep the design charter and audit linked from the repository's public documentation and learning resources.
 
-**Status:** the design charter and source-backed audit govern the active branch. Natural single-value random expressions, common natural math forms, worded comparisons, typed sprite/entity references, shared property getters/setters, and collection-oriented entity tags are implemented. Count-prefix/plural random list assignment has been implemented in the latest development commit; its current-head CI validation is pending.
+**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, worded comparisons, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. The current-head CI run must validate the latest random and property syntax plus the new example-check workflow.
 
 ### Phase 2 — expressions and common language
 
@@ -53,6 +53,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 ### Phase 5 — examples, reference and release verification
 
 - Rewrite examples so the canonical English grammar is what new users encounter first.
+- [x] Add a CI syntax pass for every standalone `.cx` example and every multi-file example project using `tools/check_examples.py` (syntax only; runtime/GUI behavior is checked separately).
 - Update the searchable reference, syntax guide, learning guide, feature pages, quickstart, standalone versioned HTML docs and package instructions together.
 - Build a parser syntax corpus covering every advertised form and alias, with invalid-form and ambiguous-parse tests.
 - Test old v0.10.14 examples through compatibility aliases wherever practical.
