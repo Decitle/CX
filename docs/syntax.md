@@ -76,7 +76,7 @@ on load:
     set {hero_texture} to texture of sprite "hero"
 ```
 
-Sprite/entity references stored in event/function locals or temporary variables identify a particular live object instance. Property expressions use the same `<property> of <object>` shape as the setters. Scalar getters include `x`/`x-coordinate`, `y`/`y-coordinate`, `width`, `height`, `texture`, `rotation`, `speed`, and `visible`/`visibility`. Entity references also expose `health` and `max health` (also written `max-health` or `max_health`); these properties are not available on sprites. Compound position and size values remain coordinate pairs in setters; read their components through the scalar coordinate/dimension getters.
+Sprite/entity references stored in event/function locals or temporary variables identify a particular live object instance. Property expressions use the same `<property> of <object>` shape as the setters. Scalar getters include `x`/`x-coordinate`, `y`/`y-coordinate`, `width`, `height`, `texture`, `rotation`, `speed`, and `visible`/`visibility`. Entity references also expose `health`, `max health` (also written `max-health` or `max_health`), `kind`, and `team`; these classification/health properties are not available on sprites. Use `set kind of entity "guard" to "boss"` and `set team of entity "guard" to "hostile"`; the earlier `set entity "guard" kind/team to ...` commands remain accepted. Compound position and size values remain coordinate pairs in setters; read their components through the scalar coordinate/dimension getters.
 
 ## Conditions
 
@@ -476,6 +476,8 @@ on load:
     set entity "player" avoids solid tiles to true
     set max health of entity "player" to 6
     set health of entity "player" to 6
+    set kind of entity "player" to "hero"
+    set team of entity "player" to "adventurer"
 
 on tick:
     move entity "player" using WASD at speed 170
