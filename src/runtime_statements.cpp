@@ -1220,14 +1220,20 @@ void Runtime::runExecution(ExecutionContext& context) {
                 if (isListWildcard(target)) {
                     if (statement.type == StatementType::Add) appendListValue(target, std::move(amount), context, &statement);
                     else {
+                        // remove X from a list removes the first matching item, matching
+                        // Skript's default. "remove all X from a list" explicitly removes
+                        // every equal typed value from the snapshot.
                         const auto entries = listEntries(target, context);
-                        const auto found = std::find_if(entries.begin(), entries.end(), [&](const ListEntry& entry) { return sameValue(entry.value, amount); });
-                        if (found != entries.end()) {
-                            const std::string itemName = target.substr(0, target.size() - 1) + found->index;
+                        bool removedOne = false;
+                        for (const auto& entry : entries) {
+                            if (!sameValue(entry.value, amount)) continue;
+                            const std::string itemName = target.substr(0, target.size() - 1) + entry.index;
                             if (itemName.starts_with("_")) context.locals.erase(itemName);
                             else if (itemName.starts_with("^")) transient_.erase(itemName.substr(1));
                             else { globals_.erase(itemName); variableStorageDirty_ = true; }
+                            if (statement.property != "all") { removedOne = true; break; }
                         }
+                        (void)removedOne;
                     }
                     break;
                 }

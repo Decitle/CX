@@ -1015,28 +1015,57 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         }
         return stmt;
     }
-    if (startsWithInsensitive(text, "add ") || startsWithInsensitive(text, "subtract ") || startsWithInsensitive(text, "remove ")) {
-        const bool adding = startsWithInsensitive(text, "add ");
-        const std::size_t prefix = adding ? 4U : (startsWithInsensitive(text, "subtract ") ? 9U : 7U);
+    const bool addToVariable = startsWithInsensitive(text, "add ");
+    const bool increaseVariable = startsWithInsensitive(text, "increase ");
+    const bool subtractFromVariable = startsWithInsensitive(text, "subtract ");
+    const bool decreaseVariable = startsWithInsensitive(text, "decrease ");
+    const bool removeFromList = startsWithInsensitive(text, "remove ");
+    if (addToVariable || increaseVariable || subtractFromVariable || decreaseVariable || removeFromList) {
+        const bool adding = addToVariable || increaseVariable;
+        const bool reverseOrder = increaseVariable || decreaseVariable;
+        const bool removeAll = startsWithInsensitive(text, "remove all ");
+        const std::size_t prefix = addToVariable ? 4U : increaseVariable ? 9U :
+            subtractFromVariable ? 9U : decreaseVariable ? 9U : (removeAll ? 11U : 7U);
         const std::string_view rest(text.data() + prefix, text.size() - prefix);
-        const auto marker = findPhraseOutsideQuotes(rest, adding ? "to" : "from");
+        const std::string_view markerText = reverseOrder ? "by" : (adding ? "to" : (removeFromList ? "from" : "from"));
+        const auto marker = findPhraseOutsideQuotes(rest, markerText);
         if (marker == std::string_view::npos) {
-            error(adding ? "The add command is missing `to`." : "The subtract command is missing `from`.",
-                  adding ? "Example: add 1 to {score}" : "Example: subtract 1 from {score}", static_cast<int>(prefix + 1U), static_cast<int>(rest.size()));
+            error(adding ? (reverseOrder ? "The increase command is missing `by`." : "The add command is missing `to`.") :
+                  (reverseOrder ? "The decrease command is missing `by`." : "This command is missing `from`."),
+                  adding ? "Use `add 1 to {score}` or `increase {score} by 1`." :
+                  "Use `subtract 1 from {score}`, `decrease {score} by 1`, or `remove \"potion\" from {inventory::*}`.",
+                  static_cast<int>(prefix + 1U), static_cast<int>(rest.size()));
             return std::nullopt;
         }
         stmt.type = adding ? StatementType::Add : StatementType::Subtract;
-        stmt.expression = trim(rest.substr(0, marker));
-        const auto rawTarget = trim(rest.substr(marker + (adding ? 2U : 4U)));
-        stmt.target = canonicalVariableName(rawTarget);
+        if (reverseOrder) {
+            const std::string rawTarget = trim(rest.substr(0, marker));
+            stmt.target = canonicalVariableName(rawTarget);
+            stmt.expression = trim(rest.substr(marker + markerText.size()));
+            if (rawTarget.find('{') == std::string::npos || rawTarget.find('}') == std::string::npos) {
+                error("The variable being increased or decreased must be written inside curly braces.",
+                      "Use `increase {score} by 1` or `decrease {score} by 1`.");
+                return std::nullopt;
+            }
+        } else {
+            stmt.expression = trim(rest.substr(0, marker));
+            const auto rawTarget = trim(rest.substr(marker + markerText.size()));
+            stmt.target = canonicalVariableName(rawTarget);
+            if (rawTarget.find('{') == std::string::npos || rawTarget.find('}') == std::string::npos) {
+                error("The destination must be a variable written inside curly braces.",
+                      adding ? "Use: add 1 to {score}" : "Use: subtract 1 from {score} or remove \"potion\" from {inventory::*}");
+                return std::nullopt;
+            }
+        }
+        if (removeAll) stmt.property = "all";
         if (stmt.target.empty() || stmt.expression.empty()) {
-            error("The amount or destination variable is missing.", adding ? "Example: add 1 to {score}" : "Example: subtract 1 from {score}");
+            error("The amount or destination variable is missing.",
+                  "Use `add 1 to {score}`, `increase {score} by 1`, or `remove \"item\" from {items::*}`.");
             return std::nullopt;
         }
-        if (!lower(rawTarget).starts_with("engine::") && (rawTarget.find('{') == std::string::npos || rawTarget.find('}') == std::string::npos)) {
-            error("The destination must be a variable written inside curly braces.",
-                  adding ? "Use: add 1 to {score}" : "Use: subtract 1 from {score}",
-                  static_cast<int>(text.find(adding ? "to" : "from") + (adding ? 3U : 5U)), static_cast<int>(rawTarget.size()));
+        if (removeFromList && !stmt.target.ends_with("::*")) {
+            error("The `remove` effect removes matching values from a list variable.",
+                  "Use: remove \"potion\" from {inventory::*}. Use `subtract amount from {score}` for numeric subtraction.");
             return std::nullopt;
         }
         return stmt;
