@@ -203,13 +203,23 @@ if {items::*} does not contain "red":
     std::filesystem::remove_all(root);
 }
 
-void testMathDomainErrorsAreActionable() {
+void testMathDomainResultsCanBeCheckedAsNaN() {
     const auto root = fixture("math-domain", R"CX(
-set {bad_root} to sqrt(-1)
+set {_bad_root} to sqrt(-1)
+set {_bad_log} to ln(0)
+set {_bad_inverse} to asin(2)
+set {root_is_nan} to isNaN({_bad_root})
+set {log_is_nan} to isNaN({_bad_log})
+set {inverse_is_nan} to isNaN({_bad_inverse})
+set {normal_is_finite} to isFinite(3.5)
 )CX");
     cx::Runtime runtime(root);
-    expect(!runtime.loadScripts(), "square root of a negative number should be diagnosed instead of silently propagating NaN");
-    expect(runtime.hasErrors(), "math domain failures should create runtime diagnostics");
+    expect(runtime.loadScripts(), "out-of-domain math results should remain numeric NaN values instead of aborting script execution");
+    expect(!runtime.hasErrors(), "valid NaN-producing math operations should not emit runtime diagnostics");
+    expect(runtime.getGlobal("root_is_nan").truthy(), "isNaN should detect sqrt of a negative value");
+    expect(runtime.getGlobal("log_is_nan").truthy(), "isNaN should detect logarithm domain results");
+    expect(runtime.getGlobal("inverse_is_nan").truthy(), "inverse trig outside its real domain should return NaN");
+    expect(runtime.getGlobal("normal_is_finite").truthy(), "isFinite should distinguish ordinary finite numbers");
     std::filesystem::remove_all(root);
 }
 }
@@ -218,7 +228,7 @@ int main() {
     testSkriptStyleRandomNumberGrammar();
     testNaturalMathAndSkriptDegreeTrigonometry();
     testNaturalComparisonAndListConditions();
-    testMathDomainErrorsAreActionable();
+    testMathDomainResultsCanBeCheckedAsNaN();
     if (failures != 0) {
         std::cerr << "CX_LANGUAGE_EXPRESSION_TESTS_FAILED failures=" << failures << '\n';
         return 1;
