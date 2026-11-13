@@ -882,6 +882,35 @@ void Runtime::runExecution(ExecutionContext& context) {
                     }
                     if (property == "kind") entity.kindId = labelId;
                     else entity.teamId = labelId;
+                } else if (property == "add_tag" || property == "remove_tag") {
+                    const std::string tag = lower(trim(statement.expression));
+                    if (!validEntityClassification(tag)) {
+                        runtimeError(statement, "Entity tags must contain 1–40 letters, numbers, underscores or hyphens.",
+                            "Use add tag \"armored\" to entity \"warden\" or remove tag \"armored\" from entity \"warden\".");
+                        break;
+                    }
+                    const std::uint32_t tagId = findEntityLabel(tag);
+                    const auto existingTag = tagId == 0U ? entity.tagIds.end() :
+                        std::find(entity.tagIds.begin(), entity.tagIds.end(), tagId);
+                    if (property == "add_tag") {
+                        if (existingTag != entity.tagIds.end()) break;
+                        if (entity.tagIds.size() >= 32U) {
+                            runtimeError(statement, "An entity can have at most 32 tags.",
+                                "Remove an existing tag before adding another one.");
+                            break;
+                        }
+                        const std::uint32_t addedTagId = tagId != 0U ? tagId : internEntityLabel(tag);
+                        if (addedTagId == 0U) {
+                            runtimeError(statement, "The runtime could not allocate an entity tag ID.",
+                                "Use fewer unique tag, kind and team identifiers in this project.");
+                            break;
+                        }
+                        entity.tagIds.push_back(addedTagId);
+                    } else if (existingTag != entity.tagIds.end()) {
+                        entity.tagIds.erase(existingTag);
+                    }
+                } else if (property == "clear_tags") {
+                    entity.tagIds.clear();
                 } else if (property == "tags") {
                     std::vector<std::uint32_t> tags;
                     if (!trim(statement.expression).empty()) {

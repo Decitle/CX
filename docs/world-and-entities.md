@@ -135,12 +135,15 @@ set engine::camera_follow to "player"
 
 ## Entity classification and collision filtering (v0.10.2)
 
-Entities now carry independent `kind`, `team`, `tags`, collision `layer`, and collision `mask` metadata. Kind and team use the shared object-property getter/setter form and only apply to entities; the older named setter forms remain accepted. Tags and collision channels retain their specialized commands. Use these properties to describe a boss, player, pickup or hazard without relying on texture filenames or hardcoded name conventions. The built-in channels are `actors`, `projectiles`, `props`, `triggers`, `effects`, `pickups`, `hazards`, and `sensors`.
+Entities now carry independent `kind`, `team`, `tags`, collision `layer`, and collision `mask` metadata. Kind and team use the shared object-property getter/setter form and only apply to entities; the older named setter forms remain accepted. Tags remain collection operations: replace the complete set, add or remove one tag, or clear all tags. Collision channels retain their specialized commands. Use these properties to describe a boss, player, pickup or hazard without relying on texture filenames or hardcoded name conventions. The built-in channels are `actors`, `projectiles`, `props`, `triggers`, `effects`, `pickups`, `hazards`, and `sensors`.
 
 ```cx
 set kind of entity "warden" to "boss"
 set team of entity "warden" to "hostile"
 set entity "warden" tags to "boss, armored, phase_two"
+add tag "elite" to entity "warden"
+remove tag "temporary" from entity "warden"
+clear tags of entity "warden"
 set {warden_kind} to kind of entity "warden"
 set {warden_team} to team of entity "warden"
 set entity "warden" collision layer to "actors, hazards"

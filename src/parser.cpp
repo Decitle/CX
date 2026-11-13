@@ -608,6 +608,29 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         stmt.property = trim(entityMatch[3].str());
         return stmt;
     }
+    static const std::regex addEntityTagPattern(R"TAG(^add\s+(?:the\s+)?tag\s+"([^"\n]+)"\s+to\s+(?:the\s+)?entity\s+"([^"\n]+)"\s*$)TAG", std::regex::icase);
+    if (std::regex_match(text, entityMatch, addEntityTagPattern)) {
+        stmt.type = StatementType::SetEntityProperty;
+        stmt.target = lower(trim(entityMatch[2].str()));
+        stmt.property = "add_tag";
+        stmt.expression = trim(entityMatch[1].str());
+        return stmt;
+    }
+    static const std::regex removeEntityTagPattern(R"TAG(^remove\s+(?:the\s+)?tag\s+"([^"\n]+)"\s+from\s+(?:the\s+)?entity\s+"([^"\n]+)"\s*$)TAG", std::regex::icase);
+    if (std::regex_match(text, entityMatch, removeEntityTagPattern)) {
+        stmt.type = StatementType::SetEntityProperty;
+        stmt.target = lower(trim(entityMatch[2].str()));
+        stmt.property = "remove_tag";
+        stmt.expression = trim(entityMatch[1].str());
+        return stmt;
+    }
+    static const std::regex clearEntityTagsPattern(R"TAG(^clear\s+(?:the\s+)?tags\s+of\s+(?:the\s+)?entity\s+"([^"\n]+)"\s*$)TAG", std::regex::icase);
+    if (std::regex_match(text, entityMatch, clearEntityTagsPattern)) {
+        stmt.type = StatementType::SetEntityProperty;
+        stmt.target = lower(trim(entityMatch[1].str()));
+        stmt.property = "clear_tags";
+        return stmt;
+    }
     static const std::regex setEntityInteractionFlagPattern(R"INTERACT(^set\s+entity\s+"([^"\n]+)"\s+interactable\s+to\s+(true|false)\s*$)INTERACT", std::regex::icase);
     if (std::regex_match(text, entityMatch, setEntityInteractionFlagPattern)) {
         stmt.type = StatementType::SetEntityProperty;

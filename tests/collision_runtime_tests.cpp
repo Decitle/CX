@@ -60,6 +60,39 @@ on load:
     std::filesystem::remove_all(root);
 }
 
+void testTagMutationCommands() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-tag-mutation-tests";
+    std::filesystem::remove_all(root);
+    createTextures(root);
+    write(root / "scripts" / "main.cx", R"CX(
+create entity "warden" with texture {$boss}
+create entity "cleanme" with texture {$boss}
+set entity "warden" tags to "armored, flying"
+set entity "cleanme" tags to "temporary, marked"
+on load:
+    add tag "elite" to entity "warden"
+    add the tag "elite" to entity "warden"
+    remove tag "flying" from entity "warden"
+    remove tag "not_present" from entity "warden"
+    if entity "warden" has tag "elite" and entity "warden" has tag "armored":
+        set {tag_mutations_match} to true
+    if entity "warden" has tag "flying":
+        set {removed_tag_still_there} to true
+    clear the tags of entity "cleanme"
+    if entity "cleanme" has tag "temporary":
+        set {tag_clear_failed} to true
+)CX");
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "tag add/remove/clear commands should parse and execute");
+    expect(globalIsTrue(runtime, "tag_mutations_match"), "tag additions and removals should update tag queries");
+    expect(runtime.sprites().at("warden").tagIds.size() == 2,
+           "adding the same tag twice should be idempotent and removing a tag should remove only that tag");
+    expect(!globalIsTrue(runtime, "removed_tag_still_there"), "removed tags should no longer match tag queries");
+    expect(runtime.sprites().at("cleanme").tagIds.empty(), "clear tags should remove the complete tag set");
+    expect(!globalIsTrue(runtime, "tag_clear_failed"), "cleared tags should no longer match tag queries");
+    std::filesystem::remove_all(root);
+}
 void testCollisionLayerAndMaskFilteringForOverlapQueries() {
     const auto root = std::filesystem::temp_directory_path() / "cx-collision-overlap-filter-tests";
     std::filesystem::remove_all(root);
@@ -482,6 +515,7 @@ void testSharedSweptAabbGeometry() {
 int main() {
     try {
         testClassificationAndTagQueries();
+        testTagMutationCommands();
         testCollisionLayerAndMaskFilteringForOverlapQueries();
         testOutgoingProjectileMaskFiltersHits();
         testTargetMaskFiltersProjectileHits();

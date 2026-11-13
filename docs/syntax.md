@@ -322,7 +322,7 @@ if entity "warden" has tag "flying":
     set {boss_can_fly} to true
 ```
 
-`kind` says what the entity is, `team` says who it belongs to, and `tags` records additional author-defined traits. These are separate metadata fields; the engine does not automatically infer damage, behavior or allegiance from their values. Tag assignment replaces the set, and an empty string clears it. Identifiers are limited to 1–40 letters, digits, underscores or hyphens; an entity can have at most 32 tags.
+`kind` says what the entity is, `team` says who it belongs to, and `tags` records additional author-defined traits. These are separate metadata fields; the engine does not automatically infer damage, behavior or allegiance from their values. Tag assignment replaces the set, and an empty string clears it. Use `add tag "flying" to entity "warden"` or `remove tag "flying" from entity "warden"` to change one tag, and `clear tags of entity "warden"` to remove them all. Adding an existing tag and removing a missing tag are no-ops. Identifiers are limited to 1–40 letters, digits, underscores or hyphens; an entity can have at most 32 tags.
 
 Collision channels are `actors`, `projectiles`, `props`, `triggers`, `effects`, `pickups`, `hazards` and `sensors`. A layer may contain a comma-separated combination. A mask lists channels an object accepts; `all` and `none` are shortcuts. The relationship is mutual: each object's mask must include at least one channel assigned to the other object. Collision-enabled state and AABB overlap must also pass. `entity "a" overlaps entity "b"` uses this same filter. Room solid-tile collision remains a separate grid system.
 
