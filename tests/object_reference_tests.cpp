@@ -40,6 +40,18 @@ on load:
     set rotation of sprite {_object} to 90
     set rotation of entity {_entity} to 180
     set speed of entity {_entity} to 125
+    set health of entity {_entity} to 8
+    set max health of entity {_entity} to 12
+    set {_target_health} to 10
+    set the health of {_entity} to {_target_health}
+    set max health of entity {_entity} to 9
+    set {_read_health_clamped} to health of entity {_entity}
+    set max-health of entity {_entity} to 14
+    set the health of {_entity} to {_target_health}
+    set {_read_health} to health of entity {_entity}
+    set {_read_max_health} to the max health of {_entity}
+    set {read_health_global} to {entity::npc::health}
+    set {read_max_health_global} to {entity::npc::max_health}
     set {_hide} to false
     set visibility of sprite {_object} to {_hide}
     set {read_x} to x-coordinate of sprite "hero"
@@ -67,6 +79,7 @@ on load:
         const auto& npc = runtime.sprites().at("npc");
         expect(npc.rotationDegrees == 180.0F, "entity handle should support rotation");
         expect(npc.moveSpeedPixelsPerSecond == 125.0F, "entity speed should remain accessible through a handle");
+        expect(npc.health == 10 && npc.maxHealth == 14, "entity health properties should preserve the existing health/max-health rules");
     } else expect(false, "npc entity should exist");
     expect(runtime.getGlobal("read_x").numberOr(-1.0) == 30.0, "x-coordinate getter should read the current live object property");
     expect(runtime.getGlobal("read_y").numberOr(-1.0) == 40.0, "property getters should work with a local object handle");
@@ -77,7 +90,45 @@ on load:
     expect(runtime.getGlobal("read_height").numberOr(-1.0) == 28.0, "height getter should expose the live vertical size");
     expect(runtime.getGlobal("read_texture").toString() == runtime.sprites().at("hero").textureId,
            "texture getter should return the active texture identifier");
+    expect(runtime.getGlobal("read_health_clamped").numberOr(-1.0) == 9.0,
+           "lowering max health should clamp current health to the new maximum");
+    expect(runtime.getGlobal("read_health").numberOr(-1.0) == 10.0,
+           "health getter should read the live entity health value");
+    expect(runtime.getGlobal("read_max_health").numberOr(-1.0) == 14.0,
+           "max health getter should read the live entity maximum health");
+    expect(runtime.getGlobal("read_health_global").numberOr(-1.0) == 10.0,
+           "entity health property writes should keep the public health variable synchronized");
+    expect(runtime.getGlobal("read_max_health_global").numberOr(-1.0) == 14.0,
+           "entity max-health property writes should keep the public max-health variable synchronized");
     expect(runtime.getGlobal("object_identity_matches").truthy(), "expressions resolving to the same object should compare by identity");
+    std::filesystem::remove_all(root);
+}
+void testHealthPropertiesRejectSprites() {
+    const auto root = makeProject("sprite-health", R"CX(
+on load:
+    create sprite "hero" with texture {$object}
+    set {bad_health} to health of sprite "hero"
+)CX");
+    cx::Runtime runtime(root);
+    expect(!runtime.loadScripts() && runtime.hasErrors(), "sprite objects must not expose entity health properties");
+    bool found = false;
+    for (const auto& diagnostic : runtime.diagnostics())
+        if (diagnostic.message.find("only available on entities") != std::string::npos) found = true;
+    expect(found, "reading health from a sprite should explain that health belongs to entities");
+    std::filesystem::remove_all(root);
+}
+void testHealthSettersRejectSprites() {
+    const auto root = makeProject("sprite-health-setter", R"CX(
+on load:
+    create sprite "hero" with texture {$object}
+    set health of sprite "hero" to 5
+)CX");
+    cx::Runtime runtime(root);
+    expect(!runtime.loadScripts() && runtime.hasErrors(), "sprite objects must reject entity health setters");
+    bool found = false;
+    for (const auto& diagnostic : runtime.diagnostics())
+        if (diagnostic.message.find("only available on entities") != std::string::npos) found = true;
+    expect(found, "setting health on a sprite should explain that health belongs to entities");
     std::filesystem::remove_all(root);
 }
 void testStaleHandleCannotTargetReplacement() {
@@ -116,6 +167,8 @@ on load:
 }
 int main() {
     testObjectVariablesAndEnglishProperties();
+    testHealthPropertiesRejectSprites();
+    testHealthSettersRejectSprites();
     testStaleHandleCannotTargetReplacement();
     testPersistentGlobalsRejectObjectHandles();
     if (failures != 0) {
