@@ -1001,9 +1001,17 @@ bool Runtime::evaluateCondition(std::string_view rawExpression, const ExecutionC
     }
 
     static const std::vector<std::pair<std::string, std::string>> compareOps = {
+        // More specific multi-word operators come first. The same operation also has
+        // concise forms so a script can read naturally without forcing one exact phrase.
+        {" is greater than or equal to ", ">="}, {" is less than or equal to ", "<="},
         {" greater than or equal to ", ">="}, {" less than or equal to ", "<="},
-        {" is not equal to ", "!="}, {" is greater than ", ">"}, {" is less than ", "<"},
-        {" is equal to ", "=="}, {" is not ", "!="}, {" contains ", "contains"},
+        {" is not equal to ", "!="}, {" does not equal ", "!="}, {" is not in ", "not_in"},
+        {" is greater than ", ">"}, {" is less than ", "<"}, {" is more than ", ">"},
+        {" is at least ", ">="}, {" is at most ", "<="}, {" is above ", ">"}, {" is below ", "<"},
+        {" greater than ", ">"}, {" less than ", "<"}, {" more than ", ">"},
+        {" at least ", ">="}, {" at most ", "<="}, {" above ", ">"}, {" below ", "<"},
+        {" is equal to ", "=="}, {" equal to ", "=="}, {" is in ", "in"}, {" in ", "in"},
+        {" is not ", "!="}, {" does not contain ", "not_contains"}, {" contains ", "contains"},
         {" equals ", "=="}, {" >= ", ">="}, {" <= ", "<="}, {" != ", "!="},
         {" == ", "=="}, {" > ", ">"}, {" < ", "<"}, {" is ", "=="}
     };
@@ -1015,9 +1023,30 @@ bool Runtime::evaluateCondition(std::string_view rawExpression, const ExecutionC
         if (!rightError.empty()) { error = rightError; return false; }
         const double leftNumber = left.numberOr(std::numeric_limits<double>::quiet_NaN());
         const double rightNumber = right.numberOr(std::numeric_limits<double>::quiet_NaN());
+        const auto isListExpression = [](std::string_view text) {
+            const std::string value = trim(text);
+            return value.size() >= 4 && value.front() == '{' && value.back() == '}' &&
+                   value.find("::*") != std::string::npos;
+        };
+        auto listContains = [&](std::string_view listExpression, const Value& wanted) {
+            const auto entries = listEntries(canonicalVariableName(listExpression), context);
+            return std::any_of(entries.begin(), entries.end(), [&](const auto& entry) {
+                return sameValue(entry.value, wanted);
+            });
+        };
         if (op->op == "==") result = sameValue(left, right);
         else if (op->op == "!=") result = !sameValue(left, right);
-        else if (op->op == "contains") result = lower(left.toString()).find(lower(right.toString())) != std::string::npos;
+        else if (op->op == "in" || op->op == "not_in") {
+            const bool found = isListExpression(std::string_view(expression).substr(op->position + op->length))
+                ? listContains(std::string_view(expression).substr(op->position + op->length), left)
+                : lower(right.toString()).find(lower(left.toString())) != std::string::npos;
+            result = op->op == "not_in" ? !found : found;
+        } else if (op->op == "contains" || op->op == "not_contains") {
+            const bool found = isListExpression(std::string_view(expression).substr(0, op->position))
+                ? listContains(std::string_view(expression).substr(0, op->position), right)
+                : lower(left.toString()).find(lower(right.toString())) != std::string::npos;
+            result = op->op == "not_contains" ? !found : found;
+        }
         else if (op->op == ">") {
             if (std::isfinite(leftNumber) && std::isfinite(rightNumber)) result = leftNumber > rightNumber;
             else result = lower(left.toString()) > lower(right.toString());
@@ -1037,8 +1066,9 @@ bool Runtime::evaluateCondition(std::string_view rawExpression, const ExecutionC
     // Common malformed comparisons are caught at runtime too, so they are understandable even when entered in the console.
     const auto lowered = lower(expression);
     if (lowered.find(" greater than ") != std::string::npos || lowered.find(" less than ") != std::string::npos ||
+        lowered.find(" at least ") != std::string::npos || lowered.find(" at most ") != std::string::npos ||
         lowered.find(" equals ") != std::string::npos) {
-        error = "Unknown comparison operator. CX uses `>`, `<`, `>=`, `<=`, `is`, and `is not`.";
+        error = "Unknown comparison operator. Try a natural form such as `is greater than`, `at least`, `contains`, or `is in`, or use `>`, `<`, `>=`, `<=`.";
         return false;
     }
     Value value = evaluateValue(expression, context, error);
