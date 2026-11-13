@@ -45,11 +45,11 @@ on load:
     set {_target_health} to 10
     set the health of {_entity} to {_target_health}
     set max health of entity {_entity} to 9
-    set {_read_health_clamped} to health of entity {_entity}
+    set {read_health_clamped} to health of entity {_entity}
     set max-health of entity {_entity} to 14
     set the health of {_entity} to {_target_health}
-    set {_read_health} to health of entity {_entity}
-    set {_read_max_health} to the max health of {_entity}
+    set {read_health} to health of entity {_entity}
+    set {read_max_health} to the max health of {_entity}
     set {read_health_global} to {entity::npc::health}
     set {read_max_health_global} to {entity::npc::max_health}
     set {_hide} to false
