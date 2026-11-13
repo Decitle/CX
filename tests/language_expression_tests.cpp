@@ -158,6 +158,22 @@ if {score} is greater than or equal to 8:
     set {inclusive_greater} to true
 if {score} is not equal to 9:
     set {not_equal} to true
+if {score} is between 5 and 10:
+    set {between} to true
+if {score} is not between 9 and 12:
+    set {not_between} to true
+if {score} is even:
+    set {even} to true
+if 7 is odd:
+    set {odd} to true
+if -3 is negative:
+    set {negative} to true
+if "hello" is text:
+    set {text_type} to true
+if {score} is a number:
+    set {number_type} to true
+if "" is empty:
+    set {empty_string} to true
 if "blue" is in {items::*}:
     set {list_membership} to true
 if {items::*} contains "green":
@@ -173,6 +189,14 @@ if {items::*} does not contain "red":
     expect(runtime.getGlobal("at_most").truthy(), "at most should map to less-than-or-equal");
     expect(runtime.getGlobal("inclusive_greater").truthy(), "is greater than or equal to should be parsed as one operator");
     expect(runtime.getGlobal("not_equal").truthy(), "is not equal to should compare unequal values");
+    expect(runtime.getGlobal("between").truthy(), "is between should include values inside the numeric range");
+    expect(runtime.getGlobal("not_between").truthy(), "is not between should negate the inclusive range check");
+    expect(runtime.getGlobal("even").truthy(), "is even should accept whole even numbers");
+    expect(runtime.getGlobal("odd").truthy(), "is odd should accept whole odd numbers");
+    expect(runtime.getGlobal("negative").truthy(), "is negative should recognize negative values");
+    expect(runtime.getGlobal("text_type").truthy(), "is text should test the string value type");
+    expect(runtime.getGlobal("number_type").truthy(), "is a number should test the numeric value type");
+    expect(runtime.getGlobal("empty_string").truthy(), "is empty should recognize empty strings");
     expect(runtime.getGlobal("list_membership").truthy(), "is in should test typed values against a list");
     expect(runtime.getGlobal("list_contains").truthy(), "list contains should find a typed list value");
     expect(runtime.getGlobal("list_not_contains").truthy(), "does not contain should negate list membership");

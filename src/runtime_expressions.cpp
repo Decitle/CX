@@ -962,6 +962,73 @@ bool Runtime::evaluateCondition(std::string_view rawExpression, const ExecutionC
         return true;
     }
 
+    // Range, parity, sign, type, and emptiness conditions are more specific than
+    // the generic `is` comparison and must therefore be evaluated first.
+    static const std::regex betweenConditionPattern(
+        R"BETWEEN(^(.+?)\s+is\s+(not\s+)?between\s+(.+)$)BETWEEN", std::regex::icase);
+    std::smatch betweenMatch;
+    if (std::regex_match(expression, betweenMatch, betweenConditionPattern)) {
+        const std::string range = trim(betweenMatch[3].str());
+        const auto separator = findOperator(range, {{" and ", "and"}});
+        if (!separator) { error = "A between condition needs a lower and upper bound separated by `and`."; return false; }
+        const Value subject = evaluateValue(trim(betweenMatch[1].str()), context, error);
+        if (!error.empty()) return false;
+        const Value lowerBound = evaluateValue(trim(std::string_view(range).substr(0, separator->position)), context, error);
+        if (!error.empty()) return false;
+        const Value upperBound = evaluateValue(trim(std::string_view(range).substr(separator->position + separator->length)), context, error);
+        if (!error.empty()) return false;
+        if (!subject.isNumber() || !lowerBound.isNumber() || !upperBound.isNumber()) {
+            error = "A between condition needs three numeric values.";
+            return false;
+        }
+        const double value = subject.numberOr(), low = lowerBound.numberOr(), high = upperBound.numberOr();
+        const bool inside = std::isfinite(value) && std::isfinite(low) && std::isfinite(high) &&
+            value >= std::min(low, high) && value <= std::max(low, high);
+        result = betweenMatch[2].matched ? !inside : inside;
+        return true;
+    }
+
+    static const std::regex valuePredicatePattern(
+        R"PREDICATE(^(.+?)\s+is\s+(not\s+)?(even|odd|positive|negative|zero|a\s+number|number|a\s+text|text|string|a\s+boolean|boolean|empty|a\s+list|list)$)PREDICATE",
+        std::regex::icase);
+    std::smatch predicateMatch;
+    if (std::regex_match(expression, predicateMatch, valuePredicatePattern)) {
+        const std::string subjectExpression = trim(predicateMatch[1].str());
+        const std::string predicate = lower(trim(predicateMatch[3].str()));
+        const bool isListExpression = subjectExpression.size() >= 4 &&
+            subjectExpression.front() == '{' && subjectExpression.back() == '}' &&
+            subjectExpression.find("::*") != std::string::npos;
+        Value subject;
+        if (!isListExpression) {
+            subject = evaluateValue(subjectExpression, context, error);
+            if (!error.empty()) return false;
+        }
+        bool matches = false;
+        if (predicate == "even" || predicate == "odd" || predicate == "positive" ||
+            predicate == "negative" || predicate == "zero" || predicate == "number" || predicate == "a number") {
+            if (subject.isNumber()) {
+                const double number = subject.numberOr();
+                if (predicate == "even") matches = std::isfinite(number) && std::trunc(number) == number && std::fmod(std::abs(number), 2.0) == 0.0;
+                else if (predicate == "odd") matches = std::isfinite(number) && std::trunc(number) == number && std::fmod(std::abs(number), 2.0) == 1.0;
+                else if (predicate == "positive") matches = number > 0.0;
+                else if (predicate == "negative") matches = number < 0.0;
+                else if (predicate == "zero") matches = number == 0.0;
+                else matches = true;
+            }
+        } else if (predicate == "text" || predicate == "a text" || predicate == "string") {
+            matches = subject.isString();
+        } else if (predicate == "boolean" || predicate == "a boolean") {
+            matches = subject.isBool();
+        } else if (predicate == "list" || predicate == "a list") {
+            matches = isListExpression;
+        } else if (predicate == "empty") {
+            matches = isListExpression ? listEntries(canonicalVariableName(subjectExpression), context).empty()
+                                       : subject.isNull() || (subject.isString() && subject.toString().empty());
+        }
+        result = predicateMatch[2].matched ? !matches : matches;
+        return true;
+    }
+
     // Skript-style presence checks must run before the generic `is not` comparison.
     static const std::regex setStatePattern(R"SET(^(.+?)\s+is\s+(not\s+)?set$)SET", std::regex::icase);
     std::smatch setStateMatch;
