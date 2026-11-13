@@ -221,6 +221,11 @@ bool Runtime::loadScripts(bool resetGlobals) {
     keysDown_ = std::move(staged.keysDown_);
     lightsRevision_ = staged.lightsRevision_;
     beamsRevision_ = staged.beamsRevision_;
+    screenEffects_ = staged.screenEffects_;
+    screenFadeStartOpacity_ = staged.screenFadeStartOpacity_;
+    screenFadeTargetOpacity_ = staged.screenFadeTargetOpacity_;
+    screenFadeElapsedSeconds_ = staged.screenFadeElapsedSeconds_;
+    screenFadeDurationSeconds_ = staged.screenFadeDurationSeconds_;
     settings_ = std::move(staged.settings_);
     tickCount_ = staged.tickCount_;
     scheduledExecutions_ = std::move(staged.scheduledExecutions_);
