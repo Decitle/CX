@@ -831,7 +831,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
 
     // Minimal renderer-neutral sprite objects. Coordinates and sizes are in pixels.
     static const std::regex createSpritePattern(R"SPRITE(^create\s+(sprite|entity)\s+"([^"\n]+)"\s+with\s+texture\s+(\{\$[^{}]+\})\s*$)SPRITE", std::regex::icase);
-    static const std::regex setSpritePropertyPattern(R"PROPERTY(^set\s+(x-coordinate|y-coordinate|position|size|rotation|texture|visible|visibility|speed)\s+of\s+((?:sprite|entity|object)\s+)?("[^"\n]+"|\{[^{}]+\})\s+to\s+(.+?)\s*$)PROPERTY", std::regex::icase);
+    static const std::regex setSpritePropertyPattern(R"PROPERTY(^set\s+(?:the\s+)?(x-coordinate|y-coordinate|position|size|rotation|texture|visible|visibility|speed|health|max(?:imum)?[ _-]health)\s+of\s+((?:sprite|entity|object)\s+)?("[^"\n]+"|\{[^{}]+\})\s+to\s+(.+?)\s*$)PROPERTY", std::regex::icase);
     static const std::regex setSpritePattern(R"SPRITE(^set\s+(sprite|entity)\s+"([^"\n]+)"\s+(position|size|texture|visible|speed)\s+to\s+(.+?)\s*$)SPRITE", std::regex::icase);
     static const std::regex moveSpritePattern(R"SPRITE(^move\s+(sprite|entity)\s+"([^"\n]+)"\s+by\s+\((.*)\)\s*$)SPRITE", std::regex::icase);
     static const std::regex deleteSpritePattern(R"SPRITE(^(?:delete|remove)\s+(?:sprite|entity)\s+"([^"\n]+)"\s*$)SPRITE", std::regex::icase);
@@ -841,6 +841,10 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         stmt.target = objectKind + " " + trim(roomMatch[3].str());
         stmt.property = lower(trim(roomMatch[1].str()));
         if (stmt.property == "visibility") stmt.property = "visible";
+        else if (stmt.property == "max health" || stmt.property == "max-health" ||
+                 stmt.property == "max_health" || stmt.property == "maximum health" ||
+                 stmt.property == "maximum-health" || stmt.property == "maximum_health")
+            stmt.property = "max_health";
         stmt.expression = trim(roomMatch[4].str());
         if ((stmt.property == "position" || stmt.property == "size") &&
             (stmt.expression.size() < 5 || stmt.expression.front() != '(' || stmt.expression.back() != ')')) {
