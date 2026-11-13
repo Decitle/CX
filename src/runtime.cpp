@@ -1269,6 +1269,11 @@ void Runtime::setVariable(std::string_view rawName, Value value, ExecutionContex
         transient_[name.substr(1)] = std::move(value);
         return;
     }
+    if (value.isObjectReference()) {
+        if (origin) runtimeError(*origin, "Sprite/entity references cannot be stored in persistent global variables.",
+            "Store object handles in a local variable like `{_sprite}` or a process-only temporary like `{^active_sprite}`. Handles are valid only while their object instance exists.");
+        return;
+    }
     if (name.starts_with("engine::")) {
         std::string error;
         if (!applySetting(name, value, error)) {

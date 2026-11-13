@@ -140,6 +140,11 @@ bool validVariableName(std::string_view name) {
     return true;
 }
 bool sameValue(const Value& a, const Value& b) {
+    if (a.isObjectReference() || b.isObjectReference()) {
+        const auto* left = a.objectReference();
+        const auto* right = b.objectReference();
+        return left && right && *left == *right;
+    }
     if (a.isNull() || b.isNull()) return a.isNull() && b.isNull();
     if (a.isNumber() || b.isNumber()) {
         const double av = a.numberOr(std::numeric_limits<double>::quiet_NaN());
@@ -330,6 +335,45 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
     if (lowered == "true") return Value(true);
     if (lowered == "false") return Value(false);
     if (lowered == "none" || lowered == "null") return Value{};
+    static const std::regex objectReferencePattern(R"OBJECT(^\s*(sprite|entity|object)\s+(.+?)\s*$)OBJECT", std::regex::icase);
+    std::smatch objectMatch;
+    if (std::regex_match(expression, objectMatch, objectReferencePattern)) {
+        const std::string requestedKind = lower(objectMatch[1].str());
+        const std::string operand = trim(objectMatch[2].str());
+        std::string objectName;
+        ObjectKind objectKind = ObjectKind::Sprite;
+        std::uint64_t instanceId = 0;
+        if (isQuoted(operand)) {
+            objectName = lower(trim(unquote(operand)));
+            const auto found = sprites_.find(objectName);
+            if (found == sprites_.end()) { error = "There is no object named \"" + objectName + "\"."; return {}; }
+            const bool isEntity = found->second.entity;
+            if ((requestedKind == "sprite" && isEntity) || (requestedKind == "entity" && !isEntity)) {
+                error = "Object \"" + objectName + "\" is not a " + requestedKind + "."; return {};
+            }
+            objectKind = isEntity ? ObjectKind::Entity : ObjectKind::Sprite;
+            instanceId = found->second.runtimeInstanceId;
+        } else {
+            Value operandValue = evaluateValue(operand, context, error);
+            if (!error.empty()) return {};
+            const auto* reference = operandValue.objectReference();
+            if (!reference) {
+                error = "A sprite or entity variable must contain an object reference. Set it from `sprite \"name\"` or `entity \"name\"` first."; return {};
+            }
+            if ((requestedKind == "sprite" && reference->kind != ObjectKind::Sprite) ||
+                (requestedKind == "entity" && reference->kind != ObjectKind::Entity)) {
+                error = "That object reference is not a " + requestedKind + "."; return {};
+            }
+            const auto found = sprites_.find(reference->name);
+            if (found == sprites_.end() || found->second.runtimeInstanceId != reference->instanceId) {
+                error = "That object reference is no longer valid because the object was removed or replaced."; return {};
+            }
+            objectName = reference->name;
+            objectKind = reference->kind;
+            instanceId = reference->instanceId;
+        }
+        return Value(ObjectReference{objectKind, objectName, instanceId});
+    }
     double number{};
     try {
         std::size_t consumed = 0;

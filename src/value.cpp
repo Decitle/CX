@@ -95,6 +95,8 @@ bool Value::isNull() const noexcept { return std::holds_alternative<std::monosta
 bool Value::isBool() const noexcept { return std::holds_alternative<bool>(value_); }
 bool Value::isNumber() const noexcept { return std::holds_alternative<double>(value_); }
 bool Value::isString() const noexcept { return std::holds_alternative<std::string>(value_); }
+bool Value::isObjectReference() const noexcept { return std::holds_alternative<ObjectReference>(value_); }
+const ObjectReference* Value::objectReference() const noexcept { return std::get_if<ObjectReference>(&value_); }
 
 // Truthiness is the shared rule used by conditions and logical operators. It is intentionally
 // explicit: an empty string and the strings "false", "no", "0", and "none" are false; most
@@ -106,7 +108,7 @@ bool Value::truthy() const noexcept {
         const auto lowered = lower(*s);
         return !s->empty() && lowered != "false" && lowered != "no" && lowered != "0" && lowered != "none";
     }
-    return false;
+    return isObjectReference();
 }
 
 double Value::numberOr(double fallback) const noexcept {
@@ -132,7 +134,10 @@ std::string Value::toString() const {
         out << std::setprecision(12) << *n;
         return out.str();
     }
-    return std::get<std::string>(value_);
+    if (const auto* text = std::get_if<std::string>(&value_)) return *text;
+    const auto& reference = std::get<ObjectReference>(value_);
+    const std::string kind = reference.kind == ObjectKind::Entity ? "entity" : "sprite";
+    return kind + " \"" + reference.name + "\"";
 }
 
 // Convert a text value supplied by the runtime (for example a console assignment) into the

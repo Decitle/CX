@@ -86,6 +86,7 @@ struct SpriteObject {
     float y{0.0F};
     float width{32.0F};
     float height{32.0F};
+    float rotationDegrees{0.0F};
     bool visible{true};
     bool entity{false};
     bool projectile{false};
