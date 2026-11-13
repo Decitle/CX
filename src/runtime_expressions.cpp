@@ -8,6 +8,7 @@
 #include <cctype>
 #include <cmath>
 #include <limits>
+#include <initializer_list>
 #include <optional>
 #include <regex>
 #include <string>
@@ -90,7 +91,7 @@ struct ArithmeticOperator { std::size_t position{}; char token{}; };
 std::optional<ArithmeticOperator> findArithmeticOperator(std::string_view text) {
     bool quoted = false, escaped = false;
     int braces = 0, parentheses = 0;
-    std::optional<ArithmeticOperator> addSub, mulDiv;
+    std::optional<ArithmeticOperator> addSub, mulDiv, power;
     for (std::size_t i = 0; i < text.size(); ++i) {
         const char c = text[i];
         if (escaped) { escaped = false; continue; }
@@ -103,19 +104,28 @@ std::optional<ArithmeticOperator> findArithmeticOperator(std::string_view text) 
         if (c == '(') { ++parentheses; continue; }
         if (c == ')' && parentheses > 0) { --parentheses; continue; }
         if (parentheses > 0) continue;
-        if (c != '+' && c != '-' && c != '*' && c != '/' && c != '%') continue;
+        if (c != '+' && c != '-' && c != '*' && c != '/' && c != '%' && c != '^') continue;
         if (i == 0) continue; // unary sign
-        const char previous = text[i - 1];
-        if (std::isspace(static_cast<unsigned char>(previous))) {
+        // Look through whitespace when deciding whether + or - is unary.
+        // This keeps expressions such as `2 * -3` and `2 ^ -2` intact.
+        std::size_t previousIndex = i;
+        while (previousIndex > 0 && std::isspace(static_cast<unsigned char>(text[previousIndex - 1])))
+            --previousIndex;
+        if (previousIndex == 0) continue;
+        const char previous = text[previousIndex - 1];
+        if (std::isspace(static_cast<unsigned char>(text[i - 1]))) {
             std::size_t j = i + 1;
             while (j < text.size() && std::isspace(static_cast<unsigned char>(text[j]))) ++j;
             if (j == text.size()) continue;
         }
-        if (previous == '+' || previous == '-' || previous == '*' || previous == '/' || previous == '%' || previous == '(') continue;
+        if (previous == '+' || previous == '-' || previous == '*' || previous == '/' || previous == '%' || previous == '^' || previous == '(') continue;
         if (c == '+' || c == '-') addSub = ArithmeticOperator{i, c};
-        else mulDiv = ArithmeticOperator{i, c};
+        else if (c == '^') {
+            // Exponentiation is right-associative: 2 ^ 3 ^ 2 means 2 ^ (3 ^ 2).
+            if (!power) power = ArithmeticOperator{i, c};
+        } else mulDiv = ArithmeticOperator{i, c};
     }
-    return addSub ? addSub : mulDiv;
+    return addSub ? addSub : (mulDiv ? mulDiv : power);
 }
 bool validVariableName(std::string_view name) {
     // This validation runs on assignment and interpolation, including inside on tick.
@@ -244,6 +254,11 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
                         lower(token) == "loop-number" || lower(token) == "loop-value" || lower(token) == "loop-index") {
                         replacement = interpolateReference(token);
                         recognized = replacement.has_value();
+                    } else if (!token.empty()) {
+                        const Value embeddedExpression = evaluateValue(token, context, error);
+                        if (!error.empty()) return {};
+                        replacement = embeddedExpression.toString();
+                        recognized = true;
                     }
                     if (recognized) {
                         interpolated += *replacement;
@@ -321,6 +336,145 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         number = std::stod(expression, &consumed);
         if (consumed == expression.size() && std::isfinite(number)) return Value(number);
     } catch (...) { /* Plain words are accepted as string values. */ }
+    // English-first numeric expressions are intentionally parsed before arithmetic and
+    // function-call syntax. The familiar words are the primary interface; function calls
+    // remain available as a compact/advanced spelling.
+    {
+        const std::string loweredExpression = lower(expression);
+        struct NaturalMathForm { std::string prefix; std::string function; };
+        static const std::array<NaturalMathForm, 12> naturalMathForms{{
+            {"the absolute value of ", "abs"}, {"absolute value of ", "abs"},
+            {"the square root of ", "sqrt"}, {"square root of ", "sqrt"},
+            {"the floor of ", "floor"}, {"floor of ", "floor"},
+            {"the ceiling of ", "ceil"}, {"ceiling of ", "ceil"},
+            {"the sine of ", "sin"}, {"sine of ", "sin"},
+            {"the cosine of ", "cos"}, {"cosine of ", "cos"}
+        }};
+        for (const auto& form : naturalMathForms) {
+            if (startsWithInsensitive(loweredExpression, form.prefix)) {
+                const auto operand = trim(std::string_view(expression).substr(form.prefix.size()));
+                if (operand.empty()) { error = "The " + form.function + " expression needs a number."; return {}; }
+                return evaluateValue(form.function + "(" + operand + ")", context, error);
+            }
+        }
+        static const std::array<NaturalMathForm, 4> otherNaturalMathForms{{
+            {"the tangent of ", "tan"}, {"tangent of ", "tan"},
+            {"the square of ", "square"}, {"square of ", "square"}
+        }};
+        for (const auto& form : otherNaturalMathForms) {
+            if (startsWithInsensitive(loweredExpression, form.prefix)) {
+                const auto operand = trim(std::string_view(expression).substr(form.prefix.size()));
+                if (operand.empty()) { error = "The " + form.function + " expression needs a number."; return {}; }
+                return evaluateValue(form.function + "(" + operand + ")", context, error);
+            }
+        }
+        static const std::regex roundNaturalPattern(
+            R"ROUND(^round\s+(.+?)\s+to\s+(-?\d+)\s+decimal\s+places?$)ROUND", std::regex::icase);
+        std::smatch roundMatch;
+        if (std::regex_match(expression, roundMatch, roundNaturalPattern))
+            return evaluateValue("round(" + roundMatch[1].str() + ", " + roundMatch[2].str() + ")", context, error);
+        if (startsWithInsensitive(loweredExpression, "round "))
+            return evaluateValue("round(" + trim(std::string_view(expression).substr(6)) + ")", context, error);
+
+        // Skript-style random expressions are natural language; explicit named streams
+        // are optional and retain their deterministic behavior.
+        std::string randomText = expression;
+        std::string streamExpression = "\"default\"";
+        if (const auto streamClause = findOperator(randomText, {{" using random stream ", "using"}})) {
+            streamExpression = trim(std::string_view(randomText).substr(streamClause->position + streamClause->length));
+            randomText = trim(std::string_view(randomText).substr(0, streamClause->position));
+            if (streamExpression.empty()) { error = "The random stream name is missing after using random stream."; return {}; }
+        }
+        auto findNaturalPrefix = [](std::string_view candidate, std::initializer_list<std::string_view> prefixes) -> std::optional<std::size_t> {
+            for (const auto prefix : prefixes) if (startsWithInsensitive(candidate, prefix)) return prefix.size();
+            return std::nullopt;
+        };
+        const auto loweredRandom = lower(randomText);
+        if (const auto prefix = findNaturalPrefix(randomText, {
+                "a random integer between ", "random integer between ",
+                "a random integer from ", "random integer from ",
+                "a random number between ", "random number between ",
+                "a random number from ", "random number from "})) {
+            const std::string header = lower(std::string_view(randomText).substr(0, *prefix));
+            const bool integerResult = header.find("integer") != std::string::npos;
+            const bool betweenForm = header.find("between") != std::string::npos;
+            const std::string_view range(std::string_view(randomText).substr(*prefix));
+            const auto separator = findOperator(range, {{betweenForm ? " and " : " to ", betweenForm ? "and" : "to"}});
+            if (!separator) {
+                error = betweenForm ? "A between random expression needs and between its two bounds."
+                                     : "A from random expression needs to between its two bounds.";
+                return {};
+            }
+            const std::string leftText = trim(range.substr(0, separator->position));
+            const std::string rightText = trim(range.substr(separator->position + separator->length));
+            if (leftText.empty() || rightText.empty()) { error = "Both bounds of a random expression are required."; return {}; }
+            Value leftValue = evaluateValue(leftText, context, error);
+            if (!error.empty()) return {};
+            Value rightValue = evaluateValue(rightText, context, error);
+            if (!error.empty()) return {};
+            const double left = leftValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+            const double right = rightValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+            if (!leftValue.isNumber() || !rightValue.isNumber() || !std::isfinite(left) || !std::isfinite(right)) {
+                error = "Random number bounds must both be finite numbers.";
+                return {};
+            }
+            auto streamValue = evaluateValue(streamExpression, context, error);
+            if (!error.empty()) return {};
+            if (!streamValue.isString()) { error = "A random stream name must be text."; return {}; }
+            const auto streamName = lower(trim(streamValue.toString()));
+            const auto streamIt = randomStreams_.find(streamName);
+            if (streamIt == randomStreams_.end()) {
+                error = "Random stream " + streamName + " has not been seeded. Seed it before using it.";
+                return {};
+            }
+            auto& state = streamIt->second.state;
+            const double minimum = std::min(left, right);
+            const double maximum = std::max(left, right);
+            if (integerResult) {
+                constexpr double maximumSafeInteger = 9007199254740991.0;
+                if (std::trunc(minimum) != minimum || std::trunc(maximum) != maximum ||
+                    std::abs(minimum) > maximumSafeInteger || std::abs(maximum) > maximumSafeInteger) {
+                    error = "A random integer needs whole-number bounds within the safe integer range.";
+                    return {};
+                }
+                const auto low = static_cast<std::int64_t>(minimum);
+                const auto high = static_cast<std::int64_t>(maximum);
+                const auto width = static_cast<std::uint64_t>(high - low) + 1ULL;
+                return Value(static_cast<double>(low + static_cast<std::int64_t>(boundedRandom(state, width))));
+            }
+            const std::uint64_t bits = nextSplitMix64(state) >> 11U;
+            const double unit = static_cast<double>(bits) * (1.0 / 9007199254740992.0);
+            return Value(std::lerp(minimum, maximum, unit));
+        }
+        if (loweredRandom.find("random integer") != std::string::npos ||
+            loweredRandom.find("random number") != std::string::npos) {
+            error = "I could not parse that random expression. Use a random integer between 1 and 10 or a random number from 0 to 1.";
+            return {};
+        }
+
+        // Random element out of a CX list follows Skript's collection expression shape.
+        // Selected values keep their original number, text, or boolean type.
+        if (const auto prefix = findNaturalPrefix(randomText, {
+                "a random element out of ", "random element out of ",
+                "a random element of ", "random element of "})) {
+            const auto source = trim(std::string_view(randomText).substr(*prefix));
+            if (source.size() < 4 || source.front() != '{' || source.back() != '}' || source.find("::*") == std::string::npos) {
+                error = "A random element currently needs a list variable, such as {inventory::*}.";
+                return {};
+            }
+            auto entries = listEntries(canonicalVariableName(source), context);
+            if (entries.empty()) return Value{};
+            auto streamValue = evaluateValue(streamExpression, context, error);
+            if (!error.empty()) return {};
+            if (!streamValue.isString()) { error = "A random stream name must be text."; return {}; }
+            const auto streamName = lower(trim(streamValue.toString()));
+            const auto streamIt = randomStreams_.find(streamName);
+            if (streamIt == randomStreams_.end()) { error = "Random stream " + streamName + " has not been seeded."; return {}; }
+            const std::size_t selected = entries.size() == 1U ? 0U : static_cast<std::size_t>(boundedRandom(streamIt->second.state, entries.size()));
+            return entries[selected].value;
+        }
+    }
+
     // Arithmetic expressions support normal precedence and parentheses without requiring a special command.
     const std::string strippedExpression = stripOuterParentheses(expression);
     if (strippedExpression != expression) return evaluateValue(strippedExpression, context, error);
@@ -347,6 +501,14 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             case '*': return Value(a * b);
             case '/': return Value(a / b);
             case '%': return Value(std::fmod(a, b));
+            case '^': {
+                const double result = std::pow(a, b);
+                if (!std::isfinite(result)) {
+                    error = "That power operation is outside the supported finite numeric range.";
+                    return {};
+                }
+                return Value(result);
+            }
             default: break;
         }
     }
@@ -489,11 +651,90 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             args.push_back(argumentNumber);
         }
         auto require = [&](std::size_t count) { if (args.size() != count) { error = "Function `" + function + "` expects " + std::to_string(count) + " argument(s)."; return false; } return true; };
+        constexpr double degreesToRadians = 3.1415926535897932384626433832795 / 180.0;
+        constexpr double radiansToDegrees = 180.0 / 3.1415926535897932384626433832795;
         if (function == "sin" || function == "cos" || function == "tan") {
             if (!require(1)) return {};
-            if (function == "sin") return Value(std::sin(args[0]));
-            if (function == "cos") return Value(std::cos(args[0]));
+            const double radians = args[0] * degreesToRadians;
+            if (function == "sin") return Value(std::sin(radians));
+            if (function == "cos") return Value(std::cos(radians));
+            return Value(std::tan(radians));
+        }
+        if (function == "sin_radians" || function == "cos_radians" || function == "tan_radians") {
+            if (!require(1)) return {};
+            if (function == "sin_radians") return Value(std::sin(args[0]));
+            if (function == "cos_radians") return Value(std::cos(args[0]));
             return Value(std::tan(args[0]));
+        }
+        if (function == "asin" || function == "acos" || function == "atan") {
+            if (!require(1)) return {};
+            if ((function == "asin" || function == "acos") && (args[0] < -1.0 || args[0] > 1.0)) {
+                error = function + " expects a value from -1 to 1.";
+                return {};
+            }
+            if (function == "asin") return Value(std::asin(args[0]) * radiansToDegrees);
+            if (function == "acos") return Value(std::acos(args[0]) * radiansToDegrees);
+            return Value(std::atan(args[0]) * radiansToDegrees);
+        }
+        if (function == "atan2") {
+            if (!require(2)) return {};
+            if (args[0] == 0.0 && args[1] == 0.0) { error = "atan2 is undefined when both coordinates are zero."; return {}; }
+            return Value(std::atan2(args[0], args[1]) * radiansToDegrees);
+        }
+        if (function == "abs" || function == "absolute") { if (!require(1)) return {}; return Value(std::abs(args[0])); }
+        if (function == "sqrt") {
+            if (!require(1)) return {};
+            if (args[0] < 0.0) { error = "The square root of a negative number is not a real number."; return {}; }
+            return Value(std::sqrt(args[0]));
+        }
+        if (function == "square") { if (!require(1)) return {}; return Value(args[0] * args[0]); }
+        if (function == "floor") { if (!require(1)) return {}; return Value(std::floor(args[0])); }
+        if (function == "ceil" || function == "ceiling") { if (!require(1)) return {}; return Value(std::ceil(args[0])); }
+        if (function == "round") {
+            if (args.empty() || args.size() > 2) { error = "round(number[, decimal_places]) expects one or two arguments."; return {}; }
+            const double places = args.size() == 2 ? args[1] : 0.0;
+            if (std::trunc(places) != places || places < -12.0 || places > 12.0) {
+                error = "round decimal_places must be a whole number from -12 to 12.";
+                return {};
+            }
+            const double scale = std::pow(10.0, places);
+            const double scaled = args[0] * scale;
+            if (!std::isfinite(scaled)) { error = "That rounding precision is outside the finite numeric range."; return {}; }
+            return Value(std::round(scaled) / scale);
+        }
+        if (function == "exp") { if (!require(1)) return {}; const double v = std::exp(args[0]); if (!std::isfinite(v)) { error = "exp result is outside the finite numeric range."; return {}; } return Value(v); }
+        if (function == "ln") {
+            if (!require(1)) return {};
+            if (args[0] <= 0.0) { error = "ln expects a value greater than zero."; return {}; }
+            return Value(std::log(args[0]));
+        }
+        if (function == "log" || function == "log10") {
+            if (args.empty() || args.size() > 2) { error = "log(number[, base]) expects one or two arguments."; return {}; }
+            const double base = args.size() == 2 ? args[1] : 10.0;
+            if (args[0] <= 0.0 || base <= 0.0 || base == 1.0) { error = "log needs a positive number and a positive base other than 1."; return {}; }
+            return Value(std::log(args[0]) / std::log(base));
+        }
+        if (function == "root") {
+            if (!require(2)) return {};
+            const double degree = args[0], radicand = args[1];
+            if (degree == 0.0) { error = "A root degree cannot be zero."; return {}; }
+            if (radicand < 0.0 && std::trunc(degree) == degree && std::fmod(std::abs(degree), 2.0) == 1.0)
+                return Value(-std::pow(-radicand, 1.0 / degree));
+            if (radicand < 0.0) { error = "A negative value only has a real root for an odd whole-number degree."; return {}; }
+            return Value(std::pow(radicand, 1.0 / degree));
+        }
+        if (function == "pow") {
+            if (!require(2)) return {};
+            const double v = std::pow(args[0], args[1]);
+            if (!std::isfinite(v)) { error = "pow result is outside the finite real-number range."; return {}; }
+            return Value(v);
+        }
+        if (function == "min" || function == "max") {
+            if (args.empty()) { error = function + " expects at least one number."; return {}; }
+            const auto value = function == "min"
+                ? *std::min_element(args.begin(), args.end())
+                : *std::max_element(args.begin(), args.end());
+            return Value(value);
         }
         if (function == "sine") {
             if (args.size() != 2 && args.size() != 3) { error = "sine(hz, seconds[, phase_radians]) expects 2 or 3 arguments."; return {}; }
@@ -511,9 +752,13 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             const auto octaves = args.size() >= 4 ? static_cast<unsigned int>(std::clamp(args[3], 1.0, 12.0)) : 4U;
             return Value(AudioSystem::fbm2d(args[0], args[1], seed, octaves));
         }
-        if (function == "clamp") { if (!require(3)) return {}; return Value(std::clamp(args[0], args[1], args[2])); }
-        if (function == "lerp") { if (!require(3)) return {}; return Value(args[0] + (args[1] - args[0]) * args[2]); }
-        error = "Unknown function `" + function + "`. Built-ins: sin, cos, tan, sine, noise2d, fbm2d, random_float, random_int, random_choice, clamp, lerp. You can define reusable script functions with `function name(parameters):`.";
+        if (function == "clamp") {
+            if (!require(3)) return {};
+            if (args[1] > args[2]) { error = "clamp minimum must not exceed its maximum."; return {}; }
+            return Value(std::clamp(args[0], args[1], args[2]));
+        }
+        if (function == "lerp") { if (!require(3)) return {}; return Value(std::lerp(args[0], args[1], args[2])); }
+        error = "Unknown function `" + function + "`. Built-ins: abs, sqrt, floor, ceil, round, exp, ln, log, root, pow, min, max, sin, cos, tan, asin, acos, atan, atan2, sin_radians, cos_radians, tan_radians, sine, noise2d, fbm2d, random_float, random_int, random_choice, clamp, lerp. You can define reusable script functions with `function name(parameters):`.";
         return {};
     }
     if (expression.find('{') != std::string::npos || expression.find('}') != std::string::npos) {

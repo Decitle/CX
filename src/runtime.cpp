@@ -18,6 +18,7 @@
 #include <sstream>
 #include <utility>
 #include <queue>
+#include <random>
 #include <tuple>
 
 namespace cx {
@@ -258,6 +259,21 @@ void Runtime::resetRuntimeState(bool resetGlobals) {
     activeInteractionFocus_.clear();
     interactionFocusRoomContextRevision_ = roomContextRevision_;
     randomStreams_.clear();
+    // Ordinary Skript-style random expressions use this runtime-local default
+    // stream. Authors can explicitly seed "default" for reproducible runs, or
+    // use named streams to isolate deterministic systems from one another.
+    std::uint64_t defaultRandomSeed = static_cast<std::uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+    defaultRandomSeed ^= static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(this));
+    try {
+        std::random_device entropy;
+        defaultRandomSeed ^= (static_cast<std::uint64_t>(entropy()) << 32U) ^
+                             static_cast<std::uint64_t>(entropy());
+    } catch (...) {
+        // The clock/address mix is a portable fallback for environments without
+        // a usable operating-system entropy source. Gameplay RNG is not crypto.
+    }
+    randomStreams_.emplace("default", RandomStreamState{defaultRandomSeed});
     entityLabelIds_.clear();
     nextEntityLabelId_ = 1;
     projectileCounter_ = 0;

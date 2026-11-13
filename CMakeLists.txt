@@ -208,6 +208,10 @@ if(CX_BUILD_TESTS)
     target_link_libraries(cx-random-stream-tests PRIVATE cx_core)
     add_test(NAME cx-random-stream-tests COMMAND cx-random-stream-tests)
 
+    add_executable(cx-language-expression-tests tests/language_expression_tests.cpp)
+    target_link_libraries(cx-language-expression-tests PRIVATE cx_core)
+    add_test(NAME cx-language-expression-tests COMMAND cx-language-expression-tests)
+
     # Keep delayed-continuation and room-context lifecycle regressions independent
     # from the large general runtime test translation unit.
     add_executable(cx-task-lifecycle-tests tests/task_lifecycle_tests.cpp)

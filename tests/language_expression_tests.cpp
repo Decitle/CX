@@ -1,0 +1,150 @@
+#include "cx/runtime.hpp"
+
+#include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <string>
+
+namespace {
+int failures = 0;
+
+void expect(bool condition, const std::string& message) {
+    if (condition) return;
+    ++failures;
+    std::cerr << "FAIL: " << message << '\n';
+}
+
+void write(const std::filesystem::path& path, const std::string& contents) {
+    std::filesystem::create_directories(path.parent_path());
+    std::ofstream output(path, std::ios::binary);
+    output << contents;
+    if (!output) throw std::runtime_error("could not write test fixture: " + path.string());
+}
+
+std::filesystem::path fixture(const std::string& name, const std::string& script) {
+    const auto root = std::filesystem::temp_directory_path() / ("cx-language-expression-" + name);
+    std::filesystem::remove_all(root);
+    write(root / "scripts" / "main.cx", script);
+    return root;
+}
+
+void testSkriptStyleRandomNumberGrammar() {
+    const auto root = fixture("natural-random", R"CX(
+seed random stream "loot" with 0
+set {between_int} to a random integer between 1 and 10
+set {from_int} to random integer from 10 to 1
+set {between_number} to a random number between 2.7 and -1.5
+set {named_stream} to a random integer between 1 and 10 using random stream "loot"
+set {items::*} to "red", "blue", 42
+set {random_item} to a random element out of {items::*}
+set {message} to "You rolled %random integer from 1 to 6%!"
+)CX");
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "Skript-style random expressions should use the automatic default stream without explicit setup");
+    const double betweenInt = runtime.getGlobal("between_int").numberOr(-1.0);
+    const double fromInt = runtime.getGlobal("from_int").numberOr(-1.0);
+    const double namedStream = runtime.getGlobal("named_stream").numberOr(-1.0);
+    const double betweenNumber = runtime.getGlobal("between_number").numberOr(-100.0);
+    expect(betweenInt >= 1.0 && betweenInt <= 10.0 && std::trunc(betweenInt) == betweenInt,
+           "a random integer between returns an inclusive whole-number result");
+    expect(fromInt >= 1.0 && fromInt <= 10.0 && std::trunc(fromInt) == fromInt,
+           "random integer from ... to ... accepts reversed endpoints like Skript");
+    expect(namedStream >= 1.0 && namedStream <= 10.0 && std::trunc(namedStream) == namedStream,
+           "natural random expressions can opt into a named deterministic stream");
+    expect(betweenNumber >= -1.5 && betweenNumber < 2.7,
+           "a random number between accepts reversed decimal endpoints");
+    const auto randomItem = runtime.getGlobal("random_item");
+    expect(randomItem.isString() || (randomItem.isNumber() && randomItem.numberOr(-1.0) == 42.0),
+           "random element out of a list returns one original value without stringifying its type");
+    const std::string message = runtime.getGlobal("message").toString();
+    expect(message.starts_with("You rolled ") && message.ends_with("!") && message.size() > 12,
+           "Skript-style percent interpolation evaluates expressions inside text");
+    expect(!runtime.hasErrors(), "valid natural random expressions should not emit diagnostics");
+    std::filesystem::remove_all(root);
+}
+
+void testNaturalMathAndSkriptDegreeTrigonometry() {
+    const auto root = fixture("math", R"CX(
+set {absolute} to the absolute value of -12.5
+set {square_root} to the square root of 81
+set {floor} to the floor of -1.2
+set {ceiling} to the ceiling of 1.2
+set {rounded} to round 2.345 to 2 decimal places
+set {square} to the square of 9
+set {sin_degrees} to sin(90)
+set {cos_degrees} to cos(180)
+set {tan_degrees} to tan(45)
+set {sin_radians} to sin_radians(1.5707963267948966)
+set {arcsin_degrees} to asin(1)
+set {atan2_degrees} to atan2(1, 1)
+set {log_default_base} to log(1000)
+set {log_custom_base} to log(81, 3)
+set {natural_log} to ln(exp(1))
+set {root} to root(3, -8)
+set {power_right_associative} to 2 ^ 3 ^ 2
+set {power_precedence} to 2 + 3 * 4 ^ 2
+set {negative_product} to 2 * -3
+set {negative_exponent} to 2 ^ -2
+set {minimum} to min(5, -2, 9, 4)
+set {maximum} to max(5, -2, 9, 4)
+set {clamped} to clamp(15, 0, 10)
+set {interpolated} to lerp(10, 20, 0.25)
+)CX");
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "natural and function-form math expressions should load");
+    const auto number = [&](const char* name) { return runtime.getGlobal(name).numberOr(std::numeric_limits<double>::quiet_NaN()); };
+    expect(std::abs(number("absolute") - 12.5) < 1e-12, "absolute value should work in natural English form");
+    expect(std::abs(number("square_root") - 9.0) < 1e-12, "square root should work in natural English form");
+    expect(std::abs(number("floor") + 2.0) < 1e-12, "floor should round negative values downward");
+    expect(std::abs(number("ceiling") - 2.0) < 1e-12, "ceiling should round upward");
+    expect(std::abs(number("rounded") - 2.35) < 1e-12, "round with decimal-place precision should work");
+    expect(std::abs(number("square") - 81.0) < 1e-12, "square should be a convenient power helper");
+    expect(std::abs(number("sin_degrees") - 1.0) < 1e-12, "Skript-compatible sin uses degrees");
+    expect(std::abs(number("cos_degrees") + 1.0) < 1e-12, "Skript-compatible cos uses degrees");
+    expect(std::abs(number("tan_degrees") - 1.0) < 1e-12, "Skript-compatible tan uses degrees");
+    expect(std::abs(number("sin_radians") - 1.0) < 1e-12, "explicit radians aliases preserve technical radians use");
+    expect(std::abs(number("arcsin_degrees") - 90.0) < 1e-12, "inverse trigonometry returns degrees");
+    expect(std::abs(number("atan2_degrees") - 45.0) < 1e-12, "atan2 should return screen/game-friendly degrees");
+    expect(std::abs(number("log_default_base") - 3.0) < 1e-12, "log defaults to base ten like Skript");
+    expect(std::abs(number("log_custom_base") - 4.0) < 1e-12, "log accepts a custom base");
+    expect(std::abs(number("natural_log") - 1.0) < 1e-12, "natural logarithm and exponential should be inverses");
+    expect(std::abs(number("root") + 2.0) < 1e-12, "odd roots of negative values should remain real");
+    expect(std::abs(number("power_right_associative") - 512.0) < 1e-12, "power operator should be right-associative");
+    expect(std::abs(number("power_precedence") - 50.0) < 1e-12, "power should bind more tightly than multiplication and addition");
+    expect(std::abs(number("negative_product") + 6.0) < 1e-12, "unary negative values should work after multiplication");
+    expect(std::abs(number("negative_exponent") - 0.25) < 1e-12, "negative exponents should be parsed as unary values");
+    expect(std::abs(number("minimum") + 2.0) < 1e-12, "min should accept multiple numeric arguments");
+    expect(std::abs(number("maximum") - 9.0) < 1e-12, "max should accept multiple numeric arguments");
+    expect(std::abs(number("clamped") - 10.0) < 1e-12, "clamp should constrain a value to the requested range");
+    expect(std::abs(number("interpolated") - 12.5) < 1e-12, "lerp should interpolate between endpoints");
+    expect(!runtime.hasErrors(), "valid math expressions should not emit diagnostics");
+    std::filesystem::remove_all(root);
+}
+
+void testMathDomainErrorsAreActionable() {
+    const auto root = fixture("math-domain", R"CX(
+set {bad_root} to sqrt(-1)
+)CX");
+    cx::Runtime runtime(root);
+    expect(!runtime.loadScripts(), "square root of a negative number should be diagnosed instead of silently propagating NaN");
+    expect(runtime.hasErrors(), "math domain failures should create runtime diagnostics");
+    std::filesystem::remove_all(root);
+}
+}
+
+int main() {
+    testSkriptStyleRandomNumberGrammar();
+    testNaturalMathAndSkriptDegreeTrigonometry();
+    testMathDomainErrorsAreActionable();
+    if (failures != 0) {
+        std::cerr << "CX_LANGUAGE_EXPRESSION_TESTS_FAILED failures=" << failures << '\n';
+        return 1;
+    }
+    std::cout << "CX_LANGUAGE_EXPRESSION_TESTS_OK\n";
+    return 0;
+}
