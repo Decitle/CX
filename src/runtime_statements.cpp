@@ -1017,6 +1017,34 @@ void Runtime::runExecution(ExecutionContext& context) {
                     break;
                 }
                 SpriteObject& sprite = found->second;
+                if (statement.property == "kind" || statement.property == "team") {
+                    if (!sprite.entity) {
+                        runtimeError(statement, "Kind and team properties are only available on entities.",
+                            "Use set kind of entity \"guard\" to \"boss\" or set team of entity \"guard\" to \"hostile\".");
+                        break;
+                    }
+                    const Value classificationValue = evaluateValue(statement.expression, context, error);
+                    if (!error.empty() || !classificationValue.isString()) {
+                        runtimeError(statement, "Entity kind and team values must be text.",
+                            "Use a quoted value such as set kind of entity \"guard\" to \"boss\".");
+                        break;
+                    }
+                    const std::string value = lower(trim(classificationValue.toString()));
+                    if (!validEntityClassification(value)) {
+                        runtimeError(statement, "Entity kind/team identifiers must contain 1–40 letters, numbers, underscores or hyphens.",
+                            "Examples: set kind of entity \"warden\" to \"boss\" and set team of entity \"warden\" to \"hostile\".");
+                        break;
+                    }
+                    const std::uint32_t labelId = internEntityLabel(value);
+                    if (labelId == 0U) {
+                        runtimeError(statement, "The runtime could not allocate an entity classification ID.",
+                            "Use a non-empty kind or team identifier and keep the number of unique identifiers reasonable.");
+                        break;
+                    }
+                    if (statement.property == "kind") sprite.kindId = labelId;
+                    else sprite.teamId = labelId;
+                    break;
+                }
                 if (statement.property == "health" || statement.property == "max_health") {
                     if (!sprite.entity) {
                         runtimeError(statement, "Health properties are only available on entities.",
