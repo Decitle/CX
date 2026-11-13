@@ -218,7 +218,7 @@ if(CX_BUILD_TESTS)
 
     add_executable(cx-event-syntax-tests tests/event_syntax_tests.cpp)
     target_link_libraries(cx-event-syntax-tests PRIVATE cx_core)
-    add_test(NAME cx-event-syntax-tests COMMAND cx-event_syntax-tests)
+    add_test(NAME cx-event-syntax-tests COMMAND $<TARGET_FILE:cx-event-syntax-tests>)
 
     add_executable(cx-variable-effect-syntax-tests tests/variable_effect_syntax_tests.cpp)
     target_link_libraries(cx-variable-effect-syntax-tests PRIVATE cx_core)
@@ -227,6 +227,10 @@ if(CX_BUILD_TESTS)
     add_executable(cx-room-transition-syntax-tests tests/room_transition_syntax_tests.cpp)
     target_link_libraries(cx-room-transition-syntax-tests PRIVATE cx_core)
     add_test(NAME cx-room-transition-syntax-tests COMMAND cx-room-transition-syntax-tests)
+
+    add_executable(cx-loop-syntax-tests tests/loop_syntax_tests.cpp)
+    target_link_libraries(cx-loop-syntax-tests PRIVATE cx_core)
+    add_test(NAME cx-loop-syntax-tests COMMAND cx-loop-syntax-tests)
 
     # Keep delayed-continuation and room-context lifecycle regressions independent
     # from the large general runtime test translation unit.

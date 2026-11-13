@@ -893,7 +893,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         return stmt;
     }
 
-    static const std::regex loopTimesPattern(R"LOOP(^loop\s+(.+?)\s+times\s*:$)LOOP", std::regex::icase);
+    static const std::regex loopTimesPattern(R"LOOP(^(?:loop|repeat)\s+(.+?)\s+times\s*:$)LOOP", std::regex::icase);
     std::smatch controlMatch;
     if (std::regex_match(text, controlMatch, loopTimesPattern)) {
         stmt.type = StatementType::LoopTimes;
@@ -904,15 +904,36 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         }
         return stmt;
     }
+    static const std::regex forEachLoopPattern(
+        R"FOREACH(^for\s+each\s+(?:item|element|value)\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
+        std::regex::icase);
+    std::smatch listLoopMatch;
+    if (std::regex_match(text, listLoopMatch, forEachLoopPattern)) {
+        const std::string listExpression = trim(listLoopMatch[1].str());
+        if (listExpression.find("::*") == std::string::npos) {
+            error("A for-each loop needs a list variable ending in `::*`.",
+                  "Use: for each item in {inventory::*}:");
+            return std::nullopt;
+        }
+        stmt.type = StatementType::LoopList;
+        stmt.expression = canonicalVariableName(listExpression);
+        return stmt;
+    }
     if (startsWithInsensitive(text, "loop ") && endsWithColon(text)) {
-        const std::string listExpression = trim(std::string_view(text).substr(5, text.size() - 6));
+        std::string listExpression = trim(std::string_view(text).substr(5, text.size() - 6));
+        const std::string loweredListExpression = lower(listExpression);
+        if (startsWithInsensitive(loweredListExpression, "over ") ||
+            startsWithInsensitive(loweredListExpression, "through ")) {
+            const auto space = listExpression.find(' ');
+            listExpression = trim(std::string_view(listExpression).substr(space + 1));
+        }
         if (listExpression.size() >= 4 && listExpression.front() == '{' && listExpression.back() == '}' && listExpression.find("::*") != std::string::npos) {
             stmt.type = StatementType::LoopList;
             stmt.expression = canonicalVariableName(listExpression);
             return stmt;
         }
         error("This loop form is not supported yet. Use a counted loop or a list wildcard.",
-              "Examples: `loop 5 times:` and `loop {inventory::*}:`. List loops visit each stored key/value pair.");
+              "Examples: `loop 5 times:`, `loop over {inventory::*}:`, and `for each item in {inventory::*}:`.");
         return std::nullopt;
     }
     if (startsWithInsensitive(text, "while ") && endsWithColon(text)) {
