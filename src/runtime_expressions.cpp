@@ -388,7 +388,7 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
     {
         const std::string loweredExpression = lower(expression);
         struct NaturalMathForm { std::string prefix; std::string function; };
-        static const std::array<NaturalMathForm, 20> naturalMathForms{{
+        static const std::array<NaturalMathForm, 26> naturalMathForms{{
             {"the absolute value of ", "abs"}, {"absolute value of ", "abs"},
             {"the square root of ", "sqrt"}, {"square root of ", "sqrt"},
             {"the floor of ", "floor"}, {"floor of ", "floor"},
