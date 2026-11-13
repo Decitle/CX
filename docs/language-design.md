@@ -71,7 +71,7 @@ set rotation of sprite "player" to 90
 set health of entity "guard" to 25
 ```
 
-The current `set entity "guard" health to 25` family may remain accepted as a compatibility form, but should not be the only pattern. Object references stored in variables require an explicit typed-handle/value design; a string variable must not silently become an object.
+The `set entity "guard" health to 25` family remains accepted as a compatibility form; the shared property grammar also supports `set health of entity "guard" to 25`. Object references stored in variables require an explicit typed-handle/value design; a string variable must not silently become an object.
 
 ### 5. Events describe what happened; context values describe who/what
 
