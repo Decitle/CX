@@ -216,6 +216,10 @@ if(CX_BUILD_TESTS)
     target_link_libraries(cx-object-reference-tests PRIVATE cx_core)
     add_test(NAME cx-object-reference-tests COMMAND cx-object-reference-tests)
 
+    add_executable(cx-event-syntax-tests tests/event_syntax_tests.cpp)
+    target_link_libraries(cx-event-syntax-tests PRIVATE cx_core)
+    add_test(NAME cx-event-syntax-tests COMMAND cx-event-syntax-tests)
+
     # Keep delayed-continuation and room-context lifecycle regressions independent
     # from the large general runtime test translation unit.
     add_executable(cx-task-lifecycle-tests tests/task_lifecycle_tests.cpp)

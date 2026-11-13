@@ -1136,8 +1136,18 @@ std::vector<Statement> parseStatements(const std::vector<SourceLine>& lines, std
 
 bool parseEventHeader(const std::string& header, EventHandler& event) {
     const auto text = lower(trim(header));
-    if (text == "on load:") { event.type = EventType::Load; return true; }
-    if (text == "on tick:" || text == "every tick:") { event.type = EventType::Tick; return true; }
+    // Startup aliases are equivalent: all run once when the project becomes active.
+    if (text == "on load:" || text == "on start:" || text == "on startup:" ||
+        text == "on project start:" || text == "on project load:" || text == "on initialize:") {
+        event.type = EventType::Load;
+        return true;
+    }
+    // A tick is one fixed logic update, not a rendered frame.
+    if (text == "on tick:" || text == "every tick:" || text == "on every tick:" ||
+        text == "each tick:" || text == "on each tick:") {
+        event.type = EventType::Tick;
+        return true;
+    }
     static const std::regex periodicPattern(R"PERIODIC(^(?:on\s+)?every\s+(\d+(?:\.\d+)?)\s*(milliseconds?|msecs?|ms|seconds?|secs?|s|ticks?|tick|minutes?|mins?|m|hours?|hrs?|h)\s*:$)PERIODIC", std::regex::icase);
     std::smatch periodicMatch;
     if (std::regex_match(text, periodicMatch, periodicPattern)) {
@@ -1156,7 +1166,10 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
             return true;
         } catch (...) { return false; }
     }
-    if (text == "on file attach:") { event.type = EventType::FileAttach; return true; }
+    if (text == "on file attach:" || text == "on file attached:") {
+        event.type = EventType::FileAttach;
+        return true;
+    }
     static const std::regex projectileHitPattern(R"HIT(^on\s+projectile\s+hit\s+entity\s+"([^"\n]+)"\s*:$)HIT", std::regex::icase);
     std::smatch projectileHitMatch;
     if (std::regex_match(header, projectileHitMatch, projectileHitPattern)) {
@@ -1205,28 +1218,47 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         event.secondarySelector = lower(trim(triggerMatch[3].str()));
         return true;
     }
-    if (text == "on press escape:" || text == "on press key escape:") { event.type = EventType::KeyPress; event.selector = "ESCAPE"; return true; }
-    static const std::regex keyPattern(R"REGEX(^on\s+press\s+key\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
-    static const std::regex keyPatternAlt(R"REGEX(^on\s+key\s+press\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
-    static const std::regex buttonPattern(R"REGEX(^on\s+click\s+button\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
-    std::smatch match;
-    if (std::regex_match(header, match, keyPattern) || std::regex_match(header, match, keyPatternAlt)) {
-        event.type = EventType::KeyPress; event.selector = canonicalEventKey(match[1].str()); return true;
+    if (text == "on press escape:" || text == "on press key escape:" ||
+        text == "when escape is pressed:") {
+        event.type = EventType::KeyPress;
+        event.selector = "ESCAPE";
+        return true;
     }
-    if (std::regex_match(header, match, buttonPattern)) {
-        event.type = EventType::ButtonClick; event.selector = lower(match[1].str()); return true;
+    static const std::regex keyPattern(R"REGEX(^on\s+(?:press\s+key|key\s+press)\s+"?([^"\s:]+)"?\s*:$)REGEX", std::regex::icase);
+    static const std::regex keyPressedPattern(R"REGEX(^on\s+key\s+"([^"\n]+)"\s+pressed\s*:$)REGEX", std::regex::icase);
+    static const std::regex whenKeyPressedPattern(R"REGEX(^when\s+key\s+"([^"\n]+)"\s+is\s+pressed\s*:$)REGEX", std::regex::icase);
+    static const std::regex buttonPattern(R"REGEX(^on\s+click\s+button\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
+    static const std::regex buttonClickPattern(R"REGEX(^on\s+button\s+click\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
+    static const std::regex buttonClickedPattern(R"REGEX(^on\s+button\s+"([^"\n]+)"\s+(?:click|clicked)\s*:$)REGEX", std::regex::icase);
+    static const std::regex whenButtonClickedPattern(R"REGEX(^when\s+button\s+"([^"\n]+)"\s+is\s+clicked\s*:$)REGEX", std::regex::icase);
+    std::smatch match;
+    if (std::regex_match(header, match, keyPattern) ||
+        std::regex_match(header, match, keyPressedPattern) ||
+        std::regex_match(header, match, whenKeyPressedPattern)) {
+        event.type = EventType::KeyPress;
+        event.selector = canonicalEventKey(match[1].str());
+        return true;
+    }
+    if (std::regex_match(header, match, buttonPattern) ||
+        std::regex_match(header, match, buttonClickPattern) ||
+        std::regex_match(header, match, buttonClickedPattern) ||
+        std::regex_match(header, match, whenButtonClickedPattern)) {
+        event.type = EventType::ButtonClick;
+        event.selector = lower(match[1].str());
+        return true;
     }
     return false;
 }
 
 std::string eventHeaderHint(const std::string& line) {
-    if (lower(line).find("load") != std::string::npos) return "Use exactly: on load:";
+    if (lower(line).find("load") != std::string::npos || lower(line).find("start") != std::string::npos)
+        return "Use `on load:` or its aliases `on start:` and `on startup:`.";
     if (lower(line).find("every") != std::string::npos) return "Use `every 1 second:` or `every 250 milliseconds:`. The interval must be positive and no longer than 7 days.";
     if (lower(line).find("tick") != std::string::npos) return "Use `on tick:` for every logic tick, or `every 1 second:` for a scheduled interval.";
     if (lower(line).find("press") != std::string::npos || lower(line).find("key") != std::string::npos)
-        return "Use: on press key \"SPACE\": (replace SPACE with a key name)";
-    if (lower(line).find("click") != std::string::npos)
-        return "Use: on click button \"resume_btn\":";
+        return "Use `on press key \"SPACE\":`, `on key \"SPACE\" pressed:`, or `when key \"SPACE\" is pressed:`.";
+    if (lower(line).find("click") != std::string::npos || lower(line).find("button") != std::string::npos)
+        return "Use `on click button \"resume_btn\":`, `on button click \"resume_btn\":`, or `when button \"resume_btn\" is clicked:`.";
     if (lower(line).find("file") != std::string::npos || lower(line).find("attach") != std::string::npos)
         return "Use exactly: on file attach:";
     if (lower(line).find("tween") != std::string::npos)
