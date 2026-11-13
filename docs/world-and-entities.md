@@ -1,6 +1,6 @@
-# CX Engine world/entity reference (reviewed against v0.10.14)
+# CX Engine world/entity reference (v0.11.0 development branch)
 
-> Feature headings retain their original introduction versions. This guide also includes later additions; use the linked feature notes for current lifecycle rules and limitations.
+> This living guide tracks the unreleased Skript-first language branch. Feature headings retain their original introduction versions. The tagged v0.10.14 release reference remains frozen; use the linked feature notes for current lifecycle rules and limitations.
 
 This document describes the working first implementation and the planned evolution. It deliberately separates the API that exists now from features that still need engineering.
 
@@ -27,13 +27,15 @@ on load:
     set entity "guard" animation sheet to (32, 32) columns 4 rows 8
     set entity "guard" hitbox to (18, 12) offset (7, 16)
     set entity "guard" avoids solid tiles to true
-    set entity "guard" health to 8
-    set entity "guard" max_health to 8
+    set max health of entity "guard" to 8
+    set health of entity "guard" to 8
+    set kind of entity "guard" to "elite"
+    set team of entity "guard" to "hostile"
 ```
 
 `create entity` uses the existing texture registry, so `assets/textures/guard_8way.png` becomes `{$guard_8way}`. The object remains lightweight: no 3D transform, rigid-body solver, or heavyweight component graph is allocated.
 
-Hitbox syntax is `(width, height) offset (x, y)`. The offset is relative to the sprite's top-left. The hitbox is an axis-aligned rectangle (AABB). If no explicit hitbox is provided, the sprite rectangle is used for overlap checks. Entity health is reflected in `{entity::guard::health}` and `{entity::guard::max_health}`. Visibility only affects drawing. A hidden entity remains collidable and can still receive projectile damage; use collision enablement as the collision policy rather than hiding a sprite.
+Hitbox syntax is `(width, height) offset (x, y)`. The offset is relative to the sprite's top-left. The hitbox is an axis-aligned rectangle (AABB). If no explicit hitbox is provided, the sprite rectangle is used for overlap checks. Health can be read with `health of entity "guard"` and `max health of entity "guard"`; writes keep `{entity::guard::health}` and `{entity::guard::max_health}` synchronized. Kind and team can be read with `kind of entity "guard"` and `team of entity "guard"`. The legacy `set entity "guard" health/max_health to ...` commands remain accepted. Visibility only affects drawing. A hidden entity remains collidable and can still receive projectile damage; use collision enablement as the collision policy rather than hiding a sprite.
 
 ### Named animation clips
 
@@ -133,12 +135,14 @@ set engine::camera_follow to "player"
 
 ## Entity classification and collision filtering (v0.10.2)
 
-Entities now carry independent `kind`, `team`, `tags`, collision `layer`, and collision `mask` metadata. Use these to describe a boss, player, pickup or hazard without relying on texture filenames or hardcoded name conventions. The built-in channels are `actors`, `projectiles`, `props`, `triggers`, `effects`, `pickups`, `hazards`, and `sensors`.
+Entities now carry independent `kind`, `team`, `tags`, collision `layer`, and collision `mask` metadata. Kind and team use the shared object-property getter/setter form and only apply to entities; the older named setter forms remain accepted. Tags and collision channels retain their specialized commands. Use these properties to describe a boss, player, pickup or hazard without relying on texture filenames or hardcoded name conventions. The built-in channels are `actors`, `projectiles`, `props`, `triggers`, `effects`, `pickups`, `hazards`, and `sensors`.
 
 ```cx
-set entity "warden" kind to "boss"
-set entity "warden" team to "hostile"
+set kind of entity "warden" to "boss"
+set team of entity "warden" to "hostile"
 set entity "warden" tags to "boss, armored, phase_two"
+set {warden_kind} to kind of entity "warden"
+set {warden_team} to team of entity "warden"
 set entity "warden" collision layer to "actors, hazards"
 set entity "warden" collision mask to "actors, projectiles, props"
 set entity "warden" collision projectile mask to "actors, props"
