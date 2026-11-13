@@ -206,7 +206,7 @@ if {items::*} does not contain "red":
 void testMathDomainResultsCanBeCheckedAsNaN() {
     const auto root = fixture("math-domain", R"CX(
 set {_bad_root} to sqrt(-1)
-set {_bad_log} to ln(0)
+set {_bad_log} to ln(-1)
 set {_bad_inverse} to asin(2)
 set {root_is_nan} to isNaN({_bad_root})
 set {log_is_nan} to isNaN({_bad_log})
