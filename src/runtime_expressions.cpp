@@ -359,7 +359,7 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
     // "set x-coordinate of {_player} to 15" pairs with
     // "x-coordinate of {_player}" in an expression or condition.
     static const std::regex objectPropertyPattern(
-        R"PROPERTY(^\s*(?:the\s+)?(x-coordinate|y-coordinate|x|y|width|height|texture|rotation|speed|visible|visibility|health|max(?:imum)?[ _-]health)\s+of\s+(?:(sprite|entity|object)\s+)?(.+?)\s*$)PROPERTY",
+        R"PROPERTY(^\s*(?:the\s+)?(x-coordinate|y-coordinate|x|y|width|height|texture|rotation|speed|visible|visibility|health|max(?:imum)?[ _-]health|kind|team)\s+of\s+(?:(sprite|entity|object)\s+)?(.+?)\s*$)PROPERTY",
         std::regex::icase);
     std::smatch propertyMatch;
     if (std::regex_match(expression, propertyMatch, objectPropertyPattern)) {
@@ -381,6 +381,20 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             return {};
         }
         const auto& object = found->second;
+        if (property == "kind" || property == "team") {
+            if (handle->kind != ObjectKind::Entity) {
+                error = "Kind and team properties are only available on entities.";
+                return {};
+            }
+            const std::uint32_t labelId = property == "kind" ? object.kindId : object.teamId;
+            const auto label = std::find_if(entityLabelIds_.begin(), entityLabelIds_.end(),
+                [&](const auto& entry) { return entry.second == labelId; });
+            if (label == entityLabelIds_.end()) {
+                error = "That entity classification is not registered in the current runtime.";
+                return {};
+            }
+            return Value(label->first);
+        }
         std::string normalizedProperty = property;
         std::replace(normalizedProperty.begin(), normalizedProperty.end(), '-', ' ');
         std::replace(normalizedProperty.begin(), normalizedProperty.end(), '_', ' ');
