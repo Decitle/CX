@@ -831,7 +831,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
 
     // Minimal renderer-neutral sprite objects. Coordinates and sizes are in pixels.
     static const std::regex createSpritePattern(R"SPRITE(^create\s+(sprite|entity)\s+"([^"\n]+)"\s+with\s+texture\s+(\{\$[^{}]+\})\s*$)SPRITE", std::regex::icase);
-    static const std::regex setSpritePropertyPattern(R"PROPERTY(^set\s+(?:the\s+)?(x-coordinate|y-coordinate|position|size|rotation|texture|visible|visibility|speed|health|max(?:imum)?[ _-]health)\s+of\s+((?:sprite|entity|object)\s+)?("[^"\n]+"|\{[^{}]+\})\s+to\s+(.+?)\s*$)PROPERTY", std::regex::icase);
+    static const std::regex setSpritePropertyPattern(R"PROPERTY(^set\s+(?:the\s+)?(x-coordinate|y-coordinate|position|size|rotation|texture|visible|visibility|speed|health|max(?:imum)?[ _-]health|kind|team)\s+of\s+((?:sprite|entity|object)\s+)?("[^"\n]+"|\{[^{}]+\})\s+to\s+(.+?)\s*$)PROPERTY", std::regex::icase);
     static const std::regex setSpritePattern(R"SPRITE(^set\s+(sprite|entity)\s+"([^"\n]+)"\s+(position|size|texture|visible|speed)\s+to\s+(.+?)\s*$)SPRITE", std::regex::icase);
     static const std::regex moveSpritePattern(R"SPRITE(^move\s+(sprite|entity)\s+"([^"\n]+)"\s+by\s+\((.*)\)\s*$)SPRITE", std::regex::icase);
     static const std::regex deleteSpritePattern(R"SPRITE(^(?:delete|remove)\s+(?:sprite|entity)\s+"([^"\n]+)"\s*$)SPRITE", std::regex::icase);
