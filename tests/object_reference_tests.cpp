@@ -42,6 +42,11 @@ on load:
     set speed of entity {_entity} to 125
     set {_hide} to false
     set visibility of sprite {_object} to {_hide}
+    set {read_x} to x-coordinate of sprite "hero"
+    set {read_y} to y-coordinate of {_object}
+    set {read_rotation} to rotation of {_object}
+    set {read_speed} to speed of entity {_entity}
+    set {read_visibility} to visibility of {_object}
     if {_object} is sprite "hero":
         set {object_identity_matches} to true
 )CX");
@@ -60,6 +65,11 @@ on load:
         expect(npc.rotationDegrees == 180.0F, "entity handle should support rotation");
         expect(npc.moveSpeedPixelsPerSecond == 125.0F, "entity speed should remain accessible through a handle");
     } else expect(false, "npc entity should exist");
+    expect(runtime.getGlobal("read_x").numberOr(-1.0) == 30.0, "x-coordinate getter should read the current live object property");
+    expect(runtime.getGlobal("read_y").numberOr(-1.0) == 40.0, "property getters should work with a local object handle");
+    expect(runtime.getGlobal("read_rotation").numberOr(-1.0) == 90.0, "rotation getter should read the renderer-facing degree value");
+    expect(runtime.getGlobal("read_speed").numberOr(-1.0) == 125.0, "speed getter should work for entity handles");
+    expect(!runtime.getGlobal("read_visibility").truthy(), "visibility getter should return the live boolean property");
     expect(runtime.getGlobal("object_identity_matches").truthy(), "expressions resolving to the same object should compare by identity");
     std::filesystem::remove_all(root);
 }

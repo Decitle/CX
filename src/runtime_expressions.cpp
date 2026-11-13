@@ -337,6 +337,38 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
     if (lowered == "true") return Value(true);
     if (lowered == "false") return Value(false);
     if (lowered == "none" || lowered == "null") return Value{};
+    // Object properties read with the same English structure used by setters:
+    // "set x-coordinate of {_player} to 15" pairs with
+    // "x-coordinate of {_player}" in an expression or condition.
+    static const std::regex objectPropertyPattern(
+        R"PROPERTY(^\s*(?:the\s+)?(x-coordinate|y-coordinate|x|y|rotation|speed|visible|visibility)\s+of\s+(?:(sprite|entity|object)\s+)?(.+?)\s*$)PROPERTY",
+        std::regex::icase);
+    std::smatch propertyMatch;
+    if (std::regex_match(expression, propertyMatch, objectPropertyPattern)) {
+        const std::string property = lower(trim(propertyMatch[1].str()));
+        const std::string requestedKind = propertyMatch[2].matched ? lower(trim(propertyMatch[2].str())) : "object";
+        const std::string operand = trim(propertyMatch[3].str());
+        const Value handleValue = evaluateValue(requestedKind + " " + operand, context, error);
+        if (!error.empty()) return {};
+        const auto* handle = handleValue.objectReference();
+        if (!handle) { error = "That property needs a sprite or entity reference."; return {}; }
+        const auto found = sprites_.find(handle->name);
+        if (found == sprites_.end() || found->second.runtimeInstanceId != handle->instanceId) {
+            error = "That object reference is no longer valid because the object was removed or replaced.";
+            return {};
+        }
+        if ((requestedKind == "sprite" && handle->kind != ObjectKind::Sprite) ||
+            (requestedKind == "entity" && handle->kind != ObjectKind::Entity)) {
+            error = "That object reference is not a " + requestedKind + ".";
+            return {};
+        }
+        const auto& object = found->second;
+        if (property == "x" || property == "x-coordinate") return Value(static_cast<double>(object.x));
+        if (property == "y" || property == "y-coordinate") return Value(static_cast<double>(object.y));
+        if (property == "rotation") return Value(static_cast<double>(object.rotationDegrees));
+        if (property == "speed") return Value(static_cast<double>(object.moveSpeedPixelsPerSecond));
+        return Value(object.visible);
+    }
     static const std::regex objectReferencePattern(R"OBJECT(^\s*(sprite|entity|object)\s+(.+?)\s*$)OBJECT", std::regex::icase);
     std::smatch objectMatch;
     if (std::regex_match(expression, objectMatch, objectReferencePattern)) {
