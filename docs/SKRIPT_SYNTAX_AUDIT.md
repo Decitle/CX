@@ -119,7 +119,7 @@ Numeric helpers should offer natural aliases such as “the sine of …”, “n
 - Place/clear tile
 - Place/clear overlay tile
 
-**Audit result:** variable mutation and basic control effects are reasonably Skript-like. Newer properties tend to use command-specific forms such as `set entity "id" health to ...`, instead of the more consistent property grammar `set health of entity "id" to ...`. `send` also needs clearer audience semantics rather than being treated as a generic synonym for log output. Retain good `play sound {@impact}`-style forms.
+**Audit result:** variable mutation and basic control effects are reasonably Skript-like. The typed object-property grammar now covers entity health as well as common visual/geometry properties, using forms such as `set health of entity "id" to 5`; the older `set entity "id" health to 5` form remains as a compatibility alias. Specialized entity metadata and collision settings still use command-specific forms. `send` also needs clearer audience semantics rather than being treated as a generic synonym for log output. Retain good `play sound {@impact}`-style forms.
 
 ### Functions and loops
 
