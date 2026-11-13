@@ -1017,6 +1017,32 @@ void Runtime::runExecution(ExecutionContext& context) {
                     break;
                 }
                 SpriteObject& sprite = found->second;
+                if (statement.property == "health" || statement.property == "max_health") {
+                    if (!sprite.entity) {
+                        runtimeError(statement, "Health properties are only available on entities.",
+                            "Use health of entity \"player\" or set health of entity \"player\" to 5.");
+                        break;
+                    }
+                    const Value healthValue = evaluateValue(statement.expression, context, error);
+                    const double numericHealth = healthValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                    if (!error.empty() || !healthValue.isNumber() || !std::isfinite(numericHealth) ||
+                        std::trunc(numericHealth) != numericHealth || numericHealth < 0.0 || numericHealth > 1000000.0) {
+                        runtimeError(statement, "Entity health values must be whole numbers from 0 to 1,000,000.",
+                            "Use a whole-number expression such as set health of entity \"player\" to 5.");
+                        break;
+                    }
+                    const int value = static_cast<int>(numericHealth);
+                    if (statement.property == "max_health") {
+                        sprite.maxHealth = value;
+                        sprite.health = std::min(sprite.health, value);
+                    } else {
+                        sprite.health = value;
+                        sprite.maxHealth = std::max(sprite.maxHealth, value);
+                    }
+                    globals_["entity::" + id + "::health"] = Value(static_cast<double>(sprite.health));
+                    globals_["entity::" + id + "::max_health"] = Value(static_cast<double>(sprite.maxHealth));
+                    break;
+                }
                 if (statement.property == "x-coordinate" || statement.property == "y-coordinate" || statement.property == "rotation") {
                     Value coordinateValue = evaluateValue(statement.expression, context, error);
                     const double number = coordinateValue.numberOr(std::numeric_limits<double>::quiet_NaN());
