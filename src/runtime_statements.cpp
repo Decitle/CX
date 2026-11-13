@@ -5,6 +5,7 @@
 #include "cx/collision.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <optional>
@@ -55,8 +56,8 @@ std::optional<std::size_t> findPhraseOutsideNested(std::string_view text, std::s
     for (std::size_t i = 0; i + wanted.size() <= text.size(); ++i) {
         const char c = text[i];
         if (escaped) { escaped = false; continue; }
-        if (c == '\\\\' && quoted) { escaped = true; continue; }
-        if (c == '\"') { quoted = !quoted; continue; }
+        if (c == '\\' && quoted) { escaped = true; continue; }
+        if (c == '"') { quoted = !quoted; continue; }
         if (quoted) continue;
         if (c == '{') { ++braces; continue; }
         if (c == '}' && braces > 0) { --braces; continue; }
@@ -72,26 +73,26 @@ std::optional<std::size_t> findPhraseOutsideNested(std::string_view text, std::s
 std::optional<CountedRandomListExpression> parseCountedRandomListExpression(std::string_view expression) {
     struct Form { std::string_view phrase; std::string_view kind; std::string_view range; };
     static constexpr std::array<Form, 8> forms{{
-        {\" random integer between \", \"integer\", \"between\"},
-        {\" random integers between \", \"integer\", \"between\"},
-        {\" random number between \", \"number\", \"between\"},
-        {\" random numbers between \", \"number\", \"between\"},
-        {\" random integer from \", \"integer\", \"from\"},
-        {\" random integers from \", \"integer\", \"from\"},
-        {\" random number from \", \"number\", \"from\"},
-        {\" random numbers from \", \"number\", \"from\"}
+        {" random integer between ", "integer", "between"},
+        {" random integers between ", "integer", "between"},
+        {" random number between ", "number", "between"},
+        {" random numbers between ", "number", "between"},
+        {" random integer from ", "integer", "from"},
+        {" random integers from ", "integer", "from"},
+        {" random number from ", "number", "from"},
+        {" random numbers from ", "number", "from"}
     }};
     for (const auto& form : forms) {
         const auto position = findPhraseOutsideNested(expression, form.phrase);
         if (!position) continue;
         const std::string count = trim(expression.substr(0, *position));
-        // `a random integer ...` remains the ordinary scalar expression form.
-        if (count.empty() || lower(count) == \"a\" || lower(count) == \"an\") return std::nullopt;
+        // "a random integer ..." remains the ordinary scalar expression form.
+        if (count.empty() || lower(count) == "a" || lower(count) == "an") return std::nullopt;
         const std::string boundsAndStream = trim(expression.substr(*position + form.phrase.size()));
         if (boundsAndStream.empty()) return std::nullopt;
         return CountedRandomListExpression{
             count,
-            \"a random \" + std::string(form.kind) + \" \" + std::string(form.range) + \" \" + boundsAndStream
+            "a random " + std::string(form.kind) + " " + std::string(form.range) + " " + boundsAndStream
         };
     }
     return std::nullopt;

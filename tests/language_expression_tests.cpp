@@ -298,15 +298,15 @@ on load:
     const bool loaded = runtime.loadScripts();
     if (!loaded) {
         for (const auto& diagnostic : runtime.diagnostics())
-            std::cerr << "COUNTED RANDOM DIAGNOSTIC: " << diagnostic.message << '\\n';
+            std::cerr << "COUNTED RANDOM DIAGNOSTIC: " << diagnostic.message << '\n';
     }
     expect(loaded, "count-prefix random integer/number expressions should load as list assignments");
     expect(!runtime.hasErrors(), "valid counted random list assignments should not emit diagnostics");
     for (int i = 1; i <= 5; ++i) {
         const std::string firstName = "integers_a::" + std::to_string(i);
         const std::string secondName = "integers_b::" + std::to_string(i);
-        const Value first = runtime.getGlobal(firstName);
-        const Value second = runtime.getGlobal(secondName);
+        const cx::Value first = runtime.getGlobal(firstName);
+        const cx::Value second = runtime.getGlobal(secondName);
         const double value = first.numberOr(-1.0);
         expect(first.isNumber() && value >= 5.0 && value <= 96.0 && std::trunc(value) == value,
                "counted random integers should append exactly bounded whole-number values");
@@ -314,7 +314,7 @@ on load:
                "counted random expressions should preserve seeded stream sequences across between/from aliases");
     }
     for (int i = 1; i <= 3; ++i) {
-        const Value sample = runtime.getGlobal("fractions::" + std::to_string(i));
+        const cx::Value sample = runtime.getGlobal("fractions::" + std::to_string(i));
         const double value = sample.numberOr(-1.0);
         expect(sample.isNumber() && value >= 0.0 && value < 1.0,
                "counted random numbers should append fractional values in the requested range");
@@ -330,7 +330,7 @@ on load:
 
 void testCountedRandomListRejectsUnsafeCounts() {
     const auto rejects = [](const std::string& name, const std::string& countExpression) {
-        const auto root = fixture(name, "set {rolls::*} to " + countExpression + " random integers between 1 and 10\\n");
+        const auto root = fixture(name, "set {rolls::*} to " + countExpression + " random integers between 1 and 10\n");
         cx::Runtime runtime(root);
         expect(!runtime.loadScripts(), "invalid random batch count should fail validation: " + countExpression);
         const bool hasCountDiagnostic = std::any_of(runtime.diagnostics().begin(), runtime.diagnostics().end(),
