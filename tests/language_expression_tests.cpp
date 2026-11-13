@@ -1,5 +1,6 @@
 #include "cx/runtime.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>

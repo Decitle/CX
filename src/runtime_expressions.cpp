@@ -508,12 +508,12 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
             }
             const std::string value = trim(std::string_view(operands).substr(0, between->position));
             const auto bounds = trim(std::string_view(operands).substr(between->position + between->length));
-            const auto and = findOperator(bounds, {{" and ", "and"}});
-            if (!and) {
+            const auto andSeparator = findOperator(bounds, {{" and ", "and"}});
+            if (!andSeparator) {
                 error = "A natural clamp expression needs `and` between its minimum and maximum."; return {};
             }
-            const std::string minimum = trim(std::string_view(bounds).substr(0, and->position));
-            const std::string maximum = trim(std::string_view(bounds).substr(and->position + and->length));
+            const std::string minimum = trim(std::string_view(bounds).substr(0, andSeparator->position));
+            const std::string maximum = trim(std::string_view(bounds).substr(andSeparator->position + andSeparator->length));
             if (value.empty() || minimum.empty() || maximum.empty()) {
                 error = "A natural clamp expression needs a value, minimum, and maximum."; return {};
             }
