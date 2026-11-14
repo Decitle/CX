@@ -239,9 +239,9 @@ A canvas keeps the existing panel/text/button declaration system. Grid coordinat
 
 ```skript
 canvas "HUD":
-    create panel "map_panel" at grid (127, 1) anchor top_right size (220, 150) color (18, 26, 40, 220)
-    create button "map_btn" at grid (127, 1) anchor top_right size (200, 42) label "Map"
-    create button "hotbar" at grid (64, 127) anchor bottom_center size (520, 54) label "Hotbar"
+    create panel "map_panel" at grid (127, 1) anchor top right size (220, 150) color (18, 26, 40, 220)
+    create button "map_btn" at grid (127, 1) anchor top right size (200, 42) label "Map"
+    create button "hotbar" at grid (64, 127) anchor bottom center size (520, 54) label "Hotbar"
     create panel "tooltip_bg" to the left of button "map_btn" gap 10 size (180, 42) color (32, 42, 60, 235)
 
 on press key "H":
@@ -254,7 +254,7 @@ on click button "resume_btn":
     close canvas "PauseMenu"
 ```
 
-Absolute `at (x, y)` declarations remain useful for pixel layouts and are scaled from the configured reference resolution. `at grid (x, y)` uses coordinates 0–128 and the optional anchors `top_left`, `top_center`, `top_right`, `center_left`, `center`, `center_right`, `bottom_left`, `bottom_center`, and `bottom_right`. `anchor auto` chooses the nearest edge based on the grid coordinate. Relative elements support `to the left/right/above/below of button|panel "id" gap N`; the target must be declared earlier in the same canvas. Use `engine::ui_scale` to scale control sizes globally without changing their edge anchor. `engine::resolution_mode` accepts `"responsive"` (adapt to the resizable window) or `"fixed"` (keep the configured window dimensions). `engine::ui_reference_width` and `engine::ui_reference_height` provide the design reference for legacy absolute-position UI coordinates. World rendering has its own tile-based view: `engine::world_view_height_tiles` defines the view height and view width follows window aspect ratio. The world is not stretched to different aspect ratios; the camera shows more or less world horizontally. Screen UI is resolved separately against the actual viewport dimensions. Panel colors are RGBA channels, each clamped to `0–255`. IDs are unique within a canvas. The canvas/button syntax remains unchanged; GUI left clicks hit-test resolved button bounds and run `on click button "id":`.
+Absolute `at (x, y)` declarations remain useful for pixel layouts and are scaled from the configured reference resolution. `at grid (x, y)` uses coordinates 0–128 and the canonical anchors `top left`, `top center`, `top right`, `center left`, `center`, `center right`, `bottom left`, `bottom center`, and `bottom right`. Underscored aliases such as `top_right` remain accepted for compatibility. `anchor auto` chooses the nearest edge based on the grid coordinate. Relative elements support `to the left/right/above/below of button|panel "id" gap N`; the target must be declared earlier in the same canvas. Use `engine::ui_scale` to scale control sizes globally without changing their edge anchor. `engine::resolution_mode` accepts `"responsive"` (adapt to the resizable window) or `"fixed"` (keep the configured window dimensions). `engine::ui_reference_width` and `engine::ui_reference_height` provide the design reference for legacy absolute-position UI coordinates. World rendering has its own tile-based view: `engine::world_view_height_tiles` defines the view height and view width follows window aspect ratio. The world is not stretched to different aspect ratios; the camera shows more or less world horizontally. Screen UI is resolved separately against the actual viewport dimensions. Panel colors are RGBA channels, each clamped to `0–255`. IDs are unique within a canvas. The canvas/button syntax remains unchanged; GUI left clicks hit-test resolved button bounds and run `on click button "id":`.
 
 ## Oblique room projection and transparent overlays
 
@@ -366,12 +366,12 @@ create beam "sun shaft" from (320, -80) to (320, 240) using {$beam_strip}
 set beam "sun shaft" width to 48
 set beam "sun shaft" opacity to 0.72
 set beam "sun shaft" tint to (255, 230, 190)
-set beam "sun shaft" texture_repeat to 64
+set beam "sun shaft" texture repeat to 64
 set beam "sun shaft" layer to "background" # or "world" / "foreground"
-set beam "sun shaft" endpoint_light to true
-set beam "sun shaft" endpoint_light_radius to 180
-set beam "sun shaft" endpoint_light_intensity to 0.72
-set beam "sun shaft" endpoint_light_color to (255, 196, 132)
+set beam "sun shaft" endpoint light to true
+set beam "sun shaft" endpoint light radius to 180
+set beam "sun shaft" endpoint light intensity to 0.72
+set beam "sun shaft" endpoint light color to (255, 196, 132)
 set beam "sun shaft" end to (360, 260)
 set beam "sun shaft" lifetime to 2.5 # zero is persistent
 remove beam "sun shaft"
@@ -383,7 +383,7 @@ remove beam "sun shaft"
 
 ```cx
 on press key "SPACE":
-    tween entity "boulder" to (700, 360) over 0.9 seconds easing ease_in_out with arc height 120
+    tween entity "boulder" to (700, 360) over 0.9 seconds easing ease in out with arc height 120
 
 on press key "C":
     cancel tween for entity "boulder"
@@ -394,7 +394,7 @@ on tween complete for entity "boulder":
     set {boulder_name} to {_tween_entity}
 ```
 
-The tween moves an ordinary entity's top-left position in world pixels. Supported easing values are `linear`, `ease_in`, `ease_out`, and `ease_in_out`. The optional non-negative `arc height` adds an upward parabola above the straight path, peaking halfway through. Duration is evaluated when the command runs and rounded up to a fixed tick count using the tick rate at that moment; changing the tick rate later does not change the active tween's tick count.
+The tween moves an ordinary entity's top-left position in world pixels. Canonical easing values are `linear`, `ease in`, `ease out`, and `ease in out`; the earlier underscored forms remain accepted aliases. The optional non-negative `arc height` adds an upward parabola above the straight path, peaking halfway through. Duration is evaluated when the command runs and rounded up to a fixed tick count using the tick rate at that moment; changing the tick rate later does not change the active tween's tick count.
 
 `on tween complete for entity "name":` runs once after the exact destination is reached. Event locals are `{_tween_entity}`, `{_tween_x}`, and `{_tween_y}`. New tweens replace old ones without completing them; cancellation is silent. Explicit position changes, nonzero manual movement, pressed directional input, assigning a tile path, deletion, or same-name replacement cancel the tween. A room-context change discards stale tweens without completion. Successful startup tweens created during a transactional script load are preserved.
 
@@ -640,7 +640,7 @@ Drop `.wav`, `.ogg`, `.flac`, `.aiff`, or `.aif` files into `assets/audio/`; the
 
 ```skript
 on load:
-    create wave "chime" duration 0.35 sample_rate 44100
+    create wave "chime" duration 0.35 sample rate 44100
     add sine wave to "chime" frequency 440 amplitude 0.55 phase 0
     add sine wave to "chime" frequency 660 amplitude 0.22 phase 0.2
     set wave "chime" envelope attack 0.01 decay 0.08 sustain 0.55 release 0.18
@@ -650,7 +650,7 @@ on load:
     play sound "chime"
 ```
 
-A wave is a named reusable sample buffer. Add sine, square, triangle, saw, or seeded noise layers. Parameters include frequency in Hz, amplitude, phase in radians, and optional noise seed. `sine(hz, seconds[, phase])`, `noise2d(x, y[, seed])`, and `fbm2d(x, y[, seed[, octaves]])` are numeric expressions for procedural synthesis/terrain parameters. `visualize wave` exports an SVG graph; it is not a live audio oscilloscope. Audio generation/export works in the core/CLI, while sound playback requires the optional graphical SFML Audio backend. There is not yet a DAW-grade mixer or VST host.
+A wave is a named reusable sample buffer. Use `sample rate` as the canonical phrase; `sample_rate` remains accepted as a compatibility alias. Add sine, square, triangle, saw, or seeded noise layers. Parameters include frequency in Hz, amplitude, phase in radians, and optional noise seed. `sine(hz, seconds[, phase])`, `noise2d(x, y[, seed])`, and `fbm2d(x, y[, seed[, octaves]])` are numeric expressions for procedural synthesis/terrain parameters. `visualize wave` exports an SVG graph; it is not a live audio oscilloscope. Audio generation/export works in the core/CLI, while sound playback requires the optional graphical SFML Audio backend. There is not yet a DAW-grade mixer or VST host.
 
 ## Color formatting and fonts
 

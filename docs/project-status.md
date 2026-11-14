@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest verified six-target development CI:** [run #91](https://github.com/Decitle/CX/actions/runs/43491377925) — all six native targets passed. Later commits added count-prefix random-list assignment, possessive property setters, and automated syntax checks for every example script; validation of the current branch head is pending.
+**Latest completed six-target development CI before the current subsystem syntax increment:** [run #100](https://github.com/Decitle/CX/actions/runs/43505981740) — all six native targets passed build, CTest, all-example syntax checks, and native package creation; Linux and Windows also passed graphical startup smoke tests. The new natural UI/graphics/audio parser forms and dedicated corpus are awaiting their own CI run.
 
 ## Repository state
 
@@ -27,11 +27,11 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Cross-platform runtime packaging fixes and successful six-target validation.
 - CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
-The latest validated code commit before the current documentation corrections passed Linux x86_64/ARM64, Windows x86_64/ARM64 and macOS x86_64/ARM64 in run #91. An earlier CI attempt, run #90, failed to compile an intermediate commit; the reserved-token issue was corrected in the next commit and #91 passed. This is retained here for an honest validation trail, not as a current blocker.
+The latest validated code commit before this subsystem syntax increment passed Linux x86_64/ARM64, Windows x86_64/ARM64 and macOS x86_64/ARM64 in run #100. An earlier CI attempt, run #90, failed to compile an intermediate commit; the reserved-token issue was corrected in the next commit and #91 passed. This is retained here for an honest validation trail, not as a current blocker.
 
 ## Remaining v0.11.0 acceptance work
 
-The principal P0 random-expression gap, **count-prefix/plural random list assignment**, has now been implemented and covered by runtime tests. Its current-head six-target CI is still pending, so this is an implementation checkpoint rather than a validated completion:
+The principal P0 random-expression gap, **count-prefix/plural random list assignment**, has now been implemented and covered by runtime tests. Its current-head six-target CI passed in run #100, so the random-list milestone is validated for that exact head:
 
 ```skript
 set {rolls::*} to 5 random integers between 5 and 96
@@ -43,7 +43,7 @@ Other remaining acceptance work includes:
 
 - Complete the subsystem-by-subsystem grammar audit. Some APIs intentionally retain technical arguments or specialized commands; their language surface still needs a consistency review.
 - The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage. Event grammar/context values and remaining subsystem-specific properties still need review.
-- Add a dedicated positive/negative syntax corpus for ambiguity, invalid types and missing event context. Every repository `.cx` example is now syntax-checked in CI, but this does not execute game behavior or graphical paths.
+- Expand the initial positive/negative syntax corpus across all advertised language families. The current subsystem corpus checks canonical/legacy forms, normalized parser meaning, invalid values, ambiguous anchors, and missing event selectors. Event payload population and lifetime still need runtime-level coverage.
 - Update the beginner learning path, complete-first-game example, subsystem pages and versioned generated reference to match the accepted v0.11.0 grammar.
 - Pass CI and release/package verification on the final accepted branch head.
 
@@ -55,10 +55,10 @@ The development documentation changes are still confined to the unmerged branch.
 
 ## Next priorities
 
-1. Validate count-prefix/plural random list assignment on all six CI targets and through the full script/example corpus.
-2. Complete the property/event/subsystem grammar review, preserving compatibility aliases where practical.
-3. Bring examples, beginner materials, feature pages and reference generation into alignment with the accepted language.
-4. Run the full syntax corpus, native six-target CI and clean extraction/launch checks.
+1. Finish the event-header/context audit and verify event-local population and lifetime behavior at runtime.
+2. Expand the positive/negative syntax corpus to every advertised syntax family and compatibility alias.
+3. Bring examples, beginner materials, feature pages and versioned reference generation into alignment with accepted canonical grammar.
+4. Run current-head six-target CI and final clean extraction/launch checks after the syntax increment.
 5. Present the completed draft for owner review; merge and publish only after acceptance.
 
 CX remains an experimental pre-release engine. The v0.11.0 milestone is not complete and v1.0 readiness is a later milestone.

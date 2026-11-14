@@ -139,13 +139,13 @@ The reference adds 23 world/entity entries, 6 project-structure entries, 7 UI en
 
 | Priority | Gap | Required direction |
 |---|---|---|
-| P0 validation gate | Count-prefix random list assignment needs full validation | The syntax/runtime path and regression tests are implemented; pass six-target CI and the expanded example syntax workflow before treating the gap as validated. |
+| [x] P0 validation gate | Count-prefix random list assignment | The implementation, typed output/range/zero-count tests, all-example syntax checks, and six-target run #100 passed on the pre-subsystem-syntax head. |
 | P1 | Advanced math helpers retain function-call forms | Common scalar operations now have natural-English forms; technical procedural helpers such as `noise2d`, `fbm2d`, and `lerp` remain function calls by design. |
 | P1 | Property grammar refinements remain | Typed sprite/entity references, the shared `set <property> of <object> to <value>` grammar, and its natural possessive setter alias are implemented for supported properties; review remaining subsystem-specific properties. |
 | P1 | Typed object references currently cover sprites/entities | Live-instance-safe sprite/entity handles are implemented. Review whether room handles are needed and keep object-reference lifetime rules consistent. |
 | P1 | Event headers are inconsistent and sometimes over-specific | Define a short event vocabulary plus standard event-context expressions/locals and filtering conditions. |
 | P1 | English comparison aliases are incomplete | Support common worded comparisons alongside symbols with identical semantics. |
-| P1 | UI/graphics/audio phrases are mixed with underscore-style implementation terms | Offer word-spaced canonical syntax; preserve existing forms as aliases. |
+| [x] | UI/graphics/audio phrases expose underscore-style implementation terms | Natural `font size`, spaced anchors, `sample rate`, `ease in out`, and spaced beam properties now normalize to existing internal keys; underscored spellings remain aliases. The new CTest corpus checks both. |
 | P1 | Event payload and object naming are inconsistent | Publish one event-value naming contract and one object-reference grammar. |
 | P2 | Screen opacity/fade and audio-track/bus controls are absent | Treat as future engine capabilities; design their script surface in the same English-first style. They are not implemented in v0.10.14. |
 | P2 | Weighted random selection is absent | Consider after the natural equal-weight/random-expression syntax is established. |
@@ -170,8 +170,8 @@ Official references:
 4. Audit the implemented natural math helpers and worded comparisons, adding missing edge-case tests rather than treating them as wholly absent.
 5. Typed object references, shared property getters/setters and the possessive setter alias are implemented; continue auditing remaining subsystem-specific properties and edge cases.
 6. Keep the now-documented event-context values consistent as new event families are added. Review event-header aliases and filter syntax; any generalized trigger/collision form must preserve bounded dispatch work and room/object lifetime guarantees.
-7. Normalize UI/graphics/audio/settings command wording and document the limits of currently unavailable screen/audio capabilities.
-8. CI now runs every standalone `.cx` example and each multi-file example project through `cx-cli --check` via `tools/check_examples.py`. Add a separate dedicated syntax corpus with positive/negative cases for aliases, ambiguity, invalid types and missing event context.
+7. Continue auditing UI/graphics/audio/settings wording. This increment normalizes canvas font size and anchors, audio sample rate, tween easing, and textured-beam property names; remaining settings and subsystem commands still need a complete pass.
+8. CI runs every standalone `.cx` example and each multi-file example project through `cx-cli --check`. A first dedicated positive/negative CTest corpus now covers natural and compatibility subsystem forms, parser normalization, invalid values, ambiguous anchors, and missing explicit event selectors; expand it to every advertised syntax family and add runtime payload-lifetime coverage.
 9. Update the searchable reference, syntax guide, beginner guide, examples, generated release reference and complete-first-project tutorial together.
 10. Pass the native six-target CI matrix and all packaging checks before tagging `v0.11.0`.
 

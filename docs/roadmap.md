@@ -10,7 +10,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - The six-target build/test workflow passed in [run 42959350359](https://github.com/Decitle/CX/actions/runs/42959350359).
 - The tagged package assembly and publication workflow passed in [run 42961733306](https://github.com/Decitle/CX/actions/runs/42961733306).
 - The README/download route, direct platform-aware download page, release-reference filename automation and dark Pages documentation work are in place.
-- The published Pages baseline remains [run 42969227621](https://github.com/Decitle/CX/actions/runs/42969227621). The active v0.11.0 development branch most recently passed its six-target native CI matrix in [run #91](https://github.com/Decitle/CX/actions/runs/43491377925). These represent different trees: main/Pages remains on v0.10.14 until the draft overhaul is accepted.
+- The published Pages baseline remains [run 42969227621](https://github.com/Decitle/CX/actions/runs/42969227621). The active v0.11.0 branch passed its six-target native CI matrix at [run #100](https://github.com/Decitle/CX/actions/runs/43505981740). The next subsystem parser/corpus increment is awaiting its own run. These represent different trees: main/Pages remains on v0.10.14 until the draft overhaul is accepted.
 
 ## Active next milestone — Skript-like language overhaul (v0.11.0)
 
@@ -24,7 +24,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Typed sprite/entity references and shared property getter/setter rules are implemented for supported properties. Continue checking object lifetime/extension cases; the standard event-context contract remains an open audit item.
 - Keep the design charter and audit linked from the repository's public documentation and learning resources.
 
-**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, worded comparisons, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. The current-head CI run must validate the latest random and property syntax plus the new example-check workflow.
+**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, worded comparisons, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #100 validated the count-prefix random syntax, property grammar, and all-example syntax workflow. The subsequent UI/graphics/audio parser changes require fresh validation.
 
 ### Phase 2 — expressions and common language
 
@@ -32,7 +32,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - [x] Retain deterministic named random streams as an optional reproducibility clause and initialize the default stream automatically.
 - [x] Add English-readable forms for common math operations while retaining compact function aliases.
 - [x] Add natural comparison wording alongside symbolic operators.
-- [ ] Validate count-prefix/plural random list assignment (implemented on the current branch) for its 0–4096 count range, range semantics, typed outputs and deterministic streams.
+- [x] Validate count-prefix/plural random list assignment for its 0–4096 count range, range semantics, typed outputs and deterministic streams on all six native targets.
 - [x] Preserve list syntax, interpolation, function semantics and the current loop/wait foundation; continue the compatibility audit.
 
 ### Phase 3 — object properties and events
@@ -55,7 +55,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Rewrite examples so the canonical English grammar is what new users encounter first.
 - [x] Add a CI syntax pass for every standalone `.cx` example and every multi-file example project using `tools/check_examples.py` (syntax only; runtime/GUI behavior is checked separately).
 - Update the searchable reference, syntax guide, learning guide, feature pages, quickstart, standalone versioned HTML docs and package instructions together.
-- Build a parser syntax corpus covering every advertised form and alias, with invalid-form and ambiguous-parse tests.
+- [x] Add an initial positive/negative subsystem syntax corpus for natural/legacy UI, graphics, audio and event forms; expand it to every advertised language family, invalid type, and event-context boundary.
 - Test old v0.10.14 examples through compatibility aliases wherever practical.
 - Pass all six native CI targets and the normal release package verifier.
 
