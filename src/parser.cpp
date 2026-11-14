@@ -1295,6 +1295,10 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
 // Parse statements until indentation returns to this block's parent level. When a
 // statement opens a block, this function calls itself to build that block's body; this
 // is a simple recursive-descent approach and mirrors how nested if/loop code is written.
+void parseConditionalBranches(Statement& statement, const std::vector<SourceLine>& lines, std::size_t& index,
+                               const SourceLine& parentLine, const std::filesystem::path& source,
+                               std::vector<Diagnostic>& diagnostics);
+
 std::vector<Statement> parseStatements(const std::vector<SourceLine>& lines, std::size_t& index,
                                        int parentIndent, const std::filesystem::path& source,
                                        std::vector<Diagnostic>& diagnostics) {
@@ -1320,44 +1324,49 @@ std::vector<Statement> parseStatements(const std::vector<SourceLine>& lines, std
                 const std::string label = statement.type == StatementType::If ? "if" : ((statement.type == StatementType::LoopTimes || statement.type == StatementType::LoopList) ? "loop" : "while loop");
                 appendDiagnostic(diagnostics, {true, source, line.number, "This " + label + " block is empty.", "Indent at least one statement beneath the block header.", 1, 1});
             }
-            if (statement.type == StatementType::If) {
-                // Represent an else-if chain as nested If statements in the
-                // preceding branch's elseBody. Runtime execution already selects
-                // exactly one branch, so no new AST or evaluator node is needed.
-                Statement* currentBranch = &statement;
-                while (index < lines.size() && lines[index].indent == line.indent) {
-                    const SourceLine branchLine = lines[index];
-                    const std::string branchText = lower(trim(branchLine.text));
-                    if (branchText == "else:") {
-                        ++index;
-                        currentBranch->elseBody = parseStatements(lines, index, branchLine.indent, source, diagnostics);
-                        if (currentBranch->elseBody.empty())
-                            appendDiagnostic(diagnostics, {true, source, branchLine.number, "This else block is empty.",
-                                "Indent at least one statement beneath else:.", 1, 1});
-                        break;
-                    }
-                    if (!startsWithInsensitive(branchText, "else if ") || !endsWithColon(branchText)) break;
-
-                    ++index;
-                    SourceLine nestedHeader = branchLine;
-                    nestedHeader.text = "if " + trim(std::string_view(branchLine.text).substr(8));
-                    std::vector<Diagnostic> nestedDiagnostics;
-                    auto nestedStatement = parseStatement(nestedHeader, source, nestedDiagnostics);
-                    appendDiagnostics(diagnostics, std::move(nestedDiagnostics));
-                    if (!nestedStatement || nestedStatement->type != StatementType::If) continue;
-                    nestedStatement->sourceLineText = branchLine.text;
-                    nestedStatement->body = parseStatements(lines, index, branchLine.indent, source, diagnostics);
-                    if (nestedStatement->body.empty())
-                        appendDiagnostic(diagnostics, {true, source, branchLine.number, "This else-if block is empty.",
-                            "Indent at least one statement beneath else if condition:.", 1, 1});
-                    currentBranch->elseBody.push_back(std::move(*nestedStatement));
-                    currentBranch = &currentBranch->elseBody.back();
-                }
-            }
+            parseConditionalBranches(statement, lines, index, line, source, diagnostics);
         }
         statements.push_back(std::move(statement));
     }
     return statements;
+}
+
+void parseConditionalBranches(Statement& statement, const std::vector<SourceLine>& lines, std::size_t& index,
+                              const SourceLine& parentLine, const std::filesystem::path& source,
+                              std::vector<Diagnostic>& diagnostics) {
+    if (statement.type != StatementType::If) return;
+
+    // The same chain parser is used for top-level bootstrap blocks and nested blocks.
+    // Each else-if is represented as one nested If in the preceding elseBody.
+    Statement* currentBranch = &statement;
+    while (index < lines.size() && lines[index].indent == parentLine.indent) {
+        const SourceLine branchLine = lines[index];
+        const std::string branchText = lower(trim(branchLine.text));
+        if (branchText == "else:") {
+            ++index;
+            currentBranch->elseBody = parseStatements(lines, index, branchLine.indent, source, diagnostics);
+            if (currentBranch->elseBody.empty())
+                appendDiagnostic(diagnostics, {true, source, branchLine.number, "This else block is empty.",
+                    "Indent at least one statement beneath else:.", 1, 1});
+            break;
+        }
+        if (!startsWithInsensitive(branchText, "else if ") || !endsWithColon(branchText)) break;
+
+        ++index;
+        SourceLine nestedHeader = branchLine;
+        nestedHeader.text = "if " + trim(std::string_view(branchLine.text).substr(8));
+        std::vector<Diagnostic> nestedDiagnostics;
+        auto nestedStatement = parseStatement(nestedHeader, source, nestedDiagnostics);
+        appendDiagnostics(diagnostics, std::move(nestedDiagnostics));
+        if (!nestedStatement || nestedStatement->type != StatementType::If) continue;
+        nestedStatement->sourceLineText = branchLine.text;
+        nestedStatement->body = parseStatements(lines, index, branchLine.indent, source, diagnostics);
+        if (nestedStatement->body.empty())
+            appendDiagnostic(diagnostics, {true, source, branchLine.number, "This else-if block is empty.",
+                "Indent at least one statement beneath else if condition:.", 1, 1});
+        currentBranch->elseBody.push_back(std::move(*nestedStatement));
+        currentBranch = &currentBranch->elseBody.back();
+    }
 }
 
 bool parseEventHeader(const std::string& header, EventHandler& event) {
@@ -1716,12 +1725,7 @@ ScriptProgram ScriptParser::parseText(const std::string& text, const std::filesy
                     appendDiagnostic(program.diagnostics, {true, sourceName, line.number,
                         "This top-level " + label + " block is empty.", "Indent at least one statement beneath the block header.", 1, 1});
                 }
-                if (statement.type == StatementType::If && index < lines.size() && lines[index].indent == line.indent && lower(lines[index].text) == "else:") {
-                    const auto elseLine = lines[index++];
-                    statement.elseBody = parseStatements(lines, index, elseLine.indent, sourceName, program.diagnostics);
-                    if (statement.elseBody.empty()) appendDiagnostic(program.diagnostics, {true, sourceName, elseLine.number,
-                        "This else block is empty.", "Indent at least one statement beneath else:.", 1, 1});
-                }
+                parseConditionalBranches(statement, lines, index, line, sourceName, program.diagnostics);
                 if (referencesEventLocal(statement)) {
                     appendDiagnostic(program.diagnostics, {false, sourceName, line.number,
                         "Event-local variables (for example, {_score}) are only available while an event is running.",

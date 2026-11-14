@@ -386,6 +386,14 @@ else if 2 is equal to 2:
         set {nested_child} to "nested-else"
 else:
     set {nested_parent} to "wrong-else"
+
+on load:
+    if 1 is equal to 2:
+        set {event_branch} to "first"
+    else if 2 is equal to 2:
+        set {event_branch} to "event-elseif"
+    else:
+        set {event_branch} to "else"
 )CX");
     cx::Runtime runtime(root);
     const bool loaded = runtime.loadScripts();
@@ -405,6 +413,8 @@ else:
            "else-if chains should compose with nested if/else blocks");
     expect(!runtime.getGlobal("nested_parent").truthy(),
            "the parent chain should select only its matching else-if branch");
+    expect(runtime.getGlobal("event_branch").toString() == "event-elseif",
+           "else-if chains inside event handlers should use the same parser path as bootstrap blocks");
     std::filesystem::remove_all(root);
 }
 
