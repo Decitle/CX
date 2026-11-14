@@ -66,7 +66,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 
 ## Following milestone — beginner-first first-game success
 
-Once the language surface is stable, finish the complete beginner journey: download, extract, launch, find the starter script, make a meaningful change, validate with `cx-cli`, run the game and fix a deliberately introduced syntax error using the source diagnostic. Use one small complete annotated game as the acceptance project.
+The first complete acceptance project is [Number Hunt](first-game.md): an asset-free game with a multi-file runnable project, annotated tutorial, CLI syntax-check instructions, a deliberate syntax-error recovery exercise, and a runtime test for a complete round. The remaining beginner-journey gate is to validate this project through the actual download/extract/launch path using an installed package.
 
 ## Later engineering stages
 

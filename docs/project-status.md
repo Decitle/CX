@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI:** [run #111](https://github.com/Decitle/CX/actions/runs/43630125248) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for commit `f3959de`; Linux and Windows also passed graphical startup smoke tests. [Run #114](https://github.com/Decitle/CX/actions/runs/43630765763) is validating the current canvas interpolation runtime test and canonicalized examples on `76f3a9d`. The branch head `3551995` adds only this validation-status documentation update.
+**Latest completed six-target development CI:** [run #114](https://github.com/Decitle/CX/actions/runs/43630765763) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for commit `76f3a9d`; Linux and Windows also passed graphical startup smoke tests. [Run #116](https://github.com/Decitle/CX/actions/runs/43631353115) is validating the subsequent event/audit documentation on `075cf25`. [Run #117](https://github.com/Decitle/CX/actions/runs/43631495763) is queued for Number Hunt and its runtime round test on `dfee74c`; this tutorial and status update are newer.
 
 ## Repository state
 
@@ -29,7 +29,7 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Cross-platform runtime packaging fixes and successful six-target validation.
 - CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
-The latest fully validated six-platform commit is `f3959de`, which passed run #111 with the expanded object-property runtime suite. Run #114 is checking the later live canvas interpolation test, beginner HUD examples and canonicalized feature examples. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
+The latest fully validated six-platform commit is `76f3a9d`, which passed run #114 with live canvas interpolation, canonicalized examples, and package validation. Run #116 checks the subsequent event/audit documentation; run #117 checks Number Hunt and its complete-round runtime test. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
 
 ## Remaining v0.11.0 acceptance work
 
@@ -48,7 +48,7 @@ Other remaining acceptance work includes:
 - The first-steps example and quickstart now demonstrate a live canvas score HUD, and the beginner/getting-started guides explain that on-screen text is distinct from developer-log output.
 - Added an asset-free first complete game, Number Hunt, with a multi-file example project, step-by-step tutorial, and runtime coverage of a full round lifecycle.
 - Expand the initial positive/negative syntax corpus across all advertised language families and compatibility aliases. The current subsystem corpus checks canonical/legacy forms, normalized parser meaning, invalid values, ambiguous anchors, missing selectors, and whitespace-only quoted event selectors. Runtime CTest coverage now checks every documented event payload field and the full implemented English comparison operator vocabulary; broader condition lifecycle cases remain part of the audit.
-- Continue polishing the beginner learning path and consider a larger follow-up game; the complete Number Hunt tutorial and runtime-tested project now provide a first end-to-end game.
+- Validate Number Hunt through the actual download/extract/launch path using an installed package, then consider a larger follow-up game; the complete tutorial and runtime-tested project now provide the first end-to-end game.
 - Pass CI and release/package verification on the final accepted branch head.
 
 ## Documentation and public reference

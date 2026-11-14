@@ -112,6 +112,28 @@ Try changing the game in one place, then run `cx-cli --check examples/first_game
 
 The example intentionally keeps each handler explicit so a beginner can trace a button click from its visible ID to the statements it runs. Once the pattern is familiar, the [functions and lists example](../examples/list_functions.cx) shows how to organize reusable logic.
 
-## 7. What the tests cover
+## 7. Practice a syntax error and recover
+
+The CLI can catch a mistake before you open the game. In `examples/first_game/scripts/main.cx`, temporarily change the title's font-size line from:
+
+```skript
+create text "Number Hunt" at (40, 35) font size 28
+```
+
+to:
+
+```skript
+create text "Number Hunt" at (40, 35) font size "large"
+```
+
+Run the same check again:
+
+```sh
+./build/cx-cli --check examples/first_game
+```
+
+The checker reports the invalid text position or font size and identifies the script file and line. Restore the numeric value `28`, check again, and launch the game. A useful habit is to make one small change at a time and run the checker before starting the graphical runtime.
+
+## 8. What the tests cover
 
 The core runtime test exercises a whole game flow: it picks an in-range secret, checks a wrong guess and its directional hint, completes the round with a correct guess, confirms further guesses are ignored, and starts a new round while preserving the score. The project is also included in CI's all-example syntax pass.
