@@ -46,11 +46,21 @@ struct Statement {
     std::string sourceLineText;
 };
 
-// A function stores its parameter names and parsed body. It does not execute while
-// the file is being parsed; calls are evaluated by Runtime when a script reaches them.
+// Function parameters have a small portable type contract. Defaults remain source
+// expressions so they can be evaluated at call time in the function's local context.
+struct ScriptParameter {
+    std::string name;
+    std::string type{"any"};
+    std::string defaultExpression;
+    bool hasDefault{false};
+};
+
+// Legacy untyped functions retain the type "any" for each parameter and their return.
 struct ScriptFunction {
     std::string name;
-    std::vector<std::string> parameters;
+    std::vector<ScriptParameter> parameters;
+    std::string returnType{"any"};
+    bool hasReturnType{false};
     std::vector<Statement> body;
     std::filesystem::path file;
     int line{0};

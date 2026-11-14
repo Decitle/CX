@@ -176,6 +176,149 @@ std::vector<std::string> splitComma(std::string_view text) {
     return result;
 }
 
+std::vector<std::string> splitTopLevelComma(std::string_view text) {
+    std::vector<std::string> result;
+    std::size_t start = 0;
+    bool inString = false;
+    bool escaped = false;
+    int parentheses = 0;
+    int braces = 0;
+    int brackets = 0;
+    for (std::size_t i = 0; i <= text.size(); ++i) {
+        if (i < text.size()) {
+            const char c = text[i];
+            if (escaped) { escaped = false; continue; }
+            if (c == '\\' && inString) { escaped = true; continue; }
+            if (c == '"') { inString = !inString; continue; }
+            if (!inString) {
+                if (c == '(') ++parentheses;
+                else if (c == ')' && parentheses > 0) --parentheses;
+                else if (c == '{') ++braces;
+                else if (c == '}' && braces > 0) --braces;
+                else if (c == '[') ++brackets;
+                else if (c == ']' && brackets > 0) --brackets;
+            }
+            if (c != ',' || inString || parentheses != 0 || braces != 0 || brackets != 0) continue;
+        }
+        result.push_back(trim(text.substr(start, i - start)));
+        start = i + 1;
+    }
+    return result;
+}
+
+std::size_t findTopLevelCharacter(std::string_view text, char wanted) {
+    bool inString = false;
+    bool escaped = false;
+    int parentheses = 0;
+    int braces = 0;
+    int brackets = 0;
+    for (std::size_t i = 0; i < text.size(); ++i) {
+        const char c = text[i];
+        if (escaped) { escaped = false; continue; }
+        if (c == '\\' && inString) { escaped = true; continue; }
+        if (c == '"') { inString = !inString; continue; }
+        if (inString) continue;
+        if (c == wanted && parentheses == 0 && braces == 0 && brackets == 0) return i;
+        if (c == '(') ++parentheses;
+        else if (c == ')' && parentheses > 0) --parentheses;
+        else if (c == '{') ++braces;
+        else if (c == '}' && braces > 0) --braces;
+        else if (c == '[') ++brackets;
+        else if (c == ']' && brackets > 0) --brackets;
+    }
+    return std::string_view::npos;
+}
+
+// A default-argument separator is a lone top-level '='. Do not split comparison
+// operators (==, !=, <=, >=) that may appear inside a default expression.
+std::size_t findTopLevelDefaultEquals(std::string_view text) {
+    bool inString = false;
+    bool escaped = false;
+    int parentheses = 0;
+    int braces = 0;
+    int brackets = 0;
+    for (std::size_t i = 0; i < text.size(); ++i) {
+        const char c = text[i];
+        if (escaped) { escaped = false; continue; }
+        if (c == '\\' && inString) { escaped = true; continue; }
+        if (c == '"') { inString = !inString; continue; }
+        if (inString) continue;
+        if (c == '=' && parentheses == 0 && braces == 0 && brackets == 0) {
+            const char previous = i > 0 ? text[i - 1] : '\0';
+            const char following = i + 1 < text.size() ? text[i + 1] : '\0';
+            if (previous != '=' && previous != '!' && previous != '<' && previous != '>' &&
+                following != '=') return i;
+        }
+        if (c == '(') ++parentheses;
+        else if (c == ')' && parentheses > 0) --parentheses;
+        else if (c == '{') ++braces;
+        else if (c == '}' && braces > 0) --braces;
+        else if (c == '[') ++brackets;
+        else if (c == ']' && brackets > 0) --brackets;
+    }
+    return std::string_view::npos;
+}
+
+std::string normalizeFunctionType(std::string type) {
+    type = lower(trim(type));
+    if (type == "string") return "text";
+    if (type == "bool") return "boolean";
+    if (type == "value") return "any";
+    if (type == "int" || type == "integer" || type == "real" ||
+        type == "float" || type == "double") return "number";
+    if (type == "void") return "none";
+    return type;
+}
+
+bool isSupportedFunctionType(std::string_view type) {
+    return type == "any" || type == "number" || type == "text" || type == "boolean" ||
+           type == "object" || type == "sprite" || type == "entity" || type == "none";
+}
+
+struct FunctionHeaderParts {
+    std::string name;
+    std::string parameters;
+    std::string suffix;
+};
+
+bool parseFunctionHeader(std::string_view raw, FunctionHeaderParts& parts) {
+    const std::string line = trim(raw);
+    if (!startsWithInsensitive(line, "function ")) return false;
+    std::size_t cursor = std::string_view("function ").size();
+    while (cursor < line.size() && std::isspace(static_cast<unsigned char>(line[cursor]))) ++cursor;
+    const std::size_t nameStart = cursor;
+    if (cursor >= line.size() ||
+        !(std::isalpha(static_cast<unsigned char>(line[cursor])) || line[cursor] == '_')) return false;
+    ++cursor;
+    while (cursor < line.size() &&
+           (std::isalnum(static_cast<unsigned char>(line[cursor])) || line[cursor] == '_')) ++cursor;
+    parts.name = lower(std::string_view(line).substr(nameStart, cursor - nameStart));
+    while (cursor < line.size() && std::isspace(static_cast<unsigned char>(line[cursor]))) ++cursor;
+    if (cursor >= line.size() || line[cursor] != '(') return false;
+
+    const std::size_t parametersStart = ++cursor;
+    int depth = 1;
+    bool inString = false;
+    bool escaped = false;
+    std::size_t closing = std::string::npos;
+    for (; cursor < line.size(); ++cursor) {
+        const char c = line[cursor];
+        if (escaped) { escaped = false; continue; }
+        if (c == '\\' && inString) { escaped = true; continue; }
+        if (c == '"') { inString = !inString; continue; }
+        if (inString) continue;
+        if (c == '(') ++depth;
+        else if (c == ')' && --depth == 0) { closing = cursor; break; }
+    }
+    if (closing == std::string::npos) return false;
+    parts.parameters = trim(std::string_view(line).substr(parametersStart, closing - parametersStart));
+    parts.suffix = trim(std::string_view(line).substr(closing + 1));
+    if (parts.suffix.empty() || parts.suffix.back() != ':') return false;
+    parts.suffix.pop_back();
+    parts.suffix = trim(parts.suffix);
+    return true;
+}
+
 bool parseNumber(std::string_view text, float& value) {
     const std::string cleaned = trim(text);
     if (cleaned.empty()) return false;
@@ -1612,39 +1755,102 @@ ScriptProgram ScriptParser::parseText(const std::string& text, const std::filesy
             ++index;
             continue;
         }
-        static const std::regex functionPattern(R"FUNC(^function\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*:$)FUNC", std::regex::icase);
-        std::smatch functionMatch;
-        if (std::regex_match(line.text, functionMatch, functionPattern)) {
+        FunctionHeaderParts functionHeader;
+        if (parseFunctionHeader(line.text, functionHeader)) {
             ScriptFunction function;
-            function.name = lower(functionMatch[1].str());
+            function.name = functionHeader.name;
             function.file = sourceName;
             function.line = line.number;
-            const std::string parameterText = trim(functionMatch[2].str());
-            if (!parameterText.empty()) {
-                std::istringstream params(parameterText);
-                std::string part;
-                std::unordered_set<std::string> seen;
-                while (std::getline(params, part, ',')) {
-                    part = trim(part);
-                    if (part.size() >= 2 && part.front() == '{' && part.back() == '}') part = trim(std::string_view(part).substr(1, part.size() - 2));
-                    const auto typeMarker = part.find(':');
-                    if (typeMarker != std::string::npos) part = trim(std::string_view(part).substr(0, typeMarker));
-                    if (part.starts_with("_")) part.erase(part.begin());
-                    if (part.empty() || !std::all_of(part.begin(), part.end(), [](unsigned char c) { return std::isalnum(c) || c == '_'; })) {
+
+            if (!functionHeader.suffix.empty()) {
+                std::string writtenReturnType;
+                if (startsWithInsensitive(functionHeader.suffix, "returns ")) {
+                    writtenReturnType = trim(std::string_view(functionHeader.suffix).substr(8));
+                } else if (startsWithInsensitive(functionHeader.suffix, "::")) {
+                    // Skript's traditional return-type marker is retained alongside
+                    // the more readable "returns type" spelling.
+                    writtenReturnType = trim(std::string_view(functionHeader.suffix).substr(2));
+                } else {
+                    appendDiagnostic(program.diagnostics, {false, sourceName, line.number,
+                        "Unknown function signature clause: " + functionHeader.suffix,
+                        "Use an optional return declaration such as returns number or :: number before the colon.",
+                        1, static_cast<int>(line.text.size())});
+                }
+                if (!writtenReturnType.empty()) {
+                    function.returnType = normalizeFunctionType(writtenReturnType);
+                    function.hasReturnType = true;
+                    if (!isSupportedFunctionType(function.returnType)) {
                         appendDiagnostic(program.diagnostics, {false, sourceName, line.number,
-                            "Function parameter names must be simple identifiers.",
-                            "Use `function clamp(value, maximum):` and read parameters as `{_value}` and `{_maximum}`.", 1, static_cast<int>(line.text.size())});
-                        continue;
+                            "Unsupported function return type: " + writtenReturnType,
+                            "Use any, number/integer, text/string, boolean, object, sprite, entity, or none.",
+                            1, static_cast<int>(line.text.size())});
+                        function.returnType = "any";
                     }
-                    const auto normalized = lower(part);
-                    if (!seen.insert(normalized).second) {
-                        appendDiagnostic(program.diagnostics, {false, sourceName, line.number,
-                            "Duplicate function parameter `" + part + "`.", "Give every parameter a unique name.", 1, static_cast<int>(line.text.size())});
-                        continue;
-                    }
-                    function.parameters.push_back(normalized);
+                } else if (functionHeader.suffix == "::") {
+                    appendDiagnostic(program.diagnostics, {false, sourceName, line.number,
+                        "A function return-type marker needs a type.",
+                        "Write `:: number`, `returns text`, or another supported return type.", 1, static_cast<int>(line.text.size())});
                 }
             }
+
+            std::unordered_set<std::string> seen;
+            bool optionalParameterSeen = false;
+            if (!functionHeader.parameters.empty()) {
+                for (const auto& rawParameter : splitTopLevelComma(functionHeader.parameters)) {
+                    const std::size_t defaultMarker = findTopLevelDefaultEquals(rawParameter);
+                    const bool hasDefault = defaultMarker != std::string::npos;
+                    const std::string declaration = trim(hasDefault ?
+                        std::string_view(rawParameter).substr(0, defaultMarker) : std::string_view(rawParameter));
+                    const std::string defaultExpression = hasDefault ?
+                        trim(std::string_view(rawParameter).substr(defaultMarker + 1)) : std::string{};
+
+                    const std::size_t typeMarker = findTopLevelCharacter(declaration, ':');
+                    std::string parameterName = trim(typeMarker == std::string::npos ?
+                        std::string_view(declaration) : std::string_view(declaration).substr(0, typeMarker));
+                    std::string parameterType = typeMarker == std::string::npos ? "any" :
+                        normalizeFunctionType(trim(std::string_view(declaration).substr(typeMarker + 1)));
+
+                    if (parameterName.size() >= 2 && parameterName.front() == '{' && parameterName.back() == '}')
+                        parameterName = trim(std::string_view(parameterName).substr(1, parameterName.size() - 2));
+                    if (parameterName.starts_with("_")) parameterName.erase(parameterName.begin());
+                    if (parameterName.empty() ||
+                        !(std::isalpha(static_cast<unsigned char>(parameterName.front())) || parameterName.front() == '_') ||
+                        !std::all_of(parameterName.begin() + 1, parameterName.end(), [](unsigned char c) { return std::isalnum(c) || c == '_'; })) {
+                        appendDiagnostic(program.diagnostics, {false, sourceName, line.number,
+                            "Function parameter names must be simple identifiers.",
+                            "Use function clamp(value: number, maximum: number): and read them as local variables.", 1, static_cast<int>(line.text.size())});
+                        continue;
+                    }
+                    if (typeMarker != std::string::npos && !isSupportedFunctionType(parameterType)) {
+                        appendDiagnostic(program.diagnostics, {false, sourceName, line.number,
+                            "Unsupported function parameter type: " + parameterType,
+                            "Use any, number, text/string, boolean, object, sprite, entity, or none.", 1, static_cast<int>(line.text.size())});
+                        continue;
+                    }
+                    if (hasDefault && defaultExpression.empty()) {
+                        appendDiagnostic(program.diagnostics, {false, sourceName, line.number,
+                            "A function default argument needs a value.",
+                            "Give the parameter a default expression, such as name: text = \"friend\".", 1, static_cast<int>(line.text.size())});
+                        continue;
+                    }
+                    if (!hasDefault && optionalParameterSeen) {
+                        appendDiagnostic(program.diagnostics, {false, sourceName, line.number,
+                            "A required function parameter cannot follow a parameter with a default.",
+                            "Move required parameters before optional parameters, or give this parameter a default too.", 1, static_cast<int>(line.text.size())});
+                        continue;
+                    }
+                    if (hasDefault) optionalParameterSeen = true;
+                    const std::string normalizedName = lower(parameterName);
+                    if (!seen.insert(normalizedName).second) {
+                        appendDiagnostic(program.diagnostics, {false, sourceName, line.number,
+                            "Duplicate function parameter: " + parameterName,
+                            "Give every parameter a unique name.", 1, static_cast<int>(line.text.size())});
+                        continue;
+                    }
+                    function.parameters.push_back({normalizedName, parameterType, defaultExpression, hasDefault});
+                }
+            }
+
             ++index;
             function.body = parseStatements(lines, index, 0, sourceName, program.diagnostics);
             if (function.body.empty()) appendDiagnostic(program.diagnostics, {true, sourceName, line.number,

@@ -57,6 +57,29 @@ bool isQuoted(std::string_view value) {
     return value.size() >= 2 && value.front() == '"' && value.back() == '"';
 }
 
+std::string functionValueTypeName(const Value& value) {
+    if (value.isNull()) return "none";
+    if (value.isBool()) return "boolean";
+    if (value.isNumber()) return "number";
+    if (value.isString()) return "text";
+    if (const auto* reference = value.objectReference())
+        return reference->kind == ObjectKind::Entity ? "entity" : "sprite";
+    return "any";
+}
+
+bool matchesFunctionValueType(const Value& value, std::string_view type) {
+    if (type == "any") return true;
+    if (type == "number") return value.isNumber();
+    if (type == "text") return value.isString();
+    if (type == "boolean") return value.isBool();
+    if (type == "none") return value.isNull();
+    const auto* reference = value.objectReference();
+    if (type == "object") return reference != nullptr;
+    if (type == "sprite") return reference && reference->kind == ObjectKind::Sprite;
+    if (type == "entity") return reference && reference->kind == ObjectKind::Entity;
+    return false;
+}
+
 // Skript exposes the active loop iteration as loop-counter/loop-iteration.
 // Accept both separator styles and its optional leading "the" article.
 bool isLoopCounterAlias(std::string_view value) {
@@ -664,46 +687,99 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         const std::string function = lower(trim(std::string_view(expression).substr(0, openParen)));
         const auto argsText = std::string_view(expression).substr(openParen + 1, expression.size() - openParen - 2);
         std::vector<std::string> rawArgs;
-        std::size_t argStart = 0; int nesting = 0; bool quoted = false; bool escaped = false;
+        std::size_t argStart = 0;
+        int parentheses = 0;
+        int braces = 0;
+        int brackets = 0;
+        bool quoted = false;
+        bool escaped = false;
         for (std::size_t i = 0; i <= argsText.size(); ++i) {
             if (i < argsText.size()) {
                 const char c = argsText[i];
                 if (escaped) { escaped = false; continue; }
                 if (c == '\\' && quoted) { escaped = true; continue; }
                 if (c == '"') { quoted = !quoted; continue; }
-                if (!quoted) { if (c == '(') ++nesting; else if (c == ')') --nesting; }
-                if (i < argsText.size() && (c != ',' || quoted || nesting != 0)) continue;
+                if (!quoted) {
+                    if (c == '(') ++parentheses;
+                    else if (c == ')' && parentheses > 0) --parentheses;
+                    else if (c == '{') ++braces;
+                    else if (c == '}' && braces > 0) --braces;
+                    else if (c == '[') ++brackets;
+                    else if (c == ']' && brackets > 0) --brackets;
+                }
+                if (c != ',' || quoted || parentheses != 0 || braces != 0 || brackets != 0) continue;
             }
             rawArgs.push_back(trim(argsText.substr(argStart, i - argStart)));
             argStart = i + 1;
         }
         if (const auto customFunction = program_.functions.find(function); customFunction != program_.functions.end()) {
-            if (functionCallDepth_ >= 64) { error = "Function recursion exceeded 64 nested calls."; return {}; }
             const auto& definition = customFunction->second;
-            if (rawArgs.size() == 1 && rawArgs.front().empty() && definition.parameters.empty()) rawArgs.clear();
-            if (rawArgs.size() != definition.parameters.size()) {
-                error = "Function `" + function + "` expects " + std::to_string(definition.parameters.size()) +
-                    " argument(s), but received " + std::to_string(rawArgs.size()) + ".";
+            if (rawArgs.size() == 1 && rawArgs.front().empty())
+                rawArgs.clear();
+            const std::size_t requiredArguments = static_cast<std::size_t>(std::count_if(
+                definition.parameters.begin(), definition.parameters.end(),
+                [](const ScriptParameter& parameter) { return !parameter.hasDefault; }));
+            if (rawArgs.size() < requiredArguments || rawArgs.size() > definition.parameters.size()) {
+                if (requiredArguments == definition.parameters.size()) {
+                    error = "Function " + function + " expects " + std::to_string(requiredArguments) +
+                        " argument(s), but received " + std::to_string(rawArgs.size()) + ".";
+                } else {
+                    error = "Function " + function + " expects between " + std::to_string(requiredArguments) +
+                        " and " + std::to_string(definition.parameters.size()) +
+                        " argument(s), but received " + std::to_string(rawArgs.size()) + ".";
+                }
                 return {};
             }
-            ExecutionContext functionContext;
-            functionContext.allowSuspend = false; // Functions return synchronously; waiting is intentionally prohibited.
-            for (std::size_t i = 0; i < rawArgs.size(); ++i) {
-                Value argument = evaluateValue(rawArgs[i], context, error);
-                if (!error.empty()) return {};
-                functionContext.locals["_" + definition.parameters[i]] = std::move(argument);
+            if (functionCallDepth_ >= 64) {
+                error = "Function recursion exceeded 64 nested calls.";
+                return {};
             }
+
             ++functionCallDepth_;
+            auto failFunctionCall = [&]() {
+                --functionCallDepth_;
+                return Value{};
+            };
+            ExecutionContext functionContext;
+            functionContext.allowSuspend = false;
+            for (std::size_t i = 0; i < definition.parameters.size(); ++i) {
+                const auto& parameter = definition.parameters[i];
+                Value argument;
+                if (i < rawArgs.size()) {
+                    if (rawArgs[i].empty()) {
+                        error = "Function " + function + " received an empty argument at position " +
+                            std::to_string(i + 1) + ". Optional trailing arguments should be omitted.";
+                        return failFunctionCall();
+                    }
+                    argument = evaluateValue(rawArgs[i], context, error);
+                } else {
+                    argument = evaluateValue(parameter.defaultExpression, functionContext, error);
+                }
+                if (!error.empty()) return failFunctionCall();
+                if (!matchesFunctionValueType(argument, parameter.type)) {
+                    error = "Function " + function + " parameter " + parameter.name +
+                        " expects " + parameter.type + ", but received " + functionValueTypeName(argument) + ".";
+                    return failFunctionCall();
+                }
+                functionContext.locals["_" + parameter.name] = std::move(argument);
+            }
+
             functionContext.frames.push_back({&definition.body, 0, 1, 1, false, false, nullptr, false, {}});
             const std::size_t diagnosticsBefore = diagnostics_.size();
             runExecution(functionContext);
             --functionCallDepth_;
             if (functionContext.suspended) {
-                error = "A function cannot suspend with `wait`; use waits in events instead.";
+                error = "A function cannot suspend with wait; use waits in events instead.";
                 return {};
             }
             if (diagnostics_.size() > diagnosticsBefore && !diagnostics_.back().warning) {
-                error = "Function `" + function + "` failed while running; see the terminal diagnostic above.";
+                error = "Function " + function + " failed while running; see the terminal diagnostic above.";
+                return {};
+            }
+            if (definition.hasReturnType &&
+                !matchesFunctionValueType(functionContext.returnValue, definition.returnType)) {
+                error = "Function " + function + " declares return type " + definition.returnType +
+                    ", but returned " + functionValueTypeName(functionContext.returnValue) + ".";
                 return {};
             }
             return functionContext.returnValue;

@@ -24,7 +24,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Typed sprite/entity references and shared property getter/setter rules are implemented for supported properties. The event-context contract is catalogued in one source-of-truth page and runtime-tested for every documented payload field; event-header vocabulary and suspended-handler edge cases remain open.
 - Keep the design charter and audit linked from the repository's public documentation and learning resources.
 
-**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, the implemented worded comparison vocabulary, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #109 passed the comparison matrix and run #111 passed the expanded object-property tests on all six platforms. Run #114 is validating live canvas interpolation, the first-steps and quickstart HUD examples, beginner-guide alignment, and canonicalized feature examples.
+**Status:** the design charter and source-backed audit govern the active branch. Natural random expressions, common natural math, comparison/type predicates, typed sprite/entity object references, and the supported property contract are implemented and tested. Run #124 passed all six native targets after consolidating Skript-style `else if` parsing across bootstrap and nested/event blocks. Typed/defaulted function signatures are the next prepared increment and need current-head validation. The broader game-scenario integration matrix is intentionally planned for v0.12.0.
 
 ### Phase 2 — expressions and common language
 
@@ -35,6 +35,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - [x] Validate natural sign, parity, zero, type, and emptiness predicates with positive and negative runtime cases.
 - [x] Validate count-prefix/plural random list assignment for its 0–4096 count range, range semantics, typed outputs and deterministic streams on all six native targets.
 - [x] Preserve list syntax, interpolation, function semantics and the current loop/wait foundation; continue the compatibility audit.
+- [x] Add typed function parameters, optional trailing defaults, declared return types, call-time type checking, and Skript `:: type` compatibility while preserving legacy untyped declarations.
 
 ### Phase 3 — object properties and events
 

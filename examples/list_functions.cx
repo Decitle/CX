@@ -1,6 +1,8 @@
-# First-class list variables and reusable functions in CX v0.6.1
-function item_label(kind, index):
-    return {_kind} + " #" + {_index}
+# Typed parameters, default arguments, and reusable list helpers in CX.
+# broadcast writes to the developer log; it is not an on-screen HUD message.
+
+function item_label(kind: text, index: number, prefix: text = "Inventory item") returns text:
+    return {_prefix} + ": " + {_kind} + " #" + {_index}
 
 on load:
     set {inventory::*} to "Potion", "Rusty Key", "Map"

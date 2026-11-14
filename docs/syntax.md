@@ -225,8 +225,10 @@ reset {_items::*}
 
 ## Reusable functions and expressions
 
+Functions can be untyped for compatibility, or declare the types of their parameters and return value. Parameters are local to the function and are read with the event-local spelling `{_name}`.
+
 ```skript
-function clamp(value, minimum, maximum):
+function clamp(value: number, minimum: number = 0, maximum: number = 1) returns number:
     if {_value} < {_minimum}:
         return {_minimum}
     if {_value} > {_maximum}:
@@ -234,11 +236,41 @@ function clamp(value, minimum, maximum):
     return {_value}
 
 on load:
-    set {volume} to clamp(1.4, 0, 1)
-    set {double_score} to ({score} + 3) * 2
+    set {volume} to clamp(1.4)
+    set {double_score} to (clamp({score}) + 3) * 2
 ```
 
-Function parameters become event-like locals named `{_value}`, `{_minimum}`, and `{_maximum}`. A function returns a value with `return`; calls can be used where a value is expected. Functions are synchronous and cannot use `wait`. Recursion is limited to 64 nested calls. Arithmetic uses parentheses and conventional precedence: `*`, `/`, `%` before `+` and `-`. `+` concatenates values when either operand is text. Common numeric operations have English-first forms, including `the sine of 90`, `the square root of 81`, `the average of {scores::*}`, and `clamp 15 between 0 and 10`. `sin`, `cos`, `tan`, `sine`, `noise2d`, `fbm2d`, `clamp`, and `lerp` function calls remain available as compact/technical forms. Seeded random functions are documented in the next section.
+A parameter declaration is `name: type`. A trailing `= expression` makes it optional. Required parameters must come before optional parameters. Defaults are evaluated at call time, from left to right, and can use earlier parameters:
+
+```skript
+function add_bonus(score: number, bonus: number = {_score} * 2) returns number:
+    return {_score} + {_bonus}
+```
+
+The canonical return declaration is `returns type`. Skript's traditional `:: type` spelling is accepted as an equivalent form:
+
+```skript
+function cube(value: integer) :: number:
+    return {_value} * {_value} * {_value}
+```
+
+Supported function types are:
+
+| Type | Meaning |
+|---|---|
+| `any` | Any CX value. `value` is an alias. |
+| `number` | Numeric value. `integer`, `int`, `real`, `float`, and `double` are aliases; CX currently uses one numeric runtime type. |
+| `text` | Text value. `string` is an alias. |
+| `boolean` | Boolean value. `bool` is an alias. |
+| `object` | Any live sprite or entity reference. |
+| `sprite` / `entity` | A live reference of the specified object kind. |
+| `none` | No return value. `void` is an alias. |
+
+Parameter and return types are checked when the function is called. A mismatch identifies the function, parameter or return contract, expected type, and actual type. A function declared with `returns number`, for example, must return a number; falling through without a return is a mismatch. A `returns none` function can perform work without returning a value.
+
+Older declarations such as `function clamp(value, minimum, maximum):` remain accepted. Untyped parameters and undeclared return types behave as `any`. Functions remain project-wide, run synchronously, and cannot use `wait`; recursion is limited to 64 nested calls. File-local functions and list-valued function parameters are not part of the current contract: lists are key-based variables rather than first-class runtime values. Those require a deliberate module/list-value design rather than a misleading signature alias.
+
+Arithmetic uses parentheses and conventional precedence: `*`, `/`, `%` before `+` and `-`. `+` concatenates values when either operand is text. Common numeric operations have English-first forms, including `the sine of 90`, `the square root of 81`, `the average of {scores::*}`, and `clamp 15 between 0 and 10`. `sin`, `cos`, `tan`, `sine`, `noise2d`, `fbm2d`, `clamp`, and `lerp` function calls remain available as compact/technical forms. Seeded random functions are documented in the next section.
 
 ### Random expressions and streams
 

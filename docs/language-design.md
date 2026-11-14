@@ -148,9 +148,10 @@ CX must not be tagged `v0.11.0` until:
 2. The random-number example in this charter and the common mathematical/property expressions have natural-English syntax and regression tests.
 3. Property access and object references have a clear, consistent contract; no syntax example relies on unsupported first-class values.
 4. Common events and effects have short, coherent Skript-style forms while the engine remains portable and 2D-focused.
-5. Existing v0.10.14 scripts continue to parse through compatibility aliases where feasible, or any unavoidable migration is documented and tested.
-6. The searchable reference, syntax guide, learning guide, examples and generated release HTML all show the same canonical grammar.
-7. All native CI targets, clean runtime packaging and relevant parser/runtime regression suites pass.
+5. Function signatures support typed parameters, optional trailing defaults, and checked return types; legacy untyped declarations remain compatible.
+6. Existing v0.10.14 scripts continue to parse through compatibility aliases where feasible, or any unavoidable migration is documented and tested.
+7. The searchable reference, syntax guide, learning guide, examples and generated release HTML all show the same canonical grammar.
+8. All native CI targets, clean runtime packaging and relevant parser/runtime regression suites pass.
 
 A version number is not an acceptance criterion. No `v0.11.0` tag should be made just because the first natural syntax expression lands.
 

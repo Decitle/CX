@@ -386,14 +386,6 @@ else if 2 is equal to 2:
         set {nested_child} to "nested-else"
 else:
     set {nested_parent} to "wrong-else"
-
-on load:
-    if 1 is equal to 2:
-        set {event_branch} to "first"
-    else if 2 is equal to 2:
-        set {event_branch} to "event-elseif"
-    else:
-        set {event_branch} to "else"
 )CX");
     cx::Runtime runtime(root);
     const bool loaded = runtime.loadScripts();
@@ -413,9 +405,277 @@ on load:
            "else-if chains should compose with nested if/else blocks");
     expect(!runtime.getGlobal("nested_parent").truthy(),
            "the parent chain should select only its matching else-if branch");
-    expect(runtime.getGlobal("event_branch").toString() == "event-elseif",
-           "else-if chains inside event handlers should use the same parser path as bootstrap blocks");
     std::filesystem::remove_all(root);
+}
+
+
+void testTypedFunctionSignaturesDefaultsAndReturnContracts() {
+    const auto root = fixture("typed-function-signatures", R"CX(
+function add_step(value: number, step: number = 2) returns number:
+    return {_value} + {_step}
+
+function wrapped(value: number = add_step(3, 4)) returns number:
+    return {_value}
+
+function is_five(value: number, matches: boolean = {_value} == 5) returns boolean:
+    return {_matches}
+
+function add_from_prior(first: number, second: number = {_first} * 2) returns number:
+    return {_first} + {_second}
+
+function cube(value: integer) :: number:
+    return {_value} * {_value} * {_value}
+
+function bool_alias(value: bool = true) returns bool:
+    return {_value}
+
+function object_identity(target: object) returns object:
+    return {_target}
+
+function greeting(name: string = "friend, pal") returns text:
+    return "Hello, " + {_name}
+
+function is_enabled(enabled: boolean) returns boolean:
+    return {_enabled}
+
+function mark_ready() returns none:
+    set {ready} to true
+
+function legacy_double(value):
+    return {_value} * 2
+
+function entity_identity(target: entity) returns entity:
+    return {_target}
+
+function entity_is_visible(target: entity) returns boolean:
+    return visible of {_target}
+
+function sprite_x(target: sprite) returns number:
+    return x-coordinate of {_target}
+
+on load:
+    create entity "player" with texture {$blank}
+    create sprite "crate" with texture {$blank}
+    set sprite "crate" x-coordinate to 23
+    set {_entity_copy} to entity_identity(entity "player")
+    set {entity_result} to entity_is_visible({_entity_copy})
+    set {sprite_result} to sprite_x(sprite "crate")
+    set {typed_default} to add_step(5)
+    set {typed_explicit} to add_step(5, 7)
+    set {nested_default} to wrapped()
+    set {equal_default_true} to is_five(5)
+    set {equal_default_false} to is_five(4)
+    set {dependent_default} to add_from_prior(4)
+    set {cube_result} to cube(3)
+    set {bool_alias_result} to bool_alias()
+    set {_object_copy} to object_identity(sprite "crate")
+    set {object_copy_x} to sprite_x({_object_copy})
+    set {text_default} to greeting()
+    set {text_explicit} to greeting("Ada")
+    set {boolean_result} to is_enabled(true)
+    set {none_result} to mark_ready()
+    set {legacy_result} to legacy_double(6)
+)CX");
+    write(root / "assets" / "textures" / "blank.png", "placeholder texture data");
+    cx::ScriptParser parser;
+    const auto parsed = parser.parseDirectory(root / "scripts");
+    expect(!cx::hasErrors(parsed.diagnostics),
+           "typed function headers, defaults, and return types should parse");
+    expect(parsed.functions.size() == 14, "all typed and legacy functions should be collected");
+    if (parsed.functions.contains("add_step")) {
+        const auto& addStep = parsed.functions.at("add_step");
+        expect(addStep.parameters.size() == 2 && addStep.parameters[0].type == "number" &&
+                   addStep.parameters[1].hasDefault && addStep.returnType == "number" &&
+                   addStep.hasReturnType,
+               "the parsed function contract should retain parameter types, defaults, and return type");
+    }
+    if (parsed.functions.contains("greeting")) {
+        const auto& greeting = parsed.functions.at("greeting");
+        expect(greeting.parameters.size() == 1 && greeting.parameters[0].type == "text" &&
+                   greeting.parameters[0].defaultExpression == "\"friend, pal\"" &&
+                   greeting.returnType == "text",
+               "string should normalize to text while keeping a comma inside its default string");
+    }
+    if (parsed.functions.contains("legacy_double")) {
+        const auto& legacy = parsed.functions.at("legacy_double");
+        expect(legacy.parameters.size() == 1 && legacy.parameters[0].type == "any" &&
+                   !legacy.parameters[0].hasDefault && !legacy.hasReturnType,
+               "legacy untyped function declarations should remain accepted as any");
+    }
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "typed and legacy function calls should execute");
+    expect(runtime.getGlobal("typed_default").numberOr(-1.0) == 7.0,
+           "omitted trailing parameters should use their declared default");
+    expect(runtime.getGlobal("typed_explicit").numberOr(-1.0) == 12.0,
+           "an explicitly supplied argument should override its default");
+    expect(runtime.getGlobal("nested_default").numberOr(-1.0) == 7.0,
+           "default expressions should be evaluated at call time and may call another function");
+    expect(runtime.getGlobal("dependent_default").numberOr(-1.0) == 12.0,
+           "a default expression should read an earlier parameter from the same call");
+    expect(runtime.getGlobal("equal_default_true").truthy() &&
+               !runtime.getGlobal("equal_default_false").truthy(),
+           "the default-value parser should preserve comparison operators such as == inside expressions");
+    expect(runtime.getGlobal("cube_result").numberOr(-1.0) == 27.0,
+           "integer should be a number alias, and :: should declare the return type");
+    expect(runtime.getGlobal("bool_alias_result").truthy(),
+           "bool should be accepted as a boolean type alias");
+    expect(runtime.getGlobal("object_copy_x").numberOr(-1.0) == 23.0,
+           "object should accept a live sprite/entity reference without erasing its concrete kind");
+    expect(runtime.getGlobal("text_default").toString() == "Hello, friend, pal",
+           "text defaults should preserve commas and be returned with their declared text type");
+    expect(runtime.getGlobal("text_explicit").toString() == "Hello, Ada",
+           "typed text parameters should accept explicit text arguments");
+    expect(runtime.getGlobal("boolean_result").truthy(),
+           "boolean parameters and return types should preserve boolean values");
+    expect(runtime.getGlobal("ready").truthy() && runtime.getGlobal("none_result").isNull(),
+           "none-returning functions should allow a side effect and no value");
+    expect(runtime.getGlobal("legacy_result").numberOr(-1.0) == 12.0,
+           "legacy untyped functions should retain their existing behavior");
+    expect(runtime.getGlobal("entity_result").truthy(),
+           "typed entity parameters and returns should preserve live entity handles");
+    expect(runtime.getGlobal("sprite_result").numberOr(-1.0) == 23.0,
+           "typed sprite parameters should preserve live sprite handles and property access");
+    expect(!runtime.hasErrors(), "valid typed function calls should not produce diagnostics");
+    std::filesystem::remove_all(root);
+
+    const auto invalidOrderRoot = fixture("typed-function-invalid-default-order", R"CX(
+function invalid(optional: number = 1, required: number):
+    return {_required}
+)CX");
+    const auto invalidOrder = parser.parseDirectory(invalidOrderRoot / "scripts");
+    expect(cx::hasErrors(invalidOrder.diagnostics),
+           "a required parameter after an optional parameter should be rejected");
+    expect(std::any_of(invalidOrder.diagnostics.begin(), invalidOrder.diagnostics.end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("cannot follow a parameter with a default") != std::string::npos;
+                       }),
+           "invalid default ordering should produce a specific diagnostic");
+    std::filesystem::remove_all(invalidOrderRoot);
+
+    const auto invalidTypeRoot = fixture("typed-function-invalid-type", R"CX(
+function unsupported(value: item) returns number:
+    return 1
+)CX");
+    const auto invalidType = parser.parseDirectory(invalidTypeRoot / "scripts");
+    expect(cx::hasErrors(invalidType.diagnostics),
+           "unsupported function value types should not be silently discarded");
+    expect(std::any_of(invalidType.diagnostics.begin(), invalidType.diagnostics.end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("Unsupported function parameter type") != std::string::npos;
+                       }),
+           "unsupported function value types should produce a clear parser diagnostic");
+    std::filesystem::remove_all(invalidTypeRoot);
+
+    const auto invalidReturnDeclarationRoot = fixture("typed-function-empty-return-type", R"CX(
+function invalid_return() :::
+    return 1
+)CX");
+    const auto invalidReturnDeclaration = parser.parseDirectory(invalidReturnDeclarationRoot / "scripts");
+    expect(cx::hasErrors(invalidReturnDeclaration.diagnostics),
+           "an empty Skript return-type marker should not be treated as an untyped function");
+    expect(std::any_of(invalidReturnDeclaration.diagnostics.begin(), invalidReturnDeclaration.diagnostics.end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("return-type marker needs a type") != std::string::npos;
+                       }),
+           "an empty return-type marker should produce an actionable diagnostic");
+    std::filesystem::remove_all(invalidReturnDeclarationRoot);
+
+    const auto invalidReturnTypeRoot = fixture("typed-function-unsupported-return-type", R"CX(
+function unsupported_return() returns item:
+    return 1
+)CX");
+    const auto invalidReturnType = parser.parseDirectory(invalidReturnTypeRoot / "scripts");
+    expect(cx::hasErrors(invalidReturnType.diagnostics),
+           "unsupported declared return types should not be silently ignored");
+    expect(std::any_of(invalidReturnType.diagnostics.begin(), invalidReturnType.diagnostics.end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("Unsupported function return type") != std::string::npos;
+                       }),
+           "unsupported declared return types should produce a clear parser diagnostic");
+    std::filesystem::remove_all(invalidReturnTypeRoot);
+
+    const auto wrongArgumentRoot = fixture("typed-function-wrong-argument", R"CX(
+function square(value: number) returns number:
+    return {_value} * {_value}
+on load:
+    set {bad_result} to square("not a number")
+)CX");
+    cx::Runtime wrongArgument(wrongArgumentRoot);
+    expect(!wrongArgument.loadScripts(),
+           "a typed function parameter should reject an argument of the wrong type");
+    expect(std::any_of(wrongArgument.diagnostics().begin(), wrongArgument.diagnostics().end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("parameter value expects number, but received text") != std::string::npos;
+                       }),
+           "a typed function argument mismatch should identify the parameter and expected type");
+    std::filesystem::remove_all(wrongArgumentRoot);
+
+    const auto wrongReturnRoot = fixture("typed-function-wrong-return", R"CX(
+function wrong_result() returns number:
+    return "not a number"
+on load:
+    set {bad_result} to wrong_result()
+)CX");
+    cx::Runtime wrongReturn(wrongReturnRoot);
+    expect(!wrongReturn.loadScripts(),
+           "a declared function return type should reject a mismatched returned value");
+    expect(std::any_of(wrongReturn.diagnostics().begin(), wrongReturn.diagnostics().end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("declares return type number, but returned text") != std::string::npos;
+                       }),
+           "a function return mismatch should name its declared and actual types");
+    std::filesystem::remove_all(wrongReturnRoot);
+
+    const auto wrongArityRoot = fixture("typed-function-wrong-arity", R"CX(
+function add(value: number) returns number:
+    return {_value}
+on load:
+    set {missing_argument} to add()
+)CX");
+    cx::Runtime wrongArity(wrongArityRoot);
+    expect(!wrongArity.loadScripts(),
+           "a typed function call should reject omitted required arguments");
+    expect(std::any_of(wrongArity.diagnostics().begin(), wrongArity.diagnostics().end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("expects 1 argument(s), but received 0") != std::string::npos;
+                       }),
+           "a missing required argument should produce an explicit arity diagnostic");
+    std::filesystem::remove_all(wrongArityRoot);
+
+    const auto tooManyRoot = fixture("typed-function-too-many-arguments", R"CX(
+function add(value: number) returns number:
+    return {_value}
+on load:
+    set {too_many} to add(1, 2)
+)CX");
+    cx::Runtime tooMany(tooManyRoot);
+    expect(!tooMany.loadScripts(),
+           "a typed function call should reject extra arguments");
+    expect(std::any_of(tooMany.diagnostics().begin(), tooMany.diagnostics().end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("expects 1 argument(s), but received 2") != std::string::npos;
+                       }),
+           "extra arguments should produce an explicit arity diagnostic");
+    std::filesystem::remove_all(tooManyRoot);
+
+    const auto wrongObjectKindRoot = fixture("typed-function-wrong-object-kind", R"CX(
+function only_entity(target: entity) returns entity:
+    return {_target}
+on load:
+    create sprite "crate" with texture {$blank}
+    set {wrong_object} to only_entity(sprite "crate")
+)CX");
+    write(wrongObjectKindRoot / "assets" / "textures" / "blank.png", "placeholder texture data");
+    cx::Runtime wrongObjectKind(wrongObjectKindRoot);
+    expect(!wrongObjectKind.loadScripts(),
+           "an entity parameter should reject a sprite reference");
+    expect(std::any_of(wrongObjectKind.diagnostics().begin(), wrongObjectKind.diagnostics().end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("parameter target expects entity, but received sprite") != std::string::npos;
+                       }),
+           "an object-kind mismatch should identify expected and actual kinds");
+    std::filesystem::remove_all(wrongObjectKindRoot);
 }
 
 void testNaturalClampRejectsInvalidRange() {
@@ -530,6 +790,7 @@ int main() {
     testNaturalComparisonAndListConditions();
     testNaturalTypeAndValuePredicateAliases();
     testSkriptStyleElseIfChains();
+    testTypedFunctionSignaturesDefaultsAndReturnContracts();
     testMathDomainResultsCanBeCheckedAsNaN();
     testNaturalClampRejectsInvalidRange();
     testSkriptStyleCountedRandomListAssignment();

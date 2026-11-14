@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI:** [run #122](https://github.com/Decitle/CX/actions/runs/43637485771) — all six native targets passed build, CTest, all-example syntax checks, and runtime package creation for commit `cb79c9e`; Linux and Windows also passed graphical startup smoke tests. This validates the natural `is a string` predicate alias and its positive/negative runtime cases. The next parser increment adds Skript-style `else if` chains and needs its own six-platform run.
+**Latest completed six-target development CI:** [run #124](https://github.com/Decitle/CX/actions/runs/43639249143) — all six native targets passed build, CTest, all-example syntax checks, runtime package creation, and configured graphical smoke tests for commit `21aee93`. This validates shared `else if` parsing across bootstrap, nested, and event-handler blocks. The typed-function signature increment is being prepared for its own six-platform validation.
 
 ## Repository state
 
@@ -21,7 +21,8 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Natural single-value random integer and number expressions, plus random item/element selection from CX lists. An automatically initialized default random stream is available, with explicitly seeded named streams as an optional deterministic facility.
 - English-first numeric expressions for common operations, including absolute value, square root, floor/ceiling, sine/cosine/tangent, rounding, average/mean/median, sum/product, minimum/maximum and natural clamp syntax. Technical helpers and compact function forms remain available.
 - Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions; the full implemented comparison vocabulary and sign/parity/type/emptiness predicates now have dedicated runtime regression coverage.
-- Skript-style `else if` chains are parsed into nested conditional branches and have runtime tests for first-match behavior, fall-through, final `else`, and nested chains; the new six-platform validation is pending.
+- Skript-style `else if` chains are parsed into nested conditional branches and have runtime tests for first-match behavior, fall-through, final `else`, and nested chains; run #124 passed all six native targets.
+- Function signatures accept typed parameters, optional trailing defaults, and declared return types in both `returns type` and Skript `:: type` forms. Runtime checks validate argument counts, value types, and return types while preserving legacy untyped functions; current-head validation is pending.
 - `send` and `broadcast` are currently identical developer-log output effects, not player-directed messaging; the docs state this explicitly and the core runtime suite verifies the equivalence.
 - Engine setting names remain stable underscore identifiers shared with `config.json`; their technical spelling is intentional rather than an incomplete prose alias.
 - Typed sprite/entity object references with live-instance identity, property getters, the shared `<property> of <object>` setter grammar, and its equivalent possessive setter form. Supported getter/setter aliases, texture/visibility writes, maximum-health spellings, type restrictions and stale-handle behavior have expanded runtime test coverage.
