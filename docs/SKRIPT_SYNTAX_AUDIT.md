@@ -63,7 +63,7 @@ The 55 `StatementType` values cover variable assignment/deletion/mutation, rando
 - `{list::*}` — list wildcard / namespace
 - `engine::setting` — reserved setting namespace without braces
 
-**Audit result:** this is one of the strongest parts of CX's Skript lineage. Global/local/list forms are recognizable. The process-only `^` namespace and asset namespaces are legitimate CX extensions, but their lifetime, mutability and interpolation behavior need to stay consistent. `engine::setting` is deliberately special; its names and friendly aliases need a stable rule.
+**Audit result:** this is one of the strongest parts of CX's Skript lineage. Global/local/list forms are recognizable. The process-only `^` namespace and asset namespaces are legitimate CX extensions, but their lifetime, mutability and interpolation behavior need to stay consistent. `engine::setting` is deliberately special. Its names are stable machine-readable identifiers shared with `config.json`; scripts use the reserved `engine::` prefix, while config keys may include or omit that prefix. Underscores are intentional in this namespace, and no separate word-spaced aliases are planned, so script and config names remain one-to-one.
 
 ### Expressions — 11 groups
 
@@ -135,7 +135,7 @@ The output effect currently has two spellings, `broadcast` and `send`, which nor
 
 The reference adds 23 world/entity entries, 6 project-structure entries, 7 UI entries, 7 graphics entries, 5 audio entries, 10 settings entries and 4 debug entries. They include named rooms/entrances, sprite and entity operations, properties, collision metadata, movement, paths, animation, timed motion, canvas elements and layout, lights/beams/layers, wave creation/export, sound playback, engine configuration, diagnostics and Room Studio.
 
-**Audit result:** the API breadth is real, but the wording is uneven. Some operations read like plain English; others expose implementation labels (`font_size`, `sample_rate`, `ease_in_out`, `engine::ui_reference_width`) or use different object/property ordering. Coordinate tuples such as `(x, y)` are appropriate and should remain. The system-wide task is to unify the surrounding grammar, not to remove useful technical parameters.
+**Audit result:** the API breadth is real, but the wording is uneven. Some operations still expose implementation labels, but canvas font size, anchors, audio sample rate, tween easing and textured-beam properties now accept natural word-spaced forms while preserving the underscored compatibility spellings. Engine setting identifiers such as `engine::ui_reference_width` intentionally remain machine-readable keys shared with `config.json`; they are not command prose. Coordinate tuples such as `(x, y)` are appropriate and should remain. The system-wide task is to unify the surrounding command grammar, not to remove useful technical parameters.
 
 ## 3. Main syntax gaps, ranked
 
