@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI:** [run #114](https://github.com/Decitle/CX/actions/runs/43630765763) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for commit `76f3a9d`; Linux and Windows also passed graphical startup smoke tests. [Run #116](https://github.com/Decitle/CX/actions/runs/43631353115) is validating the subsequent event/audit documentation on `075cf25`. [Run #117](https://github.com/Decitle/CX/actions/runs/43631495763) is queued for Number Hunt and its runtime round test on `dfee74c`; this tutorial and status update are newer.
+**Latest completed six-target development CI:** [run #114](https://github.com/Decitle/CX/actions/runs/43630765763) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for commit `76f3a9d`; Linux and Windows also passed graphical startup smoke tests. [Run #116](https://github.com/Decitle/CX/actions/runs/43631353115) is validating the event/audit documentation on `075cf25`; three platform jobs have passed, and the other three are building. Run #117 was cancelled as superseded. [Run #118](https://github.com/Decitle/CX/actions/runs/43631797904) is queued for current head `d8e517d`, which includes the Number Hunt game, its full-round runtime test, and the completed tutorial recovery exercise.
 
 ## Repository state
 
@@ -29,7 +29,7 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Cross-platform runtime packaging fixes and successful six-target validation.
 - CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
-The latest fully validated six-platform commit is `76f3a9d`, which passed run #114 with live canvas interpolation, canonicalized examples, and package validation. Run #116 checks the subsequent event/audit documentation; run #117 checks Number Hunt and its complete-round runtime test. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
+The latest fully validated six-platform commit is `76f3a9d`, which passed run #114 with live canvas interpolation, canonicalized examples, and package validation. Run #116 is still checking the subsequent event/audit documentation; run #118 will validate Number Hunt and its complete-round runtime test on the current head. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
 
 ## Remaining v0.11.0 acceptance work
 
