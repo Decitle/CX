@@ -104,6 +104,8 @@ The branch already implements natural aliases for common scalar operations (abso
 
 ### Effects — 15 groups
 
+The output effect currently has two spellings, `broadcast` and `send`, which normalize to the same runtime log statement. This is a developer-output facility, not a player messaging API.
+
 - Set an entity's interaction eligibility or interaction range
 - `set {variable} to value`
 - `add value to {variable}`
@@ -119,7 +121,7 @@ The branch already implements natural aliases for common scalar operations (abso
 - Place/clear tile
 - Place/clear overlay tile
 
-**Audit result:** variable mutation and basic control effects are reasonably Skript-like. The typed object-property grammar now covers entity health as well as common visual/geometry properties, using forms such as `set health of entity "id" to 5`; the older `set entity "id" health to 5` form remains as a compatibility alias. Entity kind and team now use the shared property grammar; tags and advanced collision settings still use command-specific forms. `send` also needs clearer audience semantics rather than being treated as a generic synonym for log output. Retain good `play sound {@impact}`-style forms.
+**Audit result:** variable mutation and basic control effects are reasonably Skript-like. The typed object-property grammar now covers entity health as well as common visual/geometry properties, using forms such as `set health of entity "id" to 5`; the older `set entity "id" health to 5` form remains as a compatibility alias. Entity kind and team now use the shared property grammar; tags and advanced collision settings still use command-specific forms. `send` is currently an exact alias for `broadcast`: both append evaluated text to the runtime developer log and neither accepts a recipient. This is now documented and runtime-tested so users do not mistake it for player-directed chat. A future player-facing message effect should use explicit recipient/audience syntax. Retain good `play sound {@impact}`-style forms.
 
 ### Functions and loops
 

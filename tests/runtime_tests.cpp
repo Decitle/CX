@@ -86,6 +86,41 @@ on press key "SPACE":
     std::filesystem::remove_all(root);
 }
 
+
+void testSendAndBroadcastShareTheDeveloperLogSink() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-engine-test-send-broadcast-alias";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root / "scripts");
+    {
+        std::ofstream file(root / "scripts" / "main.cx");
+        file << R"CX(
+on load:
+    broadcast "same output"
+    send "same output"
+)CX";
+    }
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "send/broadcast alias fixture should load");
+    expect(runtime.program().handlers.size() == 1, "one load handler should be parsed");
+    if (runtime.program().handlers.size() == 1) {
+        const auto& body = runtime.program().handlers.front().body;
+        expect(body.size() == 2, "the handler should retain both output statements");
+        if (body.size() == 2) {
+            expect(body[0].type == cx::StatementType::Broadcast &&
+                   body[1].type == cx::StatementType::Broadcast,
+                   "send and broadcast should normalize to the same statement type");
+            expect(body[0].expression == body[1].expression,
+                   "send and broadcast should evaluate the same message expression");
+        }
+    }
+    const auto matchingLogs = std::count(runtime.logs().begin(), runtime.logs().end(), "same output");
+    expect(matchingLogs == 2,
+           "send and broadcast should append the same message to the developer log sink");
+    expect(!runtime.hasErrors(), "valid send/broadcast aliases should not produce runtime diagnostics");
+    std::filesystem::remove_all(root);
+}
+
 void testSyntaxSuggestions() {
     cx::ScriptParser parser;
     const auto program = parser.parseText("on pres key \"SPACE\":\n    broadcast \"hello\"\n", "<memory>");
@@ -1974,6 +2009,7 @@ int main() {
     try {
         testValueConversions();
         testParserAndLocalVariables();
+        testSendAndBroadcastShareTheDeveloperLogSink();
         testSyntaxSuggestions();
         testFriendlyTerminalDiagnostics();
         testConfigAndScriptOverride();

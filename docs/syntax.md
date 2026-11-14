@@ -83,6 +83,20 @@ toggle {game_started}
 
 Basic values are numbers, booleans, `none`, quoted text, and variable references. Values inside quoted strings are interpolated. Initialize number variables before using arithmetic for clear behavior. `give amount to {variable}` is an alias for `add amount to {variable}`; `reset {variable}` clears one variable or an entire list namespace, like `delete`/`clear`.
 
+### Output to the developer log
+
+`broadcast message` and `send message` are currently exact aliases:
+
+```skript
+on load:
+    broadcast "The project is ready."
+
+on press key "SPACE":
+    send "Score: {score}"
+```
+
+Both evaluate the supplied value and append the resulting text to the runtime's developer log. The name `send` does not currently mean player chat, a canvas message, or delivery to a selected entity; there is no recipient/audience argument. Use the in-game developer terminal or host log to inspect these messages. A future player-facing messaging feature would need an explicit audience/target contract rather than silently changing this existing alias.
+
 ### Object references and property getters
 
 ```skript

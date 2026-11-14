@@ -27,6 +27,7 @@ on press key "SPACE":
 ```
 
 - A command such as `set` or `add` does work.
+- `broadcast` and `send` print to the runtime developer log; neither sends player-specific chat.
 - An event header such as `on press key "SPACE":` says *when* the indented commands should run.
 - The colon `:` opens a block. Commands belonging to the block are indented beneath it.
 - A line beginning with `#` is a comment. Comments help people; they do not run.
