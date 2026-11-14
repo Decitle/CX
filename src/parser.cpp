@@ -1333,6 +1333,9 @@ std::vector<Statement> parseStatements(const std::vector<SourceLine>& lines, std
 
 bool parseEventHeader(const std::string& header, EventHandler& event) {
     const auto text = lower(trim(header));
+    const auto canonicalSelector = [](const std::string& raw) {
+        return lower(trim(raw));
+    };
     // Startup aliases are equivalent: all run once when the project becomes active.
     if (text == "on load:" || text == "on start:" || text == "on startup:" ||
         text == "on project start:" || text == "on project load:" || text == "on initialize:") {
@@ -1370,8 +1373,10 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
     static const std::regex projectileHitPattern(R"HIT(^on\s+projectile\s+hit\s+entity\s+"([^"\n]+)"\s*:$)HIT", std::regex::icase);
     std::smatch projectileHitMatch;
     if (std::regex_match(header, projectileHitMatch, projectileHitPattern)) {
+        const auto selector = canonicalSelector(projectileHitMatch[1].str());
+        if (selector.empty()) return false;
         event.type = EventType::ProjectileHit;
-        event.selector = lower(trim(projectileHitMatch[1].str()));
+        event.selector = selector;
         return true;
     }
     static const std::regex tweenCompletePattern(
@@ -1379,8 +1384,10 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         std::regex::icase);
     std::smatch tweenCompleteMatch;
     if (std::regex_match(header, tweenCompleteMatch, tweenCompletePattern)) {
+        const auto selector = canonicalSelector(tweenCompleteMatch[1].str());
+        if (selector.empty()) return false;
         event.type = EventType::TweenComplete;
-        event.selector = lower(trim(tweenCompleteMatch[1].str()));
+        event.selector = selector;
         return true;
     }
     static const std::regex animationCompletePattern(
@@ -1388,9 +1395,12 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         std::regex::icase);
     std::smatch animationCompleteMatch;
     if (std::regex_match(header, animationCompleteMatch, animationCompletePattern)) {
+        const auto clipName = canonicalSelector(animationCompleteMatch[1].str());
+        const auto entityName = canonicalSelector(animationCompleteMatch[2].str());
+        if (clipName.empty() || entityName.empty()) return false;
         event.type = EventType::AnimationComplete;
-        event.secondarySelector = lower(trim(animationCompleteMatch[1].str())); // clip name
-        event.selector = lower(trim(animationCompleteMatch[2].str()));          // entity name
+        event.secondarySelector = clipName;  // clip name
+        event.selector = entityName;         // entity name
         return true;
     }
     static const std::regex interactionFocusPattern(
@@ -1398,10 +1408,13 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         std::regex::icase);
     std::smatch interactionFocusMatch;
     if (std::regex_match(header, interactionFocusMatch, interactionFocusPattern)) {
+        const auto actorName = canonicalSelector(interactionFocusMatch[1].str());
+        const auto targetName = canonicalSelector(interactionFocusMatch[3].str());
+        if (actorName.empty() || targetName.empty()) return false;
         event.type = lower(interactionFocusMatch[2].str()) == "enter"
             ? EventType::FocusEnter : EventType::FocusExit;
-        event.selector = lower(trim(interactionFocusMatch[1].str()));
-        event.secondarySelector = lower(trim(interactionFocusMatch[3].str()));
+        event.selector = actorName;
+        event.secondarySelector = targetName;
         return true;
     }
     static const std::regex triggerPattern(
@@ -1409,10 +1422,13 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         std::regex::icase);
     std::smatch triggerMatch;
     if (std::regex_match(header, triggerMatch, triggerPattern)) {
+        const auto actorName = canonicalSelector(triggerMatch[1].str());
+        const auto triggerName = canonicalSelector(triggerMatch[3].str());
+        if (actorName.empty() || triggerName.empty()) return false;
         event.type = lower(triggerMatch[2].str()) == "enter"
             ? EventType::TriggerEnter : EventType::TriggerExit;
-        event.selector = lower(trim(triggerMatch[1].str()));
-        event.secondarySelector = lower(trim(triggerMatch[3].str()));
+        event.selector = actorName;
+        event.secondarySelector = triggerName;
         return true;
     }
     if (text == "on press escape:" || text == "on press key escape:" ||
@@ -1432,16 +1448,20 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
     if (std::regex_match(header, match, keyPattern) ||
         std::regex_match(header, match, keyPressedPattern) ||
         std::regex_match(header, match, whenKeyPressedPattern)) {
+        const auto rawKey = trim(match[1].str());
+        if (rawKey.empty()) return false;
         event.type = EventType::KeyPress;
-        event.selector = canonicalEventKey(match[1].str());
+        event.selector = canonicalEventKey(rawKey);
         return true;
     }
     if (std::regex_match(header, match, buttonPattern) ||
         std::regex_match(header, match, buttonClickPattern) ||
         std::regex_match(header, match, buttonClickedPattern) ||
         std::regex_match(header, match, whenButtonClickedPattern)) {
+        const auto buttonId = canonicalSelector(match[1].str());
+        if (buttonId.empty()) return false;
         event.type = EventType::ButtonClick;
-        event.selector = lower(match[1].str());
+        event.selector = buttonId;
         return true;
     }
     return false;
@@ -1457,7 +1477,7 @@ std::string eventHeaderHint(const std::string& line) {
     if (lower(line).find("click") != std::string::npos || lower(line).find("button") != std::string::npos)
         return "Use `on click button \"resume_btn\":`, `on button click \"resume_btn\":`, or `when button \"resume_btn\" is clicked:`.";
     if (lower(line).find("file") != std::string::npos || lower(line).find("attach") != std::string::npos)
-        return "Use exactly: on file attach:";
+        return "Use: on file attach: or on file attached:";
     if (lower(line).find("tween") != std::string::npos)
         return "Use: on tween complete for entity \"boulder\":";
     if (lower(line).find("focus") != std::string::npos)

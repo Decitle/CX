@@ -1,9 +1,11 @@
 #include "cx/runtime.hpp"
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <thread>
 
 namespace {
 int failures = 0;
@@ -33,6 +35,8 @@ set {drop_x} to -1
 set {drop_y} to -1
 set {drop_button} to "not supplied"
 set {drop_count} to 0
+set {resumed_path} to "not resumed"
+set {resumed_x} to -1
 
 on file attach:
     set {attached_path} to {_attached_file}
@@ -40,6 +44,9 @@ on file attach:
     set {drop_y} to {_mouse_y}
     set {drop_button} to {_button_under_cursor}
     add 1 to {drop_count}
+    wait 1 milliseconds
+    set {resumed_path} to {_attached_file}
+    set {resumed_x} to {_mouse_x}
 )CX");
 
     cx::Runtime runtime(root);
@@ -60,6 +67,16 @@ on file attach:
            "file-attachment context should provide empty text when no canvas button is under the cursor");
     expect(runtime.getGlobal("drop_count").numberOr(0.0) == 1.0,
            "one accepted file attachment should dispatch exactly one event");
+    expect(runtime.getGlobal("resumed_path").toString() == "not resumed",
+           "a handler that reaches wait should suspend before its later statements");
+
+    // A suspended event continuation must retain its original event-local payload.
+    std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    runtime.tick();
+    expect(runtime.getGlobal("resumed_path").toString() == expectedPath,
+           "event-local file path should remain available after the handler resumes");
+    expect(runtime.getGlobal("resumed_x").numberOr(-1.0) == 12.5,
+           "event-local cursor coordinates should remain available after the handler resumes");
 
     expect(!runtime.hasErrors(), "valid file-attachment context should not produce runtime diagnostics");
     std::filesystem::remove_all(root);

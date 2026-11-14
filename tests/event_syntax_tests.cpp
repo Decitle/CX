@@ -1,10 +1,12 @@
 #include "cx/script.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 
 namespace {
 int failures = 0;
+
 void expect(bool condition, const std::string& message) {
     if (condition) return;
     ++failures;
@@ -16,52 +18,117 @@ int main() {
     const std::string source = R"CX(
 on load:
     set {load_seen} to true
+on start:
+    set {start_seen} to true
 on startup:
     set {startup_seen} to true
 on project start:
     set {project_start_seen} to true
+on project load:
+    set {project_load_seen} to true
+on initialize:
+    set {initialize_seen} to true
+
 on tick:
     set {tick_seen} to true
-on every tick:
+every tick:
     set {every_tick_seen} to true
+on every tick:
+    set {on_every_tick_seen} to true
 each tick:
     set {each_tick_seen} to true
+on each tick:
+    set {on_each_tick_seen} to true
 every 250 milliseconds:
     set {periodic_seen} to true
+on every 1 second:
+    set {periodic_seconds_seen} to true
+
+on file attach:
+    set {file_attach_seen} to true
+on file attached:
+    set {file_attached_seen} to true
+
+on projectile hit entity " WARDEN ":
+    set {projectile_hit_seen} to true
+on tween complete for entity " Boulder ":
+    set {tween_complete_seen} to true
+on animation complete " Wake " for entity " Player ":
+    set {animation_complete_seen} to true
+on entity " Player " focus enter entity " Chest ":
+    set {focus_enter_seen} to true
+on entity " Player " focus exit entity " Chest ":
+    set {focus_exit_seen} to true
+on entity " Player " enter trigger " Door ":
+    set {trigger_enter_seen} to true
+on entity " Player " exit trigger " Door ":
+    set {trigger_exit_seen} to true
+
 on press key "SPACE":
     set {space_seen} to true
-on key "ENTER" pressed:
+on key press "A":
+    set {a_seen} to true
+on key "RETURN" pressed:
     set {enter_seen} to true
 when key "ESC" is pressed:
     set {escape_seen} to true
-on button click "resume":
+on press escape:
+    set {escape_alias_seen} to true
+
+on click button "resume":
     set {resume_seen} to true
-on button "quit" clicked:
-    set {quit_seen} to true
-when button "settings" is clicked:
+on button click "settings":
     set {settings_seen} to true
-on file attached:
-    set {file_seen} to true
+on button "quit" click:
+    set {quit_seen} to true
+when button "save" is clicked:
+    set {save_seen} to true
 )CX";
+
     const auto program = cx::ScriptParser{}.parseText(source);
-    expect(program.diagnostics.empty(), "all documented event aliases should parse without diagnostics");
-    expect(program.handlers.size() == 14, "all event declarations should produce one handler each");
-    if (program.handlers.size() == 14) {
-        expect(program.handlers[0].type == cx::EventType::Load, "on load remains valid");
-        expect(program.handlers[1].type == cx::EventType::Load, "on startup maps to load");
-        expect(program.handlers[2].type == cx::EventType::Load, "on project start maps to load");
-        expect(program.handlers[3].type == cx::EventType::Tick, "on tick remains valid");
-        expect(program.handlers[4].type == cx::EventType::Tick, "on every tick maps to tick");
-        expect(program.handlers[5].type == cx::EventType::Tick, "each tick maps to tick");
-        expect(program.handlers[6].type == cx::EventType::Periodic, "periodic schedules retain their own event type");
-        expect(program.handlers[7].selector == "SPACE", "legacy key syntax remains valid");
-        expect(program.handlers[8].selector == "ENTER", "key pressed syntax maps to key press");
-        expect(program.handlers[9].selector == "ESCAPE", "when escape is pressed canonicalizes ESC");
-        expect(program.handlers[10].selector == "resume", "button click syntax maps to button click");
-        expect(program.handlers[11].selector == "quit", "button clicked syntax maps to button click");
-        expect(program.handlers[12].selector == "settings", "when button clicked maps to button click");
-        expect(program.handlers[13].type == cx::EventType::FileAttach, "file attached maps to file attach");
-    }
+    expect(program.diagnostics.empty(), "all canonical event headers and documented aliases should parse without diagnostics");
+    expect(program.handlers.size() == 31, "every event declaration should produce one handler");
+
+    const auto countType = [&](cx::EventType type) {
+        return static_cast<std::size_t>(std::count_if(
+            program.handlers.begin(), program.handlers.end(),
+            [type](const cx::EventHandler& handler) { return handler.type == type; }));
+    };
+    const auto hasEvent = [&](cx::EventType type, const std::string& selector,
+                              const std::string& secondarySelector = std::string()) {
+        return std::any_of(program.handlers.begin(), program.handlers.end(),
+            [&](const cx::EventHandler& handler) {
+                return handler.type == type && handler.selector == selector &&
+                       handler.secondarySelector == secondarySelector;
+            });
+    };
+
+    expect(countType(cx::EventType::Load) == 6, "all startup aliases should map to the load event");
+    expect(countType(cx::EventType::Tick) == 5, "all fixed-step tick aliases should map to tick");
+    expect(countType(cx::EventType::Periodic) == 2, "duration-based schedules should retain the periodic event type");
+    expect(countType(cx::EventType::FileAttach) == 2, "both file-attachment headers should map to file attach");
+
+    expect(hasEvent(cx::EventType::ProjectileHit, "warden"), "projectile-hit selectors should trim and lowercase entity names");
+    expect(hasEvent(cx::EventType::TweenComplete, "boulder"), "tween completion selectors should trim and lowercase entity names");
+    expect(hasEvent(cx::EventType::AnimationComplete, "player", "wake"),
+           "animation completion should normalize the entity and clip selectors independently");
+    expect(hasEvent(cx::EventType::FocusEnter, "player", "chest") &&
+           hasEvent(cx::EventType::FocusExit, "player", "chest"),
+           "focus transition headers should preserve their explicit actor/target pair");
+    expect(hasEvent(cx::EventType::TriggerEnter, "player", "door") &&
+           hasEvent(cx::EventType::TriggerExit, "player", "door"),
+           "trigger transition headers should preserve their explicit actor/trigger pair");
+
+    expect(hasEvent(cx::EventType::KeyPress, "SPACE"), "press-key syntax should remain valid");
+    expect(hasEvent(cx::EventType::KeyPress, "A"), "key-press word order should remain valid");
+    expect(hasEvent(cx::EventType::KeyPress, "ENTER"), "RETURN should canonicalize to ENTER");
+    expect(hasEvent(cx::EventType::KeyPress, "ESCAPE"), "ESC and the escape alias should canonicalize consistently");
+
+    expect(hasEvent(cx::EventType::ButtonClick, "resume"), "click-button syntax should remain valid");
+    expect(hasEvent(cx::EventType::ButtonClick, "settings"), "button-click syntax should remain valid");
+    expect(hasEvent(cx::EventType::ButtonClick, "quit"), "button click/clicked syntax should remain valid");
+    expect(hasEvent(cx::EventType::ButtonClick, "save"), "when-button-clicked syntax should remain valid");
+
     if (failures != 0) {
         std::cerr << "CX_EVENT_SYNTAX_TESTS_FAILED failures=" << failures << '\n';
         return 1;

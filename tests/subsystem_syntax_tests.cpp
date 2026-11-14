@@ -113,6 +113,30 @@ void testNegativeAmbiguousAndMissingContextForms() {
         {R"CX(on entity "player" enter trigger:
     set {actor} to {_trigger_actor}
 )CX", "trigger event without trigger selector"},
+        {R"CX(on projectile hit entity "   ":
+    set {damage} to {_hit_damage}
+)CX", "projectile-hit with an empty quoted selector"},
+        {R"CX(on tween complete for entity "   ":
+    set {name} to {_tween_entity}
+)CX", "tween completion with an empty quoted selector"},
+        {R"CX(on animation complete "   " for entity "player":
+    set {clip} to {_animation_name}
+)CX", "animation completion with an empty clip selector"},
+        {R"CX(on entity "   " focus enter entity "chest":
+    set {focus} to {_focus_entity}
+)CX", "focus event with an empty actor selector"},
+        {R"CX(on entity "player" focus exit entity "   ":
+    set {focus} to {_focus_entity}
+)CX", "focus event with an empty target selector"},
+        {R"CX(on entity "player" exit trigger "   ":
+    set {actor} to {_trigger_actor}
+)CX", "trigger event with an empty quoted selector"},
+        {R"CX(when key "   " is pressed:
+    set {pressed} to true
+)CX", "key event with an empty quoted selector"},
+        {R"CX(on button click "   ":
+    set {clicked} to true
+)CX", "button event with an empty quoted selector"},
         {R"CX(canvas "Bad":
     create button "play" at grid (127, 1) anchor top right bottom left size (180, 44) label "Play"
 )CX", "ambiguous multiple-anchor phrase"}

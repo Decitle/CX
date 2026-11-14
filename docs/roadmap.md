@@ -40,7 +40,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - [x] Define typed sprite/entity references so local and temporary variables can hold live object handles with instance identity.
 - [x] Standardize `set <property> of <object> to <value>` and matching property getters for the currently supported object properties.
 - [x] Add a natural possessive property setter alias that normalizes to the shared object-property operation.
-- [ ] Introduce short, consistent event headers while preserving old spellings as compatibility aliases. The current event-context local contract is documented and runtime-tested; broader header vocabulary design remains open.
+- [ ] Introduce short, consistent event headers while preserving old spellings as compatibility aliases. The current event-context local contract is documented and runtime-tested, and required event selectors reject whitespace-only values; broader header vocabulary design remains open.
 - [x] Keep coordinates as conventional tuples; use English around them rather than removing parentheses.
 
 ### Phase 4 — all subsystem surfaces
