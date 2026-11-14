@@ -47,7 +47,7 @@ wait 10 seconds
 play sound {@impact}
 ```
 
-Typed sprite/entity handles and the named random-stream grammar are implemented on the development branch. The standard event-context expression contract remains an open audit item; examples involving event context should not be advertised until that contract and its tests are complete.
+Typed sprite/entity handles and the named random-stream grammar are implemented on the development branch. The event-context contract for all currently implemented payload-bearing events is documented in [event-context.md](event-context.md) and covered by runtime tests, including suspended-local continuity. The event header vocabulary remains a separate open design item; do not imply that unimplemented event families exist.
 
 ### 3. Parentheses are appropriate when they communicate structure
 
@@ -73,6 +73,8 @@ set health of entity "guard" to 25
 ```
 
 The `set entity "guard" health to 25` family remains accepted as a compatibility form; the shared property grammar also supports `set health of entity "guard" to 25` and the equivalent possessive `set entity "guard"'s health to 25`. The development branch stores sprite/entity references as typed values with live-instance identity in local and temporary variables. Ordinary strings never silently become object references, and stale handles are rejected after an object is removed or replaced.
+
+This first-class handle model currently applies to sprites and entities, not rooms. Rooms are named project resources addressed through explicit load, enter, unload and reload effects; entrance points remain coordinate values. No v0.11.0 script operation currently needs a room instance handle. Keep this boundary unless a concrete use case justifies the additional identity and room-transition semantics.
 
 ### 5. Events describe what happened; context values describe who/what
 
