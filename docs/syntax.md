@@ -145,7 +145,7 @@ Numeric range checks use inclusive endpoints: `{score} is between 5 and 10` incl
 
 For text values, `in` and `is in` test whether the left text occurs inside the right text; `contains` tests the reverse. Text matching is case-insensitive. For list variables, `value is in {items::*}` tests list membership, while `{items::*} contains value` searches the list. Use `is not in` or `does not contain` for the inverse.
 
-Presence checks use `value is set` and `value is not set`. Value predicates include `is even`, `is odd`, `is positive`, `is negative`, `is zero`, `is a number`/`is number`, `is text`/`is a text`/`is string`, `is a boolean`/`is boolean`, `is a list`/`is list`, and `is empty`. Put `not` after `is` to negate a predicate.
+Presence checks use `value is set` and `value is not set`. Value predicates include `is even`, `is odd`, `is positive`, `is negative`, `is zero`, `is a number`/`is number`, `is text`/`is a text`/`is string`/`is a string`, `is a boolean`/`is boolean`, `is a list`/`is list`, and `is empty`. Put `not` after `is` to negate a predicate.
 
 Conditions can be combined with `and`, `or`, and `not`; parentheses make grouping explicit. Examples:
 

@@ -240,7 +240,7 @@ if {items::*} does not contain "red":
     const bool loaded = runtime.loadScripts();
     if (!loaded) {
         for (const auto& diagnostic : runtime.diagnostics())
-            std::cerr << "CONDITION FIXTURE DIAGNOSTIC: " << diagnostic.message << '\\n';
+            std::cerr << "CONDITION FIXTURE DIAGNOSTIC: " << diagnostic.message << '\n';
     }
     expect(loaded, "Skript-style comparison and membership conditions should load");
     expect(!runtime.hasErrors(), "valid English comparison and list conditions should not diagnose");
@@ -308,7 +308,9 @@ if "hello" is a text:
 if "hello" is text:
     set {text_without_article} to true
 if "hello" is a string:
-    set {string_alias} to true
+    set {string_with_article} to true
+if "hello" is string:
+    set {string_without_article} to true
 if "" is empty:
     set {empty_predicate} to true
 
@@ -323,7 +325,7 @@ if {positive_value} is zero:
     const bool loaded = runtime.loadScripts();
     if (!loaded) {
         for (const auto& diagnostic : runtime.diagnostics())
-            std::cerr << "VALUE PREDICATE DIAGNOSTIC: " << diagnostic.message << '\\n';
+            std::cerr << "VALUE PREDICATE DIAGNOSTIC: " << diagnostic.message << '\n';
     }
     expect(loaded, "natural type/value predicate aliases should parse and execute");
     expect(!runtime.hasErrors(), "valid type/value predicates should not produce runtime diagnostics");
@@ -332,7 +334,7 @@ if {positive_value} is zero:
              "even_predicate", "odd_predicate", "boolean_with_article",
              "boolean_without_article", "list_with_article", "list_without_article",
              "number_with_article", "number_without_article", "text_with_article",
-             "text_without_article", "string_alias", "empty_predicate"}) {
+             "text_without_article", "string_with_article", "string_without_article", "empty_predicate"}) {
         expect(runtime.getGlobal(name).truthy(),
                "the documented value predicate should evaluate true: " + std::string(name));
     }

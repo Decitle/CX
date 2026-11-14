@@ -1246,7 +1246,7 @@ bool Runtime::evaluateCondition(std::string_view rawExpression, const ExecutionC
     }
 
     static const std::regex valuePredicatePattern(
-        R"PREDICATE(^(.+?)\s+is\s+(not\s+)?(even|odd|positive|negative|zero|a\s+number|number|a\s+text|text|string|a\s+boolean|boolean|empty|a\s+list|list)$)PREDICATE",
+        R"PREDICATE(^(.+?)\s+is\s+(not\s+)?(even|odd|positive|negative|zero|a\s+number|number|a\s+text|text|a\s+string|string|a\s+boolean|boolean|empty|a\s+list|list)$)PREDICATE",
         std::regex::icase);
     std::smatch predicateMatch;
     if (std::regex_match(expression, predicateMatch, valuePredicatePattern)) {
@@ -1272,7 +1272,8 @@ bool Runtime::evaluateCondition(std::string_view rawExpression, const ExecutionC
                 else if (predicate == "zero") matches = number == 0.0;
                 else matches = true;
             }
-        } else if (predicate == "text" || predicate == "a text" || predicate == "string") {
+        } else if (predicate == "text" || predicate == "a text" ||
+                     predicate == "string" || predicate == "a string") {
             matches = subject.isString();
         } else if (predicate == "boolean" || predicate == "a boolean") {
             matches = subject.isBool();
