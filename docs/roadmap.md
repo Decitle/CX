@@ -41,7 +41,8 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - [x] Standardize `set <property> of <object> to <value>` and matching property getters for the currently supported object properties.
 - [x] Add a natural possessive property setter alias that normalizes to the shared object-property operation.
 - [x] Validate supported object-property aliases, texture/visibility setters, entity-only health/classification properties, maximum-health spellings, and stale-handle behavior.
-- [ ] Introduce short, consistent event headers while preserving old spellings as compatibility aliases. The current event-context local contract is documented and runtime-tested, and required event selectors reject whitespace-only values; broader header vocabulary design remains open.
+- [x] Publish one event-context local contract for all currently implemented payload-bearing events; assert every documented payload field at runtime and cover local-scope continuity across `wait`.
+- [ ] Design a broader, consistent event-header vocabulary while preserving existing spellings as compatibility aliases. Keep named trigger pairs explicit until any more general filtering mechanism has a bounded dispatch strategy; required selectors must remain non-empty.
 - [x] Keep coordinates as conventional tuples; use English around them rather than removing parentheses.
 
 ### Phase 4 — all subsystem surfaces
