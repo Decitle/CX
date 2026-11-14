@@ -74,6 +74,10 @@ when key "ESC" is pressed:
     set {escape_seen} to true
 on press escape:
     set {escape_alias_seen} to true
+on press key escape:
+    set {escape_key_alias_seen} to true
+when escape is pressed:
+    set {escape_when_alias_seen} to true
 
 on click button "resume":
     set {resume_seen} to true
@@ -87,7 +91,7 @@ when button "save" is clicked:
 
     const auto program = cx::ScriptParser{}.parseText(source);
     expect(program.diagnostics.empty(), "all canonical event headers and documented aliases should parse without diagnostics");
-    expect(program.handlers.size() == 31, "every event declaration should produce one handler");
+    expect(program.handlers.size() == 34, "every event declaration should produce one handler");
 
     const auto countType = [&](cx::EventType type) {
         return static_cast<std::size_t>(std::count_if(
@@ -122,10 +126,12 @@ when button "save" is clicked:
     expect(hasEvent(cx::EventType::KeyPress, "SPACE"), "press-key syntax should remain valid");
     expect(hasEvent(cx::EventType::KeyPress, "A"), "key-press word order should remain valid");
     expect(hasEvent(cx::EventType::KeyPress, "ENTER"), "RETURN should canonicalize to ENTER");
-    expect(hasEvent(cx::EventType::KeyPress, "ESCAPE"), "ESC and the escape alias should canonicalize consistently");
+    expect(countType(cx::EventType::KeyPress) == 7, "all documented special escape forms should map to key press");
+    expect(hasEvent(cx::EventType::KeyPress, "ESCAPE"), "ESC and the escape aliases should canonicalize consistently");
 
     expect(hasEvent(cx::EventType::ButtonClick, "resume"), "click-button syntax should remain valid");
     expect(hasEvent(cx::EventType::ButtonClick, "settings"), "button-click syntax should remain valid");
+    expect(countType(cx::EventType::ButtonClick) == 5, "all documented button-click aliases should map to button click");
     expect(hasEvent(cx::EventType::ButtonClick, "quit"), "button click/clicked syntax should remain valid");
     expect(hasEvent(cx::EventType::ButtonClick, "save"), "when-button-clicked syntax should remain valid");
 

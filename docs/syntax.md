@@ -33,6 +33,24 @@ on tween complete for entity "boulder":
 
 An event header ends with `:`. Its commands are indented under it. Required quoted selectors—entity, trigger, clip, key, and button IDs—must contain a non-whitespace name; leading and trailing whitespace is trimmed and selector matching is case-insensitive. `on tick:` uses the fixed logic rate, so avoid file I/O, expensive searches, and unbounded loops there. Use `{^...}` for high-frequency counters that do not need persistence, so they do not trigger unnecessary variable-file writes. Named trigger handlers run once when an actor starts overlapping a trigger area and once when that contact ends. Tween completion handlers run once when a deterministic entity movement finishes. Event-specific local values are catalogued in the [event context reference](event-context.md).
 
+### Currently accepted event headers
+
+| Event | Canonical form | Accepted compatibility aliases |
+|---|---|---|
+| Startup | `on load:` | `on start:`, `on startup:`, `on project start:`, `on project load:`, `on initialize:` |
+| Fixed logic tick | `on tick:` | `every tick:`, `on every tick:`, `each tick:`, `on each tick:` |
+| Periodic | `every 1 second:` | Optional `on` prefix; positive numeric intervals in milliseconds, seconds, ticks, minutes, or hours (including documented abbreviations) |
+| File attachment | `on file attach:` | `on file attached:` |
+| Key press | `on press key "SPACE":` | `on key press "SPACE":`, `on key "SPACE" pressed:`, `when key "SPACE" is pressed:`, `on press escape:`, `on press key escape:`, `when escape is pressed:` |
+| Canvas button click | `on click button "resume_btn":` | `on button click "resume_btn":`, `on button "resume_btn" click:`, `on button "resume_btn" clicked:`, `when button "resume_btn" is clicked:` |
+| Projectile hit | `on projectile hit entity "warden":` | — |
+| Trigger enter/exit | `on entity "player" enter trigger "door":` / `on entity "player" exit trigger "door":` | — |
+| Focus enter/exit | `on entity "player" focus enter entity "chest":` / `on entity "player" focus exit entity "chest":` | — |
+| Tween completion | `on tween complete for entity "boulder":` | — |
+| Animation completion | `on animation complete "wake" for entity "player":` | — |
+
+Entity, clip, key, and button selectors are matched case-insensitively after trimming surrounding whitespace. A quoted selector containing only whitespace is invalid. This table records what the v0.11.0 development parser accepts today; it is not a claim that the event vocabulary has reached its final Skript-first design. In particular, general mouse, window-focus, room-lifecycle and wildcard collision events remain future design work.
+
 ## Global and event-local variables
 
 ```skript
