@@ -69,6 +69,12 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 
 The first complete acceptance project is [Number Hunt](first-game.md): an asset-free game with a multi-file runnable project, annotated tutorial, CLI syntax-check instructions, a deliberate syntax-error recovery exercise, and a runtime test for a complete round. The remaining beginner-journey gate is to validate this project through the actual download/extract/launch path using an installed package.
 
+## v0.12.0 planning direction — engine interoperability and broad game scenarios
+
+After the 0.11.0 language and compatibility gate passes, use [the engine interoperability audit](ENGINE_INTEROPERABILITY_AUDIT.md) as the source of truth for cross-system work. The next milestone should build several small end-to-end game scenarios and settle shared contracts for simulation time, task scheduling, event ordering, room/world ownership, persistence, UI/input, audio, and asset loading. Do not add large standalone feature lists before identifying how each feature interacts with existing systems.
+
+The objective is broad, composable game-design coverage—not a literal promise that every conceivable game can be represented. Candidate acceptance slices should include exploration/adventure, platforming/precision movement, puzzle logic, arcade simulation, and presentation-heavy gameplay. Each slice needs an executable sample project, automated interaction/lifecycle tests, and clean-package launch verification.
+
 ## Later engineering stages
 
 ### Physics and gameplay reliability

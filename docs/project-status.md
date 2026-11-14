@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI:** [run #116](https://github.com/Decitle/CX/actions/runs/43631353115) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for commit `075cf25`; Linux and Windows also passed graphical startup smoke tests. [Run #119](https://github.com/Decitle/CX/actions/runs/43631897796) is validating Number Hunt on `6b883d1`; Linux x86_64/ARM64 and macOS ARM64 have passed so far, with the remaining three jobs running. The type/value predicate matrix was added after #119 started and still needs its own current-head validation.
+**Latest completed six-target development CI:** [run #122](https://github.com/Decitle/CX/actions/runs/43637485771) — all six native targets passed build, CTest, all-example syntax checks, and runtime package creation for commit `cb79c9e`; Linux and Windows also passed graphical startup smoke tests. This validates the natural `is a string` predicate alias and its positive/negative runtime cases. The next parser increment adds Skript-style `else if` chains and needs its own six-platform run.
 
 ## Repository state
 
@@ -21,6 +21,7 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Natural single-value random integer and number expressions, plus random item/element selection from CX lists. An automatically initialized default random stream is available, with explicitly seeded named streams as an optional deterministic facility.
 - English-first numeric expressions for common operations, including absolute value, square root, floor/ceiling, sine/cosine/tangent, rounding, average/mean/median, sum/product, minimum/maximum and natural clamp syntax. Technical helpers and compact function forms remain available.
 - Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions; the full implemented comparison vocabulary and sign/parity/type/emptiness predicates now have dedicated runtime regression coverage.
+- Skript-style `else if` chains are parsed into nested conditional branches and have runtime tests for first-match behavior, fall-through, final `else`, and nested chains; the new six-platform validation is pending.
 - `send` and `broadcast` are currently identical developer-log output effects, not player-directed messaging; the docs state this explicitly and the core runtime suite verifies the equivalence.
 - Engine setting names remain stable underscore identifiers shared with `config.json`; their technical spelling is intentional rather than an incomplete prose alias.
 - Typed sprite/entity object references with live-instance identity, property getters, the shared `<property> of <object>` setter grammar, and its equivalent possessive setter form. Supported getter/setter aliases, texture/visibility writes, maximum-health spellings, type restrictions and stale-handle behavior have expanded runtime test coverage.
@@ -59,7 +60,8 @@ The development documentation changes are still confined to the unmerged branch.
 
 ## Next priorities
 
-1. Continue the event-header vocabulary and suspended-handler lifecycle audit; the documented payload fields, complete comparison alias family, and supported object-property contract now have direct runtime regression coverage.
+1. Continue the event-header vocabulary and suspended-handler lifecycle audit; the documented payload fields, comparison predicates, conditional chains, and supported object-property contract now have direct runtime regression coverage.
+2. Use `docs/ENGINE_INTEROPERABILITY_AUDIT.md` to choose cross-system end-to-end scenarios; do not treat isolated subsystem tests as proof of whole-game composition.
 2. Expand the positive/negative syntax corpus to every advertised syntax family and compatibility alias.
 3. Bring examples, beginner materials, feature pages and versioned reference generation into alignment with accepted canonical grammar.
 4. Run current-head six-target CI and final clean extraction/launch checks after the syntax increment.

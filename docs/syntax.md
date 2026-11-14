@@ -147,7 +147,18 @@ For text values, `in` and `is in` test whether the left text occurs inside the r
 
 Presence checks use `value is set` and `value is not set`. Value predicates include `is even`, `is odd`, `is positive`, `is negative`, `is zero`, `is a number`/`is number`, `is text`/`is a text`/`is string`/`is a string`, `is a boolean`/`is boolean`, `is a list`/`is list`, and `is empty`. Put `not` after `is` to negate a predicate.
 
-Conditions can be combined with `and`, `or`, and `not`; parentheses make grouping explicit. Examples:
+Conditions can be combined with `and`, `or`, and `not`; parentheses make grouping explicit. A conditional chain can use `else if` for additional mutually exclusive branches before a final `else`:
+
+```skript
+if {lives} is at least 3:
+    set {rank} to "steady"
+else if {lives} is at least 1:
+    set {rank} to "last chance"
+else:
+    set {rank} to "game over"
+```
+
+Examples:
 
 ```skript
 if {lives} is greater than 0 and {score} is at least 100:

@@ -13,6 +13,7 @@ CX is a C++20 graphical 2D game engine with an approachable, Skript-inspired scr
 - [Interactive HTML reference](reference.html) — searchable overview of the language and runtime.
 - [Language design charter](language-design.md) — the English-first Skript-like grammar requirement for v0.11.0.
 - [Skript syntax audit](SKRIPT_SYNTAX_AUDIT.md) — source-backed feature inventory and concrete syntax gaps.
+- [Engine interoperability audit](ENGINE_INTEROPERABILITY_AUDIT.md) — what is integrated today, what has only lifecycle coverage, and the broader 0.12.0 composition plan.
 - [Event context](event-context.md) — local values supplied by trigger, focus, projectile, tween, animation, and file-attachment handlers.
 - [Getting started](getting-started.md) — choose a runtime or build from source, launch the graphical engine, and open a starter project.
 - [First game: Number Hunt](first-game.md) — a complete, asset-free game project with a step-by-step walkthrough.

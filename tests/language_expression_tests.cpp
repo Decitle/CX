@@ -347,6 +347,67 @@ if {positive_value} is zero:
     std::filesystem::remove_all(root);
 }
 
+
+void testSkriptStyleElseIfChains() {
+    const auto root = fixture("else-if-chains", R"CX(
+if 2 is equal to 2:
+    set {first_branch} to "first"
+else if 3 is equal to 3:
+    set {first_branch} to "second"
+else if 4 is equal to 4:
+    set {first_branch} to "third"
+else:
+    set {first_branch} to "else"
+
+if 1 is equal to 2:
+    set {second_branch} to "first"
+else if 2 is equal to 3:
+    set {second_branch} to "second"
+else if 3 is equal to 3:
+    set {second_branch} to "third"
+else:
+    set {second_branch} to "else"
+
+if 1 is equal to 2:
+    set {third_branch} to "first"
+else if 2 is equal to 3:
+    set {third_branch} to "second"
+else:
+    set {third_branch} to "else"
+
+if 1 is equal to 2:
+    set {nested_parent} to "wrong"
+else if 2 is equal to 2:
+    if 3 is equal to 3:
+        set {nested_child} to "nested-first"
+    else if 4 is equal to 4:
+        set {nested_child} to "nested-second"
+    else:
+        set {nested_child} to "nested-else"
+else:
+    set {nested_parent} to "wrong-else"
+)CX");
+    cx::Runtime runtime(root);
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics())
+            std::cerr << "ELSE-IF DIAGNOSTIC: " << diagnostic.message << '\n';
+    }
+    expect(loaded, "Skript-style else-if chains should parse and execute");
+    expect(!runtime.hasErrors(), "valid else-if branches should not produce runtime diagnostics");
+    expect(runtime.getGlobal("first_branch").toString() == "first",
+           "the first matching branch should execute and prevent later branches");
+    expect(runtime.getGlobal("second_branch").toString() == "third",
+           "an intermediate else-if branch should execute after earlier conditions fail");
+    expect(runtime.getGlobal("third_branch").toString() == "else",
+           "a final else should run when every if/else-if condition fails");
+    expect(runtime.getGlobal("nested_child").toString() == "nested-first",
+           "else-if chains should compose with nested if/else blocks");
+    expect(!runtime.getGlobal("nested_parent").truthy(),
+           "the parent chain should select only its matching else-if branch");
+    std::filesystem::remove_all(root);
+}
+
 void testNaturalClampRejectsInvalidRange() {
     const auto root = fixture("natural-clamp-invalid-range", R"CX(
 set {value} to clamp 5 between 10 and 0
@@ -458,6 +519,7 @@ int main() {
     testNaturalMathAndSkriptDegreeTrigonometry();
     testNaturalComparisonAndListConditions();
     testNaturalTypeAndValuePredicateAliases();
+    testSkriptStyleElseIfChains();
     testMathDomainResultsCanBeCheckedAsNaN();
     testNaturalClampRejectsInvalidRange();
     testSkriptStyleCountedRandomListAssignment();

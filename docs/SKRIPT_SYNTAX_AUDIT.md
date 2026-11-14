@@ -89,7 +89,7 @@ The branch already implements natural aliases for common scalar operations (abso
 
 ### Conditions — 10 groups
 
-- `if condition:` / `else:` blocks
+- `if condition:` / `else if condition:` / `else:` chains
 - `value is set` / `value is not set`
 - Held-key state: `key "W" is down` / `is not down`
 - `mouse cursor is over button "id"`
@@ -100,7 +100,7 @@ The branch already implements natural aliases for common scalar operations (abso
 - Entity tag query
 - Comparisons and boolean operators
 
-**Audit result:** symbolic comparisons and the English alias families are implemented and now have a runtime regression matrix covering every comparison spelling in the evaluator, including inclusive bounds, equality/inequality, string containment, list membership, and boolean composition. Type/value predicates now also have runtime cases for sign, parity, zero, text/string, number, boolean, list and empty values, including negative type-coercion checks. Presence checks, held-key state and existing geometry/focus queries remain distinct condition families. Future condition work should add language only where it improves clarity, without changing query lifecycle or filtering semantics.
+**Audit result:** symbolic comparisons and the English alias families are implemented and have a runtime regression matrix covering inclusive bounds, equality/inequality, string containment, list membership, and boolean composition. Type/value predicates have positive and negative runtime cases, including article/no-article string forms and type-coercion checks. Skript-style `else if` chains are parsed as nested conditional branches and tested for first-match, fall-through, final-else, and nested behavior; the current-head six-target run is the remaining validation gate. Presence checks, held-key state and existing geometry/focus queries remain distinct condition families.
 
 ### Effects — 15 groups
 
@@ -129,7 +129,7 @@ The output effect currently has two spellings, `broadcast` and `send`, which nor
 - `return value`
 - Counted loops, list loops, `while`, `wait`/`halt`, loop exit, loop continue, and loop-number/counter/iteration/value/index context values
 
-**Audit result:** these are already close to Skript's readable block model. Preserve them, test scope and scheduler lifecycle, and improve error messages/aliases rather than rewriting them without a reason. Functions are synchronous today and cannot suspend with `wait`; this limitation must stay explicit until task semantics change.
+**Audit result:** block structure, loop locals, nested list scopes, loop context values, return, and the synchronous/no-wait function rule are implemented. The function surface is not yet as close to Skript as it should be: the declaration parser currently discards parameter type annotations, requires every argument, has no declared return type, and exposes every function in the program-wide function map. Add typed parameters, default values, and return-type validation before calling the function contract complete. Treat file-local function visibility as a deliberate design decision; it may need caller-file scope rather than silently changing current cross-file calls. Functions cannot suspend with `wait`; retain that explicit limitation until task semantics are deliberately redesigned.
 
 ### World, UI, graphics, audio, settings and debug
 
@@ -145,7 +145,9 @@ The reference adds 23 world/entity entries, 6 project-structure entries, 7 UI en
 | [x] | Advanced math helpers retain function-call forms | Common scalar operations have natural-English forms. Parameter-heavy procedural helpers such as `noise2d`, `fbm2d`, and `lerp` intentionally remain function calls; this is a deliberate language-design boundary, not an unfinished alias gap. |
 | [x] | Supported object property grammar needs validation | The shared `set <property> of <object> to <value>` grammar, possessive setter alias, live-instance checks, type restrictions, scalar getter aliases, texture/visibility properties, and maximum-health spellings are documented and covered by the object-reference runtime suite. Specialized collision, animation, path and interaction settings intentionally remain subsystem-specific commands. |
 | [x] | Typed object references currently cover sprites/entities | This is the deliberate v0.11.0 boundary. Sprites and entities are mutable live instances whose handles need replacement-safe identity; rooms are named resources managed by explicit load/enter/reload operations, while entrances remain ordinary coordinate values. No current operation requires a first-class room handle, so this is not an unfinished object-reference family. Revisit only if a concrete script use case needs identity-bound room values. |
+| [x] | Skript-style `else if` chains were missing | The parser represents each `else if` as a nested conditional branch, preserving the existing runtime's mutually exclusive branch-selection semantics. Runtime tests cover first-match, intermediate match, final else, and nested chains; validate this increment on all six platforms. |
 | P1 | Event headers are inconsistent and sometimes over-specific | Design a broader, consistent event vocabulary and any body-level filtering only where selection and dispatch costs are well-defined. Preserve the current named trigger-pair boundary so a future wildcard form cannot reintroduce unbounded actor-by-trigger scanning. |
+| P1 | Function signatures are less expressive than Skript | Add typed parameters, optional/default arguments, and declared return types with runtime validation. Decide explicitly whether file-local function declarations belong in 0.11 or a later module/scope milestone. Preserve the current synchronous/no-wait contract until task semantics are deliberately redesigned. |
 | [x] | English comparison aliases are incomplete | The evaluator's complete English comparison family is documented and covered by a runtime test matrix alongside the symbolic operators. |
 | [x] | UI/graphics/audio phrases expose underscore-style implementation terms | Natural `font size`, spaced anchors, `sample rate`, `ease in out`, and spaced beam properties now normalize to existing internal keys; underscored spellings remain aliases. The new CTest corpus checks both. |
 | [x] | Event payload and object naming are inconsistent | The event-local contract is published in `event-context.md`, every documented payload field has runtime assertions, suspended file-attachment locals are covered, and the shared typed object/property grammar is documented and tested. Broader event header design remains a separate open item. |

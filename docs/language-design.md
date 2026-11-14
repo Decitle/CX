@@ -153,3 +153,7 @@ CX must not be tagged `v0.11.0` until:
 7. All native CI targets, clean runtime packaging and relevant parser/runtime regression suites pass.
 
 A version number is not an acceptance criterion. No `v0.11.0` tag should be made just because the first natural syntax expression lands.
+
+## Beyond v0.11.0: composition rather than feature accumulation
+
+The next milestone should improve how existing and future systems work together, not simply add more isolated subsystems. The [engine interoperability audit](ENGINE_INTEROPERABILITY_AUDIT.md) separates integrated workflows from lifecycle-only evidence and open gaps. Use it to plan v0.12.0 vertical slices across room/state ownership, event ordering, scheduling, movement/collision, UI/input, animation, audio, persistence, and packaging. The goal is a broad and composable engine for many game designs; do not make an untestable promise that every imaginable game is possible.
