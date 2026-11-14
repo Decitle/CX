@@ -51,7 +51,7 @@ The 55 `StatementType` values cover variable assignment/deletion/mutation, rando
 - `on entity "actor" focus enter entity "target":`
 - `on entity "actor" focus exit entity "target":`
 
-**Audit result:** lifecycle and periodic events are already close to Skript. Key press has two word orders, but the event family is narrow: a consistent key/mouse press/release vocabulary, window focus, and room lifecycle still need design. Existing event payload locals are now catalogued in [event-context.md](event-context.md). Some newer event headers name both entities explicitly; this is intentionally retained for trigger pairs because the runtime checks authored pairs rather than scanning every actor/trigger combination each tick. Review where body-level filtering is practical without introducing unbounded dispatch work.
+**Audit result:** lifecycle and periodic events are already close to Skript. Key press has two word orders, but the event family is narrow: a consistent key/mouse press/release vocabulary, window focus, and room lifecycle still need design. The complete set of existing payload locals is catalogued in [event-context.md](event-context.md) and now has direct runtime field assertions across each payload-bearing event family. Some newer event headers name both entities explicitly; this is intentionally retained for trigger pairs because the runtime checks authored pairs rather than scanning every actor/trigger combination each tick. Broader header vocabulary and body-level filtering still need design without introducing unbounded dispatch work.
 
 ### Variables — 7
 

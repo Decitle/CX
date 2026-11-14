@@ -220,6 +220,11 @@ if(CX_BUILD_TESTS)
     target_link_libraries(cx-event-syntax-tests PRIVATE cx_core)
     add_test(NAME cx-event-syntax-tests COMMAND $<TARGET_FILE:cx-event-syntax-tests>)
 
+    # Validate the file-attachment event's runtime payload values through the public host API.
+    add_executable(cx-event-context-runtime-tests tests/event_context_runtime_tests.cpp)
+    target_link_libraries(cx-event-context-runtime-tests PRIVATE cx_core)
+    add_test(NAME cx-event-context-runtime-tests COMMAND cx-event-context-runtime-tests)
+
     add_executable(cx-variable-effect-syntax-tests tests/variable_effect_syntax_tests.cpp)
     target_link_libraries(cx-variable-effect-syntax-tests PRIVATE cx_core)
     add_test(NAME cx-variable-effect-syntax-tests COMMAND cx-variable-effect-syntax-tests)

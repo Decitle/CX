@@ -21,10 +21,10 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Inventory every event, variable form, expression, condition, effect/statement, function, loop and project-facing API.
 - Choose a canonical English form and useful aliases for each supported family.
 - Mark current syntax, accepted aliases, planned syntax and unsupported concepts distinctly.
-- Typed sprite/entity references and shared property getter/setter rules are implemented for supported properties. Continue checking object lifetime/extension cases; the standard event-context contract remains an open audit item.
+- Typed sprite/entity references and shared property getter/setter rules are implemented for supported properties. The event-context contract is catalogued in one source-of-truth page and runtime-tested for every documented payload field; event-header vocabulary and suspended-handler edge cases remain open.
 - Keep the design charter and audit linked from the repository's public documentation and learning resources.
 
-**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, worded comparisons, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #100 validated the count-prefix random syntax, property grammar, and all-example syntax workflow. The subsequent UI/graphics/audio parser changes require fresh validation.
+**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, worded comparisons, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #103 validated the latest parser/example increment on all six platforms. A new runtime test increment now covers the complete documented event payload field set and will receive its own current-head validation.
 
 ### Phase 2 — expressions and common language
 
@@ -40,7 +40,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - [x] Define typed sprite/entity references so local and temporary variables can hold live object handles with instance identity.
 - [x] Standardize `set <property> of <object> to <value>` and matching property getters for the currently supported object properties.
 - [x] Add a natural possessive property setter alias that normalizes to the shared object-property operation.
-- [ ] Introduce short, consistent event headers with standard event-context values. Preserve old header spellings as compatibility aliases where possible.
+- [ ] Introduce short, consistent event headers while preserving old spellings as compatibility aliases. The current event-context local contract is documented and runtime-tested; broader header vocabulary design remains open.
 - [x] Keep coordinates as conventional tuples; use English around them rather than removing parentheses.
 
 ### Phase 4 — all subsystem surfaces
@@ -56,6 +56,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - [x] Add a CI syntax pass for every standalone `.cx` example and every multi-file example project using `tools/check_examples.py` (syntax only; runtime/GUI behavior is checked separately).
 - Update the searchable reference, syntax guide, learning guide, feature pages, quickstart, standalone versioned HTML docs and package instructions together.
 - [x] Add an initial positive/negative subsystem syntax corpus for natural/legacy UI, graphics, audio and event forms; expand it to every advertised language family, invalid type, and event-context boundary.
+- [x] Add runtime assertions for every documented event payload field, including file-attachment path, cursor coordinates, and the empty/no-button case. Keep callback identity and room-context lifecycle checks in their subsystem integration tests.
 - Test old v0.10.14 examples through compatibility aliases wherever practical.
 - Pass all six native CI targets and the normal release package verifier.
 

@@ -111,4 +111,17 @@ There is no universal event object, dictionary of payload values, or generic col
 
 Event-local names describe what the runtime observed; they do not extend object lifetimes. Sprite/entity object handles remain typed, local/temporary-only values with live-instance identity. Event payload names are text/number locals, not persistent object handles.
 
+## Runtime regression coverage
+
+The runtime payload contract is checked in CTest alongside the subsystem behavior that produces each event:
+
+- Trigger actor/trigger names: `tests/collision_runtime_tests.cpp`.
+- Focus actor/target names and the `_focused_entity` compatibility alias: `tests/interaction_focus_tests.cpp`.
+- Hit target, projectile ID and applied damage: `tests/projectile_runtime_tests.cpp`.
+- Tween entity name and captured final coordinates: `tests/motion_runtime_tests.cpp`.
+- Animation entity name, clip name, final frame and resolved row: `tests/animation_runtime_tests.cpp`.
+- Attached absolute path, cursor coordinates and the empty button-ID case: `tests/event_context_runtime_tests.cpp`.
+
+These value assertions complement the existing lifecycle checks for contact separation, callback-driven deletion/replacement, playback/tween identity, and room-context changes. The file-attachment test uses the public host API with a temporary regular file; it does not depend on a native desktop file-drop bridge.
+
 Trigger and focus transitions have intentionally specific actor/target selectors. Trigger dispatch iterates the authored pairs and checks their live endpoints, avoiding a full actor-by-trigger Cartesian scan every tick. Focus selection likewise has explicit configured actors and a known per-tick candidate-search cost. A more general event vocabulary may be considered later, but must preserve bounded work, clear filtering semantics, and the existing room/object lifetime guarantees.
