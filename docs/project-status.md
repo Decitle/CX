@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI:** [run #108](https://github.com/Decitle/CX/actions/runs/43568367748) — all six native targets passed build, CTest, example syntax checks, and native package creation for branch head `77ee733`; Linux and Windows also passed graphical startup smoke tests. Run [#109](https://github.com/Decitle/CX/actions/runs/43629646878) is validating the comparison-alias matrix on an intermediate commit; Linux x86_64, Linux ARM64 and macOS ARM64 have passed so far, while the other jobs are still running. Run [#110](https://github.com/Decitle/CX/actions/runs/43629839134) is queued for `aac16dd`, including the `send` output test and stable settings-name documentation. The new object-property regression coverage in this increment will require another run on the latest head.
+**Latest completed six-target development CI:** [run #109](https://github.com/Decitle/CX/actions/runs/43629646878) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for commit `d24bdb`; Linux and Windows also passed graphical startup smoke tests. [Run #111](https://github.com/Decitle/CX/actions/runs/43630125248) is validating object-property runtime assertions on `f3959de`. [Run #112](https://github.com/Decitle/CX/actions/runs/43630365700) is queued for the current head `50f743e`, including the beginner-project HUD examples and guide alignment.
 
 ## Repository state
 
@@ -25,11 +25,11 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Engine setting names remain stable underscore identifiers shared with `config.json`; their technical spelling is intentional rather than an incomplete prose alias.
 - Typed sprite/entity object references with live-instance identity, property getters, the shared `<property> of <object>` setter grammar, and its equivalent possessive setter form. Supported getter/setter aliases, texture/visibility writes, maximum-health spellings, type restrictions and stale-handle behavior have expanded runtime test coverage.
 - Entity classification and tag collection operations, including whole-set tags, add, remove, clear and has-tag checks.
-- Expanded tests for expressions, loops, event syntax and runtime payloads, object references, variable effects, room transitions, screen effects, entity tags, and packaging.
+- Expanded tests for expressions, loops, event syntax and runtime payloads, object-reference property aliases, variable effects, room transitions, screen effects, entity tags, and packaging.
 - Cross-platform runtime packaging fixes and successful six-target validation.
 - CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
-The latest fully validated six-platform commit is `77ee733`, which passed run #108 after the event-context and event-header validation work. Later comparison, output-semantics, settings-documentation and object-property increments are tracked separately in runs #109–#110 and the next current-head run. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
+The latest fully validated six-platform commit is `d24bdb`, which passed run #109 with the complete comparison-alias matrix. The later object-property runtime assertions are tracked by run #111, and the current branch head with beginner HUD examples is queued in run #112. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
 
 ## Remaining v0.11.0 acceptance work
 
@@ -45,8 +45,9 @@ Other remaining acceptance work includes:
 
 - Complete the subsystem-by-subsystem grammar audit. Some APIs intentionally retain technical arguments or specialized commands; their language surface still needs a consistency review.
 - The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage, including getter/setter aliases and live-instance validation. Event payload locals are catalogued in one source-of-truth page and now have direct runtime assertions for all documented fields; the event-header vocabulary and suspended-handler lifecycle audit remain open.
+- The first-steps example and quickstart now demonstrate a live canvas score HUD, and the beginner/getting-started guides explain that on-screen text is distinct from developer-log output.
 - Expand the initial positive/negative syntax corpus across all advertised language families and compatibility aliases. The current subsystem corpus checks canonical/legacy forms, normalized parser meaning, invalid values, ambiguous anchors, missing selectors, and whitespace-only quoted event selectors. Runtime CTest coverage now checks every documented event payload field and the full implemented English comparison operator vocabulary; broader condition lifecycle cases remain part of the audit.
-- Update the beginner learning path, complete-first-game example, subsystem pages and versioned generated reference to match the accepted v0.11.0 grammar.
+- Continue the beginner learning path and write a complete-first-game tutorial around the canonical English grammar; the first-steps and quickstart examples now demonstrate a visible HUD.
 - Pass CI and release/package verification on the final accepted branch head.
 
 ## Documentation and public reference

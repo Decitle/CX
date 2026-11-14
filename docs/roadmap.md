@@ -24,7 +24,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Typed sprite/entity references and shared property getter/setter rules are implemented for supported properties. The event-context contract is catalogued in one source-of-truth page and runtime-tested for every documented payload field; event-header vocabulary and suspended-handler edge cases remain open.
 - Keep the design charter and audit linked from the repository's public documentation and learning resources.
 
-**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, the implemented worded comparison vocabulary, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #108 validated the event/parser increment on all six platforms. The comparison matrix and output/settings audit are tracked by runs #109–#110; the supported object-property alias matrix has now been expanded and awaits current-head CI.
+**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, the implemented worded comparison vocabulary, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #109 passed the comparison matrix on all six platforms. Run #111 is validating object-property coverage; run #112 is queued for the current head, including the first-steps and quickstart HUD examples and beginner-guide alignment.
 
 ### Phase 2 — expressions and common language
 
@@ -53,7 +53,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 
 ### Phase 5 — examples, reference and release verification
 
-- Rewrite examples so the canonical English grammar is what new users encounter first.
+- Rewrite examples so the canonical English grammar is what new users encounter first. The first-steps example and quickstart now show a live score HUD instead of relying on developer-log messages.
 - [x] Add a CI syntax pass for every standalone `.cx` example and every multi-file example project using `tools/check_examples.py` (syntax only; runtime/GUI behavior is checked separately).
 - Update the searchable reference, syntax guide, learning guide, feature pages, quickstart, standalone versioned HTML docs and package instructions together.
 - [x] Add an initial positive/negative subsystem syntax corpus for natural/legacy UI, graphics, audio and event forms; expand it to every advertised language family, invalid type, and event-context boundary.
