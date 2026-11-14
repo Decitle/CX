@@ -232,6 +232,11 @@ if(CX_BUILD_TESTS)
     target_link_libraries(cx-loop-syntax-tests PRIVATE cx_core)
     add_test(NAME cx-loop-syntax-tests COMMAND cx-loop-syntax-tests)
 
+    # Positive/negative Skript-style UI, graphics, audio, and event grammar corpus.
+    add_executable(cx-subsystem-syntax-tests tests/subsystem_syntax_tests.cpp)
+    target_link_libraries(cx-subsystem-syntax-tests PRIVATE cx_core)
+    add_test(NAME cx-subsystem-syntax-tests COMMAND cx-subsystem-syntax-tests)
+
     add_executable(cx-screen-effect-tests tests/screen_effect_tests.cpp)
     target_link_libraries(cx-screen-effect-tests PRIVATE cx_core)
     add_test(NAME cx-screen-effect-tests COMMAND cx-screen-effect-tests)

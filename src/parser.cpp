@@ -218,6 +218,20 @@ int editDistance(std::string_view a, std::string_view b) {
     return previous.back();
 }
 
+std::string normalizeCommandWords(std::string value) {
+    value = lower(trim(value));
+    std::string normalized;
+    normalized.reserve(value.size());
+    bool pendingSeparator = false;
+    for (const unsigned char ch : value) {
+        if (std::isspace(ch) || ch == '-') { pendingSeparator = !normalized.empty(); continue; }
+        if (pendingSeparator && !normalized.empty()) normalized.push_back('_');
+        pendingSeparator = false;
+        normalized.push_back(static_cast<char>(ch));
+    }
+    return normalized;
+}
+
 bool containsEventLocalReference(std::string_view source) {
     for (std::size_t i = 0; i < source.size(); ++i) {
         if (source[i] != '{') continue;
@@ -273,11 +287,11 @@ std::optional<CanvasElement> parseCanvasElement(const SourceLine& line, const st
                                                   std::vector<Diagnostic>& diagnostics) {
     static const std::regex panelPattern(R"REGEX(^create\s+panel\s+at\s+\(([^)]*)\)\s+size\s+\(([^)]*)\)\s+color\s+\(([^)]*)\)\s*$)REGEX", std::regex::icase);
     static const std::regex namedPanelPattern(R"REGEX(^create\s+panel\s+"([^"\n]+)"\s+at\s+\(([^)]*)\)\s+size\s+\(([^)]*)\)\s+color\s+\(([^)]*)\)\s*$)REGEX", std::regex::icase);
-    static const std::regex gridPanelPattern(R"REGEX(^create\s+panel\s+"([^"\n]+)"\s+at\s+grid\s+\(([^)]*)\)(?:\s+anchor\s+([a-z_]+))?\s+size\s+\(([^)]*)\)\s+color\s+\(([^)]*)\)\s*$)REGEX", std::regex::icase);
+    static const std::regex gridPanelPattern(R"REGEX(^create\s+panel\s+"([^"\n]+)"\s+at\s+grid\s+\(([^)]*)\)(?:\s+anchor\s+([a-z_]+(?:\s+[a-z_]+)?))?\s+size\s+\(([^)]*)\)\s+color\s+\(([^)]*)\)\s*$)REGEX", std::regex::icase);
     static const std::regex relativePanelPattern(R"REGEX(^create\s+panel\s+"([^"\n]+)"\s+(?:to\s+the\s+)?(left|right|above|below)(?:\s+of)?\s+(button|panel)\s+"([^"\n]+)"\s+gap\s+([0-9]+(?:\.[0-9]+)?)\s+size\s+\(([^)]*)\)\s+color\s+\(([^)]*)\)\s*$)REGEX", std::regex::icase);
-    static const std::regex gridButtonPattern(R"REGEX(^create\s+button\s+"([^"\n]+)"\s+at\s+grid\s+\(([^)]*)\)(?:\s+anchor\s+([a-z_]+))?\s+size\s+\(([^)]*)\)\s+label\s+("(?:\\.|[^"])*")\s*$)REGEX", std::regex::icase);
+    static const std::regex gridButtonPattern(R"REGEX(^create\s+button\s+"([^"\n]+)"\s+at\s+grid\s+\(([^)]*)\)(?:\s+anchor\s+([a-z_]+(?:\s+[a-z_]+)?))?\s+size\s+\(([^)]*)\)\s+label\s+("(?:\\.|[^"])*")\s*$)REGEX", std::regex::icase);
     static const std::regex relativeButtonPattern(R"REGEX(^create\s+button\s+"([^"\n]+)"\s+(?:to\s+the\s+)?(left|right|above|below)(?:\s+of)?\s+(button|panel)\s+"([^"\n]+)"\s+gap\s+([0-9]+(?:\.[0-9]+)?)\s+size\s+\(([^)]*)\)\s+label\s+("(?:\\.|[^"])*")\s*$)REGEX", std::regex::icase);
-    static const std::regex textPattern(R"REGEX(^create\s+text\s+("(?:\\.|[^"])*")\s+at\s+\(([^)]*)\)\s+font_size\s+(\d+)\s*$)REGEX", std::regex::icase);
+    static const std::regex textPattern(R"REGEX(^create\s+text\s+("(?:\\.|[^"])*")\s+at\s+\(([^)]*)\)\s+font(?:_|\s+)size\s+(\d+)\s*$)REGEX", std::regex::icase);
     static const std::regex buttonPattern(R"REGEX(^create\s+button\s+"([^"\n]+)"\s+at\s+\(([^)]*)\)\s+size\s+\(([^)]*)\)\s+label\s+("(?:\\.|[^"])*")\s*$)REGEX", std::regex::icase);
     std::smatch match;
     CanvasElement element;
@@ -308,7 +322,7 @@ std::optional<CanvasElement> parseCanvasElement(const SourceLine& line, const st
         if (!parseTuple(match[2].str(), position, 2) || !parseNumber(position[0], gx) || !parseNumber(position[1], gy) || gx < 0 || gx > 128 || gy < 0 || gy > 128)
             return bad("Grid positions must be coordinates from 0 to 128.", "Use `at grid (1, 1)` near the top-left or `at grid (127, 127) anchor bottom_right` near the bottom-right.");
         element.type = CanvasElementType::Panel; element.id = match[1].str(); element.layoutMode = CanvasLayoutMode::Grid;
-        element.gridX = gx; element.gridY = gy; element.anchor = match[3].matched ? lower(match[3].str()) : "auto";
+        element.gridX = gx; element.gridY = gy; element.anchor = match[3].matched ? normalizeCommandWords(match[3].str()) : "auto";
         if (!validAnchors.contains(element.anchor)) return bad("Unknown UI anchor `" + element.anchor + "`.", "Use auto, top_left, top_center, top_right, center_left, center, center_right, bottom_left, bottom_center, or bottom_right.");
         if (!parseSize(match[4].str(), element) || !parseColor(match[5].str(), element)) return bad("Grid panel size or color is invalid.", "Example: create panel \"panel1\" at grid (1, 1) size (400, 240) color (40, 40, 40, 220)");
         return element;
@@ -328,7 +342,7 @@ std::optional<CanvasElement> parseCanvasElement(const SourceLine& line, const st
             return bad("Grid positions must be coordinates from 0 to 128.", "Use `at grid (127, 127) anchor bottom_right` to pin a button to the lower-right corner.");
         element.type = CanvasElementType::Button; element.id = match[1].str(); element.text = unquote(match[5].str());
         element.layoutMode = CanvasLayoutMode::Grid; element.gridX = gx; element.gridY = gy;
-        element.anchor = match[3].matched ? lower(match[3].str()) : "auto";
+        element.anchor = match[3].matched ? normalizeCommandWords(match[3].str()) : "auto";
         if (!validAnchors.contains(element.anchor)) return bad("Unknown UI anchor `" + element.anchor + "`.", "Use top_left, top_center, top_right, center_left, center, center_right, bottom_left, bottom_center, or bottom_right.");
         if (!parseSize(match[4].str(), element)) return bad("Grid button size is invalid.", "Use a positive width and height, e.g. size (180, 44).");
         element.red=55; element.green=66; element.blue=86; element.alpha=245;
@@ -426,7 +440,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         appendDiagnostic(diagnostics, {false, source, line.number, std::move(message), std::move(suggestion), column, length});
     };
 
-    static const std::regex createWavePattern(R"REGEX(^create\s+wave\s+"([^"\n]+)"\s+duration\s+([0-9]+(?:\.[0-9]+)?)\s+sample_rate\s+(\d+)\s*$)REGEX", std::regex::icase);
+    static const std::regex createWavePattern(R"REGEX(^create\s+wave\s+"([^"\n]+)"\s+duration\s+([0-9]+(?:\.[0-9]+)?)\s+sample(?:_|\s+)rate\s+(\d+)\s*$)REGEX", std::regex::icase);
     static const std::regex addWaveLayerPattern(R"REGEX(^add\s+(sine|square|triangle|saw|noise)\s+wave\s+to\s+"([^"\n]+)"\s+(.+?)\s*$)REGEX", std::regex::icase);
     static const std::regex setWaveEnvelopePattern(R"REGEX(^set\s+wave\s+"([^"\n]+)"\s+envelope\s+attack\s+([0-9]+(?:\.[0-9]+)?)\s+decay\s+([0-9]+(?:\.[0-9]+)?)\s+sustain\s+([0-9]+(?:\.[0-9]+)?)\s+release\s+([0-9]+(?:\.[0-9]+)?)\s*$)REGEX", std::regex::icase);
     static const std::regex namedWavePattern(R"REGEX(^(normalize\s+wave|save\s+wave|visualize\s+wave|play\s+sound)\s+(.+?)\s*$)REGEX", std::regex::icase);
@@ -530,7 +544,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
 
     static const std::regex createBeamPattern(R"REGEX(^create\s+beam\s+"([^"\n]+)"\s+from\s+\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)\s+to\s+\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)\s+using\s+(\{\$[^{}]+\})\s*$)REGEX", std::regex::icase);
     static const std::regex removeBeamPattern(R"REGEX(^remove\s+beam\s+"([^"\n]+)"\s*$)REGEX", std::regex::icase);
-    static const std::regex setBeamPattern(R"REGEX(^set\s+beam\s+"([^"\n]+)"\s+([a-z_]+)\s+to\s+(.+?)\s*$)REGEX", std::regex::icase);
+    static const std::regex setBeamPattern(R"REGEX(^set\s+beam\s+"([^"\n]+)"\s+([a-z_]+(?:\s+[a-z_]+)*)\s+to\s+(.+?)\s*$)REGEX", std::regex::icase);
     if (std::regex_match(text, roomMatch, createBeamPattern)) {
         stmt.type = StatementType::CreateBeam;
         stmt.target = lower(trim(roomMatch[1].str()));
@@ -547,7 +561,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
     if (std::regex_match(text, roomMatch, setBeamPattern)) {
         stmt.type = StatementType::SetBeam;
         stmt.target = lower(trim(roomMatch[1].str()));
-        stmt.property = lower(trim(roomMatch[2].str()));
+        stmt.property = normalizeCommandWords(roomMatch[2].str());
         stmt.expression = trim(roomMatch[3].str());
         static const std::unordered_set<std::string> beamProperties = {
             "start", "end", "width", "opacity", "tint", "layer", "lifetime",
@@ -758,14 +772,14 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         return std::nullopt;
     }
     static const std::regex tweenEntityPattern(
-        R"TWEEN(^tween\s+entity\s+"([^"\n]+)"\s+to\s+\((.*)\)\s+over\s+(.+?)\s+seconds?\s+easing\s+(linear|ease_in|ease_out|ease_in_out)(?:\s+with\s+arc\s+height\s+(.+?))?\s*$)TWEEN",
+        R"TWEEN(^tween\s+entity\s+"([^"\n]+)"\s+to\s+\((.*)\)\s+over\s+(.+?)\s+seconds?\s+easing\s+(linear|ease(?:_|\s+)in(?:_|\s+)out|ease(?:_|\s+)in|ease(?:_|\s+)out)(?:\s+with\s+arc\s+height\s+(.+?))?\s*$)TWEEN",
         std::regex::icase);
     if (std::regex_match(text, entityMatch, tweenEntityPattern)) {
         stmt.type = StatementType::TweenEntity;
         stmt.target = lower(trim(entityMatch[1].str()));
         stmt.expression = "(" + trim(entityMatch[2].str()) + ")";
         stmt.secondaryExpression = trim(entityMatch[3].str());
-        stmt.property = lower(trim(entityMatch[4].str()));
+        stmt.property = normalizeCommandWords(entityMatch[4].str());
         if (entityMatch[5].matched) stmt.detailExpression = trim(entityMatch[5].str());
         return stmt;
     }
