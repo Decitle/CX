@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI before the current English-condition test increment:** [run #108](https://github.com/Decitle/CX/actions/runs/43568367748) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for branch head `77ee733`; Linux and Windows also passed graphical startup smoke tests. The complete comparison-alias runtime matrix added after that head is awaiting fresh current-head validation.
+**Latest completed six-target development CI before the current language-condition increment:** [run #108](https://github.com/Decitle/CX/actions/runs/43568367748) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for branch head `77ee733`; Linux and Windows also passed graphical startup smoke tests. [Run #109](https://github.com/Decitle/CX/actions/runs/43629646878) is validating the comparison-alias runtime matrix on commit `d24bdb`; the subsequent `send` output test and settings documentation update are newer than that run and still need current-head CI.
 
 ## Repository state
 
@@ -20,7 +20,9 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 
 - Natural single-value random integer and number expressions, plus random item/element selection from CX lists. An automatically initialized default random stream is available, with explicitly seeded named streams as an optional deterministic facility.
 - English-first numeric expressions for common operations, including absolute value, square root, floor/ceiling, sine/cosine/tangent, rounding, average/mean/median, sum/product, minimum/maximum and natural clamp syntax. Technical helpers and compact function forms remain available.
-- Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions; the full implemented comparison vocabulary now has a dedicated runtime regression matrix.
+- Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions; the full implemented comparison vocabulary has a dedicated runtime regression matrix.
+- `send` and `broadcast` are currently identical developer-log output effects, not player-directed messaging; the docs state this explicitly and the core runtime suite verifies the equivalence.
+- Engine setting names remain stable underscore identifiers shared with `config.json`; their technical spelling is intentional rather than an incomplete prose alias.
 - Typed sprite/entity object references with live-instance identity, property getters, the shared `<property> of <object>` setter grammar, and its equivalent possessive setter form for supported transform/render/health/classification properties.
 - Entity classification and tag collection operations, including whole-set tags, add, remove, clear and has-tag checks.
 - Expanded tests for expressions, loops, event syntax and runtime payloads, object references, variable effects, room transitions, screen effects, entity tags, and packaging.
