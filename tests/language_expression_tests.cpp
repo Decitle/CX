@@ -271,6 +271,80 @@ if {items::*} does not contain "red":
     std::filesystem::remove_all(root);
 }
 
+
+void testNaturalTypeAndValuePredicateAliases() {
+    const auto root = fixture("natural-value-predicate-aliases", R"CX(
+set {positive_value} to 5
+set {negative_value} to -5
+set {zero_value} to 0
+set {enabled} to true
+set {items::*} to "red", "blue"
+
+if {positive_value} is positive:
+    set {positive_predicate} to true
+if {negative_value} is negative:
+    set {negative_predicate} to true
+if {zero_value} is zero:
+    set {zero_predicate} to true
+if {zero_value} is even:
+    set {even_predicate} to true
+if 3 is odd:
+    set {odd_predicate} to true
+
+if {enabled} is a boolean:
+    set {boolean_with_article} to true
+if {enabled} is boolean:
+    set {boolean_without_article} to true
+if {items::*} is a list:
+    set {list_with_article} to true
+if {items::*} is list:
+    set {list_without_article} to true
+if 12 is a number:
+    set {number_with_article} to true
+if 12 is number:
+    set {number_without_article} to true
+if "hello" is a text:
+    set {text_with_article} to true
+if "hello" is text:
+    set {text_without_article} to true
+if "hello" is a string:
+    set {string_alias} to true
+if "" is empty:
+    set {empty_predicate} to true
+
+if "12" is a number:
+    set {string_was_number} to true
+if {enabled} is a list:
+    set {boolean_was_list} to true
+if {positive_value} is zero:
+    set {positive_was_zero} to true
+)CX");
+    cx::Runtime runtime(root);
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics())
+            std::cerr << "VALUE PREDICATE DIAGNOSTIC: " << diagnostic.message << '\\n';
+    }
+    expect(loaded, "natural type/value predicate aliases should parse and execute");
+    expect(!runtime.hasErrors(), "valid type/value predicates should not produce runtime diagnostics");
+    for (const auto& name : {
+             "positive_predicate", "negative_predicate", "zero_predicate",
+             "even_predicate", "odd_predicate", "boolean_with_article",
+             "boolean_without_article", "list_with_article", "list_without_article",
+             "number_with_article", "number_without_article", "text_with_article",
+             "text_without_article", "string_alias", "empty_predicate"}) {
+        expect(runtime.getGlobal(name).truthy(),
+               "the documented value predicate should evaluate true: " + std::string(name));
+    }
+    expect(!runtime.getGlobal("string_was_number").truthy(),
+           "a numeric-looking string should not pass the number type predicate");
+    expect(!runtime.getGlobal("boolean_was_list").truthy(),
+           "a boolean should not pass the list type predicate");
+    expect(!runtime.getGlobal("positive_was_zero").truthy(),
+           "a positive number should not pass the zero predicate");
+    std::filesystem::remove_all(root);
+}
+
 void testNaturalClampRejectsInvalidRange() {
     const auto root = fixture("natural-clamp-invalid-range", R"CX(
 set {value} to clamp 5 between 10 and 0
@@ -381,6 +455,7 @@ int main() {
     testSkriptStyleRandomNumberGrammar();
     testNaturalMathAndSkriptDegreeTrigonometry();
     testNaturalComparisonAndListConditions();
+    testNaturalTypeAndValuePredicateAliases();
     testMathDomainResultsCanBeCheckedAsNaN();
     testNaturalClampRejectsInvalidRange();
     testSkriptStyleCountedRandomListAssignment();
