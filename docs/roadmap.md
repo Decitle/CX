@@ -24,14 +24,14 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Typed sprite/entity references and shared property getter/setter rules are implemented for supported properties. The event-context contract is catalogued in one source-of-truth page and runtime-tested for every documented payload field; event-header vocabulary and suspended-handler edge cases remain open.
 - Keep the design charter and audit linked from the repository's public documentation and learning resources.
 
-**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, worded comparisons, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #103 validated the latest parser/example increment on all six platforms. A new runtime test increment now covers the complete documented event payload field set and will receive its own current-head validation.
+**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, the implemented worded comparison vocabulary, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #108 validated the previous event/parser increment on all six platforms. A complete runtime matrix for comparison aliases has now been added and requires current-head CI.
 
 ### Phase 2 — expressions and common language
 
 - [x] Add natural single-value random number expressions and random item/element selection from lists.
 - [x] Retain deterministic named random streams as an optional reproducibility clause and initialize the default stream automatically.
 - [x] Add English-readable forms for common math operations while retaining compact function aliases.
-- [x] Add natural comparison wording alongside symbolic operators.
+- [x] Add natural comparison wording alongside symbolic operators and validate every implemented operator spelling with runtime tests.
 - [x] Validate count-prefix/plural random list assignment for its 0–4096 count range, range semantics, typed outputs and deterministic streams on all six native targets.
 - [x] Preserve list syntax, interpolation, function semantics and the current loop/wait foundation; continue the compatibility audit.
 

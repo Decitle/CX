@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI before the current event-context test increment:** [run #103](https://github.com/Decitle/CX/actions/runs/43563396396) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for branch head `bd0c5a3`; Linux and Windows also passed graphical startup smoke tests. The focused event-context runtime assertions added after that head are awaiting a fresh six-target run.
+**Latest completed six-target development CI before the current English-condition test increment:** [run #108](https://github.com/Decitle/CX/actions/runs/43568367748) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for branch head `77ee733`; Linux and Windows also passed graphical startup smoke tests. The complete comparison-alias runtime matrix added after that head is awaiting fresh current-head validation.
 
 ## Repository state
 
@@ -20,7 +20,7 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 
 - Natural single-value random integer and number expressions, plus random item/element selection from CX lists. An automatically initialized default random stream is available, with explicitly seeded named streams as an optional deterministic facility.
 - English-first numeric expressions for common operations, including absolute value, square root, floor/ceiling, sine/cosine/tangent, rounding, average/mean/median, sum/product, minimum/maximum and natural clamp syntax. Technical helpers and compact function forms remain available.
-- Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions.
+- Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions; the full implemented comparison vocabulary now has a dedicated runtime regression matrix.
 - Typed sprite/entity object references with live-instance identity, property getters, the shared `<property> of <object>` setter grammar, and its equivalent possessive setter form for supported transform/render/health/classification properties.
 - Entity classification and tag collection operations, including whole-set tags, add, remove, clear and has-tag checks.
 - Expanded tests for expressions, loops, event syntax and runtime payloads, object references, variable effects, room transitions, screen effects, entity tags, and packaging.
@@ -43,7 +43,7 @@ Other remaining acceptance work includes:
 
 - Complete the subsystem-by-subsystem grammar audit. Some APIs intentionally retain technical arguments or specialized commands; their language surface still needs a consistency review.
 - The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage. Event payload locals are catalogued in one source-of-truth page and now have direct runtime assertions for all documented fields; the event-header vocabulary and suspended-handler lifecycle audit remain open.
-- Expand the initial positive/negative syntax corpus across all advertised language families and compatibility aliases. The current subsystem corpus checks canonical/legacy forms, normalized parser meaning, invalid values, ambiguous anchors, missing selectors, and whitespace-only quoted event selectors. Runtime CTest coverage now checks all documented event payload fields and the existing identity/room-context guards; suspended event-local continuity and additional edge cases remain part of the audit.
+- Expand the initial positive/negative syntax corpus across all advertised language families and compatibility aliases. The current subsystem corpus checks canonical/legacy forms, normalized parser meaning, invalid values, ambiguous anchors, missing selectors, and whitespace-only quoted event selectors. Runtime CTest coverage now checks every documented event payload field and the full implemented English comparison operator vocabulary; broader condition lifecycle cases remain part of the audit.
 - Update the beginner learning path, complete-first-game example, subsystem pages and versioned generated reference to match the accepted v0.11.0 grammar.
 - Pass CI and release/package verification on the final accepted branch head.
 
@@ -55,7 +55,7 @@ The development documentation changes are still confined to the unmerged branch.
 
 ## Next priorities
 
-1. Continue the event-header vocabulary and suspended-handler lifecycle audit; the documented payload fields now have direct runtime assertions across all event families that expose them.
+1. Continue the event-header vocabulary and suspended-handler lifecycle audit; the documented payload fields and complete comparison alias family now have direct runtime regression coverage.
 2. Expand the positive/negative syntax corpus to every advertised syntax family and compatibility alias.
 3. Bring examples, beginner materials, feature pages and versioned reference generation into alignment with accepted canonical grammar.
 4. Run current-head six-target CI and final clean extraction/launch checks after the syntax increment.

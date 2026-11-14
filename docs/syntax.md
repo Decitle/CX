@@ -107,7 +107,32 @@ else:
     broadcast "Keep going!"
 ```
 
-Use `>`, `<`, `>=`, `<=`, `is`, `is not`, `equals`, `contains`, `and`, `or`, `not`, and parentheses. Natural numeric comparisons accept forms such as `is greater than`, `higher than`, `bigger than`, `larger than`, `more than`, `is less than`, `lower than`, and `smaller than`.
+CX accepts symbolic and English comparison wording. The word forms are aliases for the same operators; choose the one that makes a particular condition easiest to read.
+
+| Meaning | Accepted wording |
+|---|---|
+| Greater than | `>`, `greater than`, `is greater than`, `higher than`, `is higher than`, `bigger than`, `is bigger than`, `larger than`, `is larger than`, `more than`, `is more than`, and the corresponding `are greater/higher/bigger/larger/more than` forms |
+| Less than | `<`, `less than`, `is less than`, `lower than`, `is lower than`, `smaller than`, `is smaller than`, and the corresponding `are less/lower/smaller than` forms |
+| Greater than or equal | `>=`, `greater than or equal to`, `is greater than or equal to`, `at least`, `is at least` |
+| Less than or equal | `<=`, `less than or equal to`, `is less than or equal to`, `at most`, `is at most` |
+| Equal / not equal | `==`, `is`, `equals`, `equal to`, `is equal to`; `!=`, `is not`, `does not equal`, `is not equal to` |
+| Greater / less shorthand | `above`, `is above`, `below`, `is below` |
+
+Numeric range checks use inclusive endpoints: `{score} is between 5 and 10` includes both 5 and 10. Add `not` after `is` to negate the range check.
+
+For text values, `in` and `is in` test whether the left text occurs inside the right text; `contains` tests the reverse. Text matching is case-insensitive. For list variables, `value is in {items::*}` tests list membership, while `{items::*} contains value` searches the list. Use `is not in` or `does not contain` for the inverse.
+
+Presence checks use `value is set` and `value is not set`. Value predicates include `is even`, `is odd`, `is positive`, `is negative`, `is zero`, `is a number`/`is number`, `is text`/`is a text`/`is string`, `is a boolean`/`is boolean`, `is a list`/`is list`, and `is empty`. Put `not` after `is` to negate a predicate.
+
+Conditions can be combined with `and`, `or`, and `not`; parentheses make grouping explicit. Examples:
+
+```skript
+if {lives} is greater than 0 and {score} is at least 100:
+    broadcast "Bonus life earned!"
+
+if "chest" is in "Ancient Chest" and {inventory::*} contains "key":
+    broadcast "The chest is ready to open."
+```
 
 
 ## Loops, wait, and scheduled events

@@ -100,7 +100,7 @@ The branch already implements natural aliases for common scalar operations (abso
 - Entity tag query
 - Comparisons and boolean operators
 
-**Audit result:** the overall structure is familiar. Numeric operators such as `>=` and `<=` are compact, but common English comparison alternatives should be recognized and documented. Presence, proximity, overlap and focus conditions should keep clear distinctions; no syntax alias should change their lifecycle or filtering semantics.
+**Audit result:** symbolic comparisons and the English alias families are implemented and now have a runtime regression matrix covering every comparison spelling in the evaluator, including inclusive bounds, equality/inequality, string containment, list membership, and boolean composition. Presence checks, type/parity/sign/emptiness predicates, held-key state and the existing geometry/focus queries remain distinct condition families. Future condition work should add language only where it improves clarity, without changing query lifecycle or filtering semantics.
 
 ### Effects — 15 groups
 
@@ -144,7 +144,7 @@ The reference adds 23 world/entity entries, 6 project-structure entries, 7 UI en
 | P1 | Property grammar refinements remain | Typed sprite/entity references, the shared `set <property> of <object> to <value>` grammar, and its natural possessive setter alias are implemented for supported properties; review remaining subsystem-specific properties. |
 | P1 | Typed object references currently cover sprites/entities | Live-instance-safe sprite/entity handles are implemented. Review whether room handles are needed and keep object-reference lifetime rules consistent. |
 | P1 | Event headers are inconsistent and sometimes over-specific | Define a short event vocabulary plus standard event-context expressions/locals and filtering conditions. |
-| P1 | English comparison aliases are incomplete | Support common worded comparisons alongside symbols with identical semantics. |
+| [x] | English comparison aliases are incomplete | The evaluator's complete English comparison family is documented and covered by a runtime test matrix alongside the symbolic operators. |
 | [x] | UI/graphics/audio phrases expose underscore-style implementation terms | Natural `font size`, spaced anchors, `sample rate`, `ease in out`, and spaced beam properties now normalize to existing internal keys; underscored spellings remain aliases. The new CTest corpus checks both. |
 | P1 | Event payload and object naming are inconsistent | Publish one event-value naming contract and one object-reference grammar. |
 | P2 | Screen opacity/fade and audio-track/bus controls are absent | Treat as future engine capabilities; design their script surface in the same English-first style. They are not implemented in v0.10.14. |
@@ -167,7 +167,7 @@ Official references:
 1. Freeze this inventory as the source audit; resolve every item into canonical syntax, aliases, implementation status and tests.
 2. Design grammar/AST support for English expressions and property access. Avoid implementing the entire overhaul as one-off regex additions.
 3. Validate the implemented count-prefix/plural random list assignment, including count/range rejection, bounded work, integer/number typing, zero-count semantics and deterministic-stream behavior. Retain the existing function-call API.
-4. Audit the implemented natural math helpers and worded comparisons, adding missing edge-case tests rather than treating them as wholly absent.
+4. [x] Audit natural math helpers and worded comparisons; the comparison alias matrix now covers all implemented operator spellings and the syntax guide records their semantics. Continue adding edge-case tests as other condition families evolve.
 5. Typed object references, shared property getters/setters and the possessive setter alias are implemented; continue auditing remaining subsystem-specific properties and edge cases.
 6. Keep the now-documented event-context values consistent as new event families are added. Review event-header aliases and filter syntax; any generalized trigger/collision form must preserve bounded dispatch work and room/object lifetime guarantees.
 7. Continue auditing UI/graphics/audio/settings wording. This increment normalizes canvas font size and anchors, audio sample rate, tween easing, and textured-beam property names; remaining settings and subsystem commands still need a complete pass.

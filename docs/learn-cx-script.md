@@ -60,7 +60,7 @@ A `wait` resumes only while its captured room context is still current. If anoth
 ## 5. Conditions, loops, and functions
 
 ```skript
-if {score} >= 5:
+if {score} is at least 5:
     broadcast "Milestone reached!"
 else:
     broadcast "Keep playing!"
@@ -72,7 +72,7 @@ function double(value):
     return {_value} * 2
 ```
 
-Conditions control which block runs. A counted loop repeats its block. Functions let you name a calculation so you can reuse it. Function parameters are available as event-like local variables such as `{_value}`. Functions are synchronous and cannot use `wait` in the current language.
+Conditions control which block runs. The language accepts both symbolic comparisons such as `>=` and readable forms such as `is at least`; use whichever is clearest in context. A counted loop repeats its block. Functions let you name a calculation so you can reuse it. Function parameters are available as event-like local variables such as `{_value}`. Functions are synchronous and cannot use `wait` in the current language.
 
 ## 6. Generate random values
 
