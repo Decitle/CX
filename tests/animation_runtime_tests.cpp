@@ -35,6 +35,8 @@ on load:
     play animation "wake" for entity "actor"
 on animation complete "wake" for entity "actor":
     add 1 to {wake_count}
+    set {finished_entity} to {_animation_entity}
+    set {finished_name} to {_animation_name}
     set {finished_frame} to {_animation_frame}
     set {finished_row} to {_animation_row}
 )CX");
@@ -61,6 +63,8 @@ on animation complete "wake" for entity "actor":
     expect(!finished.animationPlaying, "one-shot clip should stop after its final frame interval");
     expect(finished.animationFrame == 3, "completed one-shot should hold the final frame");
     expect(runtime.getGlobal("wake_count").numberOr(0.0) == 1.0, "completion event should fire exactly once");
+    expect(runtime.getGlobal("finished_entity").toString() == "actor", "completion event should expose the animated entity name");
+    expect(runtime.getGlobal("finished_name").toString() == "wake", "completion event should expose the completed clip name");
     expect(runtime.getGlobal("finished_frame").numberOr(-1.0) == 3.0, "completion event should expose the final frame");
     expect(runtime.getGlobal("finished_row").numberOr(-1.0) == 5.0, "completion event should expose the resolved row");
     for (int i = 0; i < 30; ++i) runtime.tick();

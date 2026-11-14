@@ -208,6 +208,44 @@ if(CX_BUILD_TESTS)
     target_link_libraries(cx-random-stream-tests PRIVATE cx_core)
     add_test(NAME cx-random-stream-tests COMMAND cx-random-stream-tests)
 
+    add_executable(cx-language-expression-tests tests/language_expression_tests.cpp)
+    target_link_libraries(cx-language-expression-tests PRIVATE cx_core)
+    add_test(NAME cx-language-expression-tests COMMAND cx-language-expression-tests)
+
+    add_executable(cx-object-reference-tests tests/object_reference_tests.cpp)
+    target_link_libraries(cx-object-reference-tests PRIVATE cx_core)
+    add_test(NAME cx-object-reference-tests COMMAND cx-object-reference-tests)
+
+    add_executable(cx-event-syntax-tests tests/event_syntax_tests.cpp)
+    target_link_libraries(cx-event-syntax-tests PRIVATE cx_core)
+    add_test(NAME cx-event-syntax-tests COMMAND $<TARGET_FILE:cx-event-syntax-tests>)
+
+    # Validate the file-attachment event's runtime payload values through the public host API.
+    add_executable(cx-event-context-runtime-tests tests/event_context_runtime_tests.cpp)
+    target_link_libraries(cx-event-context-runtime-tests PRIVATE cx_core)
+    add_test(NAME cx-event-context-runtime-tests COMMAND cx-event-context-runtime-tests)
+
+    add_executable(cx-variable-effect-syntax-tests tests/variable_effect_syntax_tests.cpp)
+    target_link_libraries(cx-variable-effect-syntax-tests PRIVATE cx_core)
+    add_test(NAME cx-variable-effect-syntax-tests COMMAND cx-variable-effect-syntax-tests)
+
+    add_executable(cx-room-transition-syntax-tests tests/room_transition_syntax_tests.cpp)
+    target_link_libraries(cx-room-transition-syntax-tests PRIVATE cx_core)
+    add_test(NAME cx-room-transition-syntax-tests COMMAND cx-room-transition-syntax-tests)
+
+    add_executable(cx-loop-syntax-tests tests/loop_syntax_tests.cpp)
+    target_link_libraries(cx-loop-syntax-tests PRIVATE cx_core)
+    add_test(NAME cx-loop-syntax-tests COMMAND cx-loop-syntax-tests)
+
+    # Positive/negative Skript-style UI, graphics, audio, and event grammar corpus.
+    add_executable(cx-subsystem-syntax-tests tests/subsystem_syntax_tests.cpp)
+    target_link_libraries(cx-subsystem-syntax-tests PRIVATE cx_core)
+    add_test(NAME cx-subsystem-syntax-tests COMMAND cx-subsystem-syntax-tests)
+
+    add_executable(cx-screen-effect-tests tests/screen_effect_tests.cpp)
+    target_link_libraries(cx-screen-effect-tests PRIVATE cx_core)
+    add_test(NAME cx-screen-effect-tests COMMAND cx-screen-effect-tests)
+
     # Keep delayed-continuation and room-context lifecycle regressions independent
     # from the large general runtime test translation unit.
     add_executable(cx-task-lifecycle-tests tests/task_lifecycle_tests.cpp)
@@ -289,6 +327,9 @@ install(RUNTIME_DEPENDENCY_SET cx_runtime_dependencies
         "^ext-ms-.*"
         # CMake lowercases Windows DLL names before PRE_EXCLUDE_REGEXES matching.
         "^(azureattestmanager|azureattestnormal|hvsifiletrust|pdmutilities|wpaxholder|shell32|shlwapi|dbgeng|d2d1|uiautomationcore|esent|coreuicomponents|certenroll|setupapi|windows\\.storage)\\.dll$"
+        "^(authz|bcd|contactactivation|coremessaging|credui|cryptdll|cryptngc|cryptxml|d3d11|d3d11on12|d3d12|d3dscache|dcomp|declaredconfiguration|diagnosticdatasettings|dmcmnutils|dmenrollengine|dmenterprisediagnostics|dmpushproxy|dmxmlhelputils|drvstore|dsclient|dsreg|dsrole|dxgi|edpauditapi|edpcsp|edputil)\\.dll$"
+        "^(efscore|efsutil|efswrt|enterpriseresourcemanager|feclient|firewallapi|fveapi|fvecerts|fveskybackup|fwbase|fwpolicyiomgr|fwpuclnt|gmsaclient|hid|iertutil|iri|kerb3961|ktmw32|lsaadt|lsasrv|mdmregistration|microsoft\\.internal\\.warppal|msvcp110_win|netlogon|ngcrecovery|ngcutils|noise|ntdsapi|omadmapi)\\.dll$"
+        "^(pcrpf|policymanager|policymanagerprecheck|popkeycli|samcli|samsrv|schannel|setupcl|srpapi|tpmcoreprovisioning|twinapi\\.appcore|unenrollhook|urlmon|userdatatypehelperutil|vaultcli|vbsapi|virtdisk|w32topl|webauthn|webservices|wevtapi|winbrand|wininet|winipcfile|winmsipc|wldp|wtdccm|wuceffects)\\.dll$"
         "^/lib/.*"
         "^/usr/lib/.*"
         "^[A-Za-z]:[/\\\\]Windows[/\\\\](System32|SysWOW64|SysArm32|WinSxS)[/\\\\].*"

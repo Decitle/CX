@@ -2,7 +2,9 @@
 
 CX is a C++20 graphical 2D game engine with an approachable, Skript-inspired scripting language.
 
-> **Start here:** [Open the interactive CX Script & Runtime Reference](reference.html) — search events, variables, expressions, statements, engine APIs, and known limitations.
+> **Released syntax (v0.10.14):** [Open the interactive CX Script & Runtime Reference](reference.html) — this searchable catalogue is pinned to the current published release.
+>
+> **v0.11.0 development:** Follow the [language design charter](language-design.md), [Skript syntax audit](SKRIPT_SYNTAX_AUDIT.md), and [development syntax guide](syntax.md) for the in-progress overhaul. These additions are not part of the published runtime yet.
 >
 > **New to CX?** Follow [Getting started](getting-started.md), then the [CX Script learning guide](learn-cx-script.md).
 
@@ -11,6 +13,7 @@ CX is a C++20 graphical 2D game engine with an approachable, Skript-inspired scr
 - [Interactive HTML reference](reference.html) — searchable overview of the language and runtime.
 - [Language design charter](language-design.md) — the English-first Skript-like grammar requirement for v0.11.0.
 - [Skript syntax audit](SKRIPT_SYNTAX_AUDIT.md) — source-backed feature inventory and concrete syntax gaps.
+- [Event context](event-context.md) — local values supplied by trigger, focus, projectile, tween, animation, and file-attachment handlers.
 - [Getting started](getting-started.md) — choose a runtime or build from source, launch the graphical engine, and open a starter project.
 - [Full CX Script syntax guide](syntax.md) — detailed syntax and language behavior.
 - [Engine settings](engine-settings.md) — supported settings, defaults, accepted values, and when they take effect.
@@ -26,7 +29,7 @@ CX is a C++20 graphical 2D game engine with an approachable, Skript-inspired scr
 - [Skript compatibility notes](language-compatibility.md)
 - [Learn the C++ source](understanding-the-cpp-source.md)
 - [Platform support](platform-support.md)
-- [Testing and validation](testing.md)
+- [Testing and validation](testing.md) — CI syntax-checks every `.cx` example; CTest and graphical smoke tests cover separate behavior paths.
 - [Runtime package guide](runtime-package.md)
 - [Release format](release-format.md)
 - [Roadmap](roadmap.md)
@@ -38,6 +41,8 @@ Feature-specific contracts are documented under [features/](features/), includin
 
 ## Repository and release status
 
-The latest completed native build/test baseline is [run #20](https://github.com/Decitle/CX/actions/runs/42756628417). Both v0.10.14-preview.5 and preview.6 passed compilation and tests but failed during Windows ARM64's CMake install-time dependency scan, so neither release has executable downloads. The root cause was mixed-case Windows DLL exclusion patterns: CMake lowercases dependency names before matching PRE_EXCLUDE_REGEXES. The corrected lowercase filter is now in main. Ordinary CI now exercises installation and runtime packaging on all six targets, and the release publisher verifies all six archives, checksums, and version-matched reference before attaching assets. Wait for the expanded CI matrix to pass before creating preview.7.
+The latest published runtime remains [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8). The v0.11.0 Skript-like overhaul is being developed on an open draft branch and is not yet merged or released. Its latest verified development CI matrix passed all six native targets in [run #91](https://github.com/Decitle/CX/actions/runs/43491377925).
 
-GitHub automatically provides Source code (zip) and Source code (tar.gz) snapshots for each tag. The release workflow uploads only native runtime packages and the version-matched HTML reference.
+The searchable `reference.html` continues to describe v0.10.14 until the v0.11.0 language surface is accepted. The development syntax guide and audit are separate on purpose. Recent branch commits added count-prefix random list assignment, possessive property setters, and CI syntax checks for all `.cx` examples; the current-head CI run must pass before those additions are considered validated. For the exact repository/PR state and remaining release gates, see [Project status](project-status.md).
+
+GitHub automatically provides Source code (zip) and Source code (tar.gz) snapshots for each tag. The release workflow uploads native runtime packages and a version-matched HTML reference.

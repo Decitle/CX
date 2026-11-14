@@ -5,8 +5,10 @@
 #include "cx/collision.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <regex>
 #include <string>
 #include <string_view>
@@ -39,10 +41,71 @@ std::vector<std::string> splitTopLevelComma(std::string_view text) {
     }
     return parts;
 }
+struct CountedRandomListExpression {
+    std::string countExpression;
+    std::string singleValueExpression;
+};
+
+// Find a grammar phrase without mistaking text inside strings, variable references,
+// or nested calls for the boundary between a count and its random expression.
+std::optional<std::size_t> findPhraseOutsideNested(std::string_view text, std::string_view phrase) {
+    const std::string lowered = lower(text);
+    const std::string wanted = lower(phrase);
+    bool quoted = false, escaped = false;
+    int braces = 0, parentheses = 0;
+    for (std::size_t i = 0; i + wanted.size() <= text.size(); ++i) {
+        const char c = text[i];
+        if (escaped) { escaped = false; continue; }
+        if (c == '\\' && quoted) { escaped = true; continue; }
+        if (c == '"') { quoted = !quoted; continue; }
+        if (quoted) continue;
+        if (c == '{') { ++braces; continue; }
+        if (c == '}' && braces > 0) { --braces; continue; }
+        if (braces > 0) continue;
+        if (c == '(') { ++parentheses; continue; }
+        if (c == ')' && parentheses > 0) { --parentheses; continue; }
+        if (parentheses > 0) continue;
+        if (lowered.compare(i, wanted.size(), wanted) == 0) return i;
+    }
+    return std::nullopt;
+}
+
+std::optional<CountedRandomListExpression> parseCountedRandomListExpression(std::string_view expression) {
+    struct Form { std::string_view phrase; std::string_view kind; std::string_view range; };
+    static constexpr std::array<Form, 8> forms{{
+        {" random integer between ", "integer", "between"},
+        {" random integers between ", "integer", "between"},
+        {" random number between ", "number", "between"},
+        {" random numbers between ", "number", "between"},
+        {" random integer from ", "integer", "from"},
+        {" random integers from ", "integer", "from"},
+        {" random number from ", "number", "from"},
+        {" random numbers from ", "number", "from"}
+    }};
+    for (const auto& form : forms) {
+        const auto position = findPhraseOutsideNested(expression, form.phrase);
+        if (!position) continue;
+        const std::string count = trim(expression.substr(0, *position));
+        // "a random integer ..." remains the ordinary scalar expression form.
+        if (count.empty() || lower(count) == "a" || lower(count) == "an") return std::nullopt;
+        const std::string boundsAndStream = trim(expression.substr(*position + form.phrase.size()));
+        if (boundsAndStream.empty()) return std::nullopt;
+        return CountedRandomListExpression{
+            count,
+            "a random " + std::string(form.kind) + " " + std::string(form.range) + " " + boundsAndStream
+        };
+    }
+    return std::nullopt;
+}
 bool isListWildcard(std::string_view name) {
     return name.ends_with("::*");
 }
 bool sameValue(const Value& a, const Value& b) {
+    if (a.isObjectReference() || b.isObjectReference()) {
+        const auto* left = a.objectReference();
+        const auto* right = b.objectReference();
+        return left && right && *left == *right;
+    }
     if (a.isNull() || b.isNull()) return a.isNull() && b.isNull();
     if (a.isNumber() || b.isNumber()) {
         const double av = a.numberOr(std::numeric_limits<double>::quiet_NaN());
@@ -56,6 +119,18 @@ bool sameValue(const Value& a, const Value& b) {
 
 void Runtime::runExecution(ExecutionContext& context) {
     context.suspended = false;
+    const auto restoreLoopLocals = [&](const ExecutionFrame& frame) {
+        for (auto it = frame.localVariableBackups.rbegin(); it != frame.localVariableBackups.rend(); ++it) {
+            if (it->existed) context.locals[it->name] = it->previousValue;
+            else context.locals.erase(it->name);
+        }
+    };
+    const auto bindListEntry = [&](ExecutionFrame& frame) {
+        if (!frame.listLoop || frame.iteration == 0 || frame.iteration > frame.listEntries.size()) return;
+        const auto& entry = frame.listEntries[frame.iteration - 1];
+        if (!frame.listValueVariable.empty()) context.locals[frame.listValueVariable] = entry.value;
+        if (!frame.listIndexVariable.empty()) context.locals[frame.listIndexVariable] = Value(entry.index);
+    };
     std::size_t instructionCount = 0;
     while (!context.frames.empty() && !context.stopped) {
         if (++instructionCount > maximumInstructionsPerResume_) {
@@ -105,6 +180,7 @@ void Runtime::runExecution(ExecutionContext& context) {
                         if (activeFrame.listLoop && activeFrame.iteration <= activeFrame.listEntries.size()) {
                             context.loopValues.back() = activeFrame.listEntries[activeFrame.iteration - 1].value;
                             if (!context.loopIndexes.empty()) context.loopIndexes.back() = activeFrame.listEntries[activeFrame.iteration - 1].index;
+                            bindListEntry(activeFrame);
                         } else {
                             context.loopValues.back() = Value(static_cast<double>(activeFrame.iteration));
                             if (!context.loopIndexes.empty()) context.loopIndexes.back() = std::to_string(activeFrame.iteration);
@@ -112,6 +188,7 @@ void Runtime::runExecution(ExecutionContext& context) {
                     }
                     continue;
                 }
+                restoreLoopLocals(activeFrame);
                 context.frames.pop_back();
                 if (!context.loopNumbers.empty()) context.loopNumbers.pop_back();
                 if (!context.loopValues.empty()) context.loopValues.pop_back();
@@ -239,17 +316,43 @@ void Runtime::runExecution(ExecutionContext& context) {
                 break;
             }
             case StatementType::EnterRoom: {
-                std::string valueError;
-                const Value value = evaluateValue(statement.expression, context, valueError);
-                if (!valueError.empty()) {
-                    runtimeError(statement, valueError, R"HINT(Use a point variable, for example: enter room "cave" at {entrance::cave::spawn})HINT");
-                    break;
-                }
                 TilePoint point;
-                if (!RoomManager::parseEntrancePoint(value.toString(), point)) {
-                    runtimeError(statement, "Variable " + statement.expression + " is not an entrance point.",
-                                 "Set it using `set {entrance1::room1} to an entrance point at (0, 0)` or use a named entrance generated from the room file.");
-                    break;
+                const std::string entryExpression = trim(statement.expression);
+                if (entryExpression.size() >= 2 && entryExpression.front() == '(' && entryExpression.back() == ')') {
+                    const auto coordinateExpressions = splitTopLevelComma(
+                        std::string_view(entryExpression).substr(1, entryExpression.size() - 2));
+                    if (coordinateExpressions.size() != 2) {
+                        runtimeError(statement, "A room entry coordinate pair needs exactly two values.",
+                            "Use: enter room \"cave\" at (5, 3). Coordinates are tile positions.");
+                        break;
+                    }
+                    Value xValue = evaluateValue(coordinateExpressions[0], context, error);
+                    if (!error.empty()) { runtimeError(statement, error, "Room x-coordinate must be a whole tile number."); break; }
+                    Value yValue = evaluateValue(coordinateExpressions[1], context, error);
+                    if (!error.empty()) { runtimeError(statement, error, "Room y-coordinate must be a whole tile number."); break; }
+                    const double x = xValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                    const double y = yValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                    if (!xValue.isNumber() || !yValue.isNumber() || !std::isfinite(x) || !std::isfinite(y) ||
+                        std::trunc(x) != x || std::trunc(y) != y ||
+                        x < static_cast<double>(std::numeric_limits<int>::min()) || x > static_cast<double>(std::numeric_limits<int>::max()) ||
+                        y < static_cast<double>(std::numeric_limits<int>::min()) || y > static_cast<double>(std::numeric_limits<int>::max())) {
+                        runtimeError(statement, "Room entry coordinates must be finite whole tile numbers.",
+                            "Use coordinates such as (5, 3), not fractional positions.");
+                        break;
+                    }
+                    point = {static_cast<int>(x), static_cast<int>(y)};
+                } else {
+                    std::string valueError;
+                    const Value value = evaluateValue(statement.expression, context, valueError);
+                    if (!valueError.empty()) {
+                        runtimeError(statement, valueError, R"HINT(Use a point variable, for example: enter room "cave" at {entrance::cave::spawn})HINT");
+                        break;
+                    }
+                    if (!RoomManager::parseEntrancePoint(value.toString(), point)) {
+                        runtimeError(statement, "Variable " + statement.expression + " is not an entrance point.",
+                                     "Set it using `set {entrance1::room1} to an entrance point at (0, 0)` or use a named entrance generated from the room file.");
+                        break;
+                    }
                 }
                 const std::string previous = rooms_.activeRoomName();
                 std::string roomError;
@@ -837,6 +940,35 @@ void Runtime::runExecution(ExecutionContext& context) {
                     }
                     if (property == "kind") entity.kindId = labelId;
                     else entity.teamId = labelId;
+                } else if (property == "add_tag" || property == "remove_tag") {
+                    const std::string tag = lower(trim(statement.expression));
+                    if (!validEntityClassification(tag)) {
+                        runtimeError(statement, "Entity tags must contain 1–40 letters, numbers, underscores or hyphens.",
+                            "Use add tag \"armored\" to entity \"warden\" or remove tag \"armored\" from entity \"warden\".");
+                        break;
+                    }
+                    const std::uint32_t tagId = findEntityLabel(tag);
+                    const auto existingTag = tagId == 0U ? entity.tagIds.end() :
+                        std::find(entity.tagIds.begin(), entity.tagIds.end(), tagId);
+                    if (property == "add_tag") {
+                        if (existingTag != entity.tagIds.end()) break;
+                        if (entity.tagIds.size() >= 32U) {
+                            runtimeError(statement, "An entity can have at most 32 tags.",
+                                "Remove an existing tag before adding another one.");
+                            break;
+                        }
+                        const std::uint32_t addedTagId = tagId != 0U ? tagId : internEntityLabel(tag);
+                        if (addedTagId == 0U) {
+                            runtimeError(statement, "The runtime could not allocate an entity tag ID.",
+                                "Use fewer unique tag, kind and team identifiers in this project.");
+                            break;
+                        }
+                        entity.tagIds.push_back(addedTagId);
+                    } else if (existingTag != entity.tagIds.end()) {
+                        entity.tagIds.erase(existingTag);
+                    }
+                } else if (property == "clear_tags") {
+                    entity.tagIds.clear();
                 } else if (property == "tags") {
                     std::vector<std::uint32_t> tags;
                     if (!trim(statement.expression).empty()) {
@@ -951,14 +1083,94 @@ void Runtime::runExecution(ExecutionContext& context) {
                 break;
             }
             case StatementType::SetSprite: {
-                const std::string id = lower(trim(statement.target));
+                std::string id;
+                std::uint64_t expectedInstanceId = 0;
+                const bool usesObjectExpression = statement.target.starts_with("sprite ") ||
+                    statement.target.starts_with("entity ") || statement.target.starts_with("object ");
+                if (usesObjectExpression) {
+                    const Value targetValue = evaluateValue(statement.target, context, error);
+                    if (!error.empty()) { runtimeError(statement, error, "Use an object reference such as `sprite \"player\"` or a variable that stores one."); break; }
+                    const auto* reference = targetValue.objectReference();
+                    if (!reference) { runtimeError(statement, "That value is not a sprite or entity reference.", "Set a local variable first, for example: set {_object} to sprite \"player\"."); break; }
+                    id = reference->name;
+                    expectedInstanceId = reference->instanceId;
+                } else {
+                    id = lower(trim(statement.target)); // Preserve the legacy named setter.
+                }
                 auto found = sprites_.find(id);
-                if (found == sprites_.end()) {
-                    runtimeError(statement, "There is no sprite named `" + id + "`.",
-                        "Create it first with `create sprite \"" + id + "\" with texture {$crate}`.");
+                if (found == sprites_.end() || (expectedInstanceId != 0 && found->second.runtimeInstanceId != expectedInstanceId)) {
+                    runtimeError(statement, "There is no current sprite/entity object matching `" + id + "`.",
+                        "Create the object first, or refresh a local reference after replacing it.");
                     break;
                 }
                 SpriteObject& sprite = found->second;
+                if (statement.property == "kind" || statement.property == "team") {
+                    if (!sprite.entity) {
+                        runtimeError(statement, "Kind and team properties are only available on entities.",
+                            "Use set kind of entity \"guard\" to \"boss\" or set team of entity \"guard\" to \"hostile\".");
+                        break;
+                    }
+                    const Value classificationValue = evaluateValue(statement.expression, context, error);
+                    if (!error.empty() || !classificationValue.isString()) {
+                        runtimeError(statement, "Entity kind and team values must be text.",
+                            "Use a quoted value such as set kind of entity \"guard\" to \"boss\".");
+                        break;
+                    }
+                    const std::string value = lower(trim(classificationValue.toString()));
+                    if (!validEntityClassification(value)) {
+                        runtimeError(statement, "Entity kind/team identifiers must contain 1–40 letters, numbers, underscores or hyphens.",
+                            "Examples: set kind of entity \"warden\" to \"boss\" and set team of entity \"warden\" to \"hostile\".");
+                        break;
+                    }
+                    const std::uint32_t labelId = internEntityLabel(value);
+                    if (labelId == 0U) {
+                        runtimeError(statement, "The runtime could not allocate an entity classification ID.",
+                            "Use a non-empty kind or team identifier and keep the number of unique identifiers reasonable.");
+                        break;
+                    }
+                    if (statement.property == "kind") sprite.kindId = labelId;
+                    else sprite.teamId = labelId;
+                    break;
+                }
+                if (statement.property == "health" || statement.property == "max_health") {
+                    if (!sprite.entity) {
+                        runtimeError(statement, "Health properties are only available on entities.",
+                            "Use health of entity \"player\" or set health of entity \"player\" to 5.");
+                        break;
+                    }
+                    const Value healthValue = evaluateValue(statement.expression, context, error);
+                    const double numericHealth = healthValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                    if (!error.empty() || !healthValue.isNumber() || !std::isfinite(numericHealth) ||
+                        std::trunc(numericHealth) != numericHealth || numericHealth < 0.0 || numericHealth > 1000000.0) {
+                        runtimeError(statement, "Entity health values must be whole numbers from 0 to 1,000,000.",
+                            "Use a whole-number expression such as set health of entity \"player\" to 5.");
+                        break;
+                    }
+                    const int value = static_cast<int>(numericHealth);
+                    if (statement.property == "max_health") {
+                        sprite.maxHealth = value;
+                        sprite.health = std::min(sprite.health, value);
+                    } else {
+                        sprite.health = value;
+                        sprite.maxHealth = std::max(sprite.maxHealth, value);
+                    }
+                    globals_["entity::" + id + "::health"] = Value(static_cast<double>(sprite.health));
+                    globals_["entity::" + id + "::max_health"] = Value(static_cast<double>(sprite.maxHealth));
+                    break;
+                }
+                if (statement.property == "x-coordinate" || statement.property == "y-coordinate" || statement.property == "rotation") {
+                    Value coordinateValue = evaluateValue(statement.expression, context, error);
+                    const double number = coordinateValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                    if (!error.empty() || !coordinateValue.isNumber() || !std::isfinite(number) || std::abs(number) > 10000000.0) {
+                        runtimeError(statement, "This sprite property needs a finite number within 10,000,000.",
+                            "Use a value such as `15`, `-20`, or `90`.");
+                        break;
+                    }
+                    if (statement.property == "x-coordinate") { entityTweens_.erase(id); sprite.x = static_cast<float>(number); }
+                    else if (statement.property == "y-coordinate") { entityTweens_.erase(id); sprite.y = static_cast<float>(number); }
+                    else sprite.rotationDegrees = static_cast<float>(number);
+                    break;
+                }
                 if (statement.property == "position" || statement.property == "size") {
                     std::string pairText = trim(statement.expression);
                     if (pairText.size() >= 2 && pairText.front() == '(' && pairText.back() == ')')
@@ -1009,8 +1221,11 @@ void Runtime::runExecution(ExecutionContext& context) {
                     }
                     sprite.textureId = textureId;
                 } else if (statement.property == "visible") {
-                    const auto visible = lower(trim(statement.expression));
-                    sprite.visible = visible == "true";
+                    const Value visibleValue = evaluateValue(statement.expression, context, error);
+                    if (!error.empty() || !visibleValue.isBool()) {
+                        runtimeError(statement, "Sprite visibility must evaluate to true or false.",
+                            "Use: set visibility of sprite \"player\" to false.");
+                    } else sprite.visible = visibleValue.truthy();
                 }
                 break;
             }
@@ -1148,9 +1363,39 @@ void Runtime::runExecution(ExecutionContext& context) {
                     std::vector<ListEntry> sourceEntries;
                     const bool copyingList = isListWildcard(sourceName);
                     if (copyingList) sourceEntries = listEntries(sourceName, context); // snapshot before clearing, including self-copy
+
+                    const auto countedRandom = copyingList ? std::optional<CountedRandomListExpression>{}
+                                                            : parseCountedRandomListExpression(statement.expression);
+                    std::size_t randomCount = 0;
+                    if (countedRandom) {
+                        Value countValue = evaluateValue(countedRandom->countExpression, context, error);
+                        const double count = countValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                        constexpr double maximumRandomBatchCount = 4096.0;
+                        if (!error.empty()) {
+                            runtimeError(statement, error, "The random batch count must be a numeric expression.");
+                            break;
+                        }
+                        if (!countValue.isNumber() || !std::isfinite(count) || std::trunc(count) != count ||
+                            count < 0.0 || count > maximumRandomBatchCount) {
+                            runtimeError(statement, "A random batch count must be a whole number from 0 to 4096.",
+                                "Use a bounded list assignment such as `set {rolls::*} to 5 random integers between 1 and 10`.");
+                            break;
+                        }
+                        randomCount = static_cast<std::size_t>(count);
+                    }
+
                     clearList(target, context, &statement);
                     if (copyingList) {
                         for (const auto& entry : sourceEntries) setVariable(target.substr(0, target.size() - 1) + entry.index, entry.value, context, &statement);
+                    } else if (countedRandom) {
+                        for (std::size_t i = 0; i < randomCount; ++i) {
+                            Value value = evaluateValue(countedRandom->singleValueExpression, context, error);
+                            if (!error.empty()) {
+                                runtimeError(statement, error, "Check the random range and seed the named stream before using it.");
+                                break;
+                            }
+                            appendListValue(target, std::move(value), context, &statement);
+                        }
                     } else if (lower(trim(statement.expression)) != "none" && lower(trim(statement.expression)) != "null") {
                         for (const auto& part : splitTopLevelComma(statement.expression)) {
                             if (part.empty()) { runtimeError(statement, "A list literal contains an empty item.", "Use `set {items::*} to \"first\", \"second\"` with no trailing comma."); break; }
@@ -1186,14 +1431,20 @@ void Runtime::runExecution(ExecutionContext& context) {
                 if (isListWildcard(target)) {
                     if (statement.type == StatementType::Add) appendListValue(target, std::move(amount), context, &statement);
                     else {
+                        // remove X from a list removes the first matching item, matching
+                        // Skript's default. "remove all X from a list" explicitly removes
+                        // every equal typed value from the snapshot.
                         const auto entries = listEntries(target, context);
-                        const auto found = std::find_if(entries.begin(), entries.end(), [&](const ListEntry& entry) { return sameValue(entry.value, amount); });
-                        if (found != entries.end()) {
-                            const std::string itemName = target.substr(0, target.size() - 1) + found->index;
+                        bool removedOne = false;
+                        for (const auto& entry : entries) {
+                            if (!sameValue(entry.value, amount)) continue;
+                            const std::string itemName = target.substr(0, target.size() - 1) + entry.index;
                             if (itemName.starts_with("_")) context.locals.erase(itemName);
                             else if (itemName.starts_with("^")) transient_.erase(itemName.substr(1));
                             else { globals_.erase(itemName); variableStorageDirty_ = true; }
+                            if (statement.property != "all") { removedOne = true; break; }
                         }
+                        (void)removedOne;
                     }
                     break;
                 }
@@ -1397,12 +1648,25 @@ void Runtime::runExecution(ExecutionContext& context) {
                 }
                 auto entries = listEntries(wildcard, context);
                 if (!entries.empty() && !statement.body.empty()) {
-                    context.loopNumbers.push_back(1);
-                    context.loopValues.push_back(entries.front().value);
-                    context.loopIndexes.push_back(entries.front().index);
                     ExecutionFrame frame{&statement.body, 0, entries.size(), 1, true, false, &statement, true, entries};
                     frame.listLoop = true;
                     frame.listEntries = std::move(entries);
+                    frame.listValueVariable = statement.target;
+                    frame.listIndexVariable = statement.property;
+                    auto rememberLocal = [&](const std::string& name) {
+                        if (name.empty()) return;
+                        const auto found = context.locals.find(name);
+                        frame.localVariableBackups.push_back({
+                            name, found != context.locals.end(),
+                            found != context.locals.end() ? found->second : Value{}
+                        });
+                    };
+                    rememberLocal(frame.listValueVariable);
+                    rememberLocal(frame.listIndexVariable);
+                    context.loopNumbers.push_back(1);
+                    context.loopValues.push_back(frame.listEntries.front().value);
+                    context.loopIndexes.push_back(frame.listEntries.front().index);
+                    bindListEntry(frame);
                     context.frames.push_back(std::move(frame));
                 }
                 break;
@@ -1464,6 +1728,7 @@ void Runtime::runExecution(ExecutionContext& context) {
                 }
                 while (context.frames.size() > loopFrameIndex) {
                     if (context.frames.back().loopFrame) {
+                        restoreLoopLocals(context.frames.back());
                         if (!context.loopNumbers.empty()) context.loopNumbers.pop_back();
                         if (!context.loopValues.empty()) context.loopValues.pop_back();
                         if (!context.loopIndexes.empty()) context.loopIndexes.pop_back();
@@ -1482,7 +1747,15 @@ void Runtime::runExecution(ExecutionContext& context) {
                         "Place it inside `loop N times:` or `while condition:`.");
                     break;
                 }
-                while (context.frames.size() > loopFrameIndex + 1) context.frames.pop_back();
+                while (context.frames.size() > loopFrameIndex + 1) {
+                    if (context.frames.back().loopFrame) {
+                        restoreLoopLocals(context.frames.back());
+                        if (!context.loopNumbers.empty()) context.loopNumbers.pop_back();
+                        if (!context.loopValues.empty()) context.loopValues.pop_back();
+                        if (!context.loopIndexes.empty()) context.loopIndexes.pop_back();
+                    }
+                    context.frames.pop_back();
+                }
                 auto& loopFrame = context.frames[loopFrameIndex];
                 if (loopFrame.statements) loopFrame.nextIndex = loopFrame.statements->size();
                 break;
@@ -1507,6 +1780,113 @@ void Runtime::runExecution(ExecutionContext& context) {
                 if (!error.empty()) { runtimeError(statement, error, "Use `return value` or `return none`."); break; }
                 context.returned = true;
                 context.stopped = true;
+                break;
+            }
+            case StatementType::SetScreenOpacity: {
+                const Value opacityValue = evaluateValue(statement.expression, context, error);
+                const double opacity = opacityValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                if (!error.empty() || !opacityValue.isNumber() || !std::isfinite(opacity) || opacity < 0.0 || opacity > 1.0) {
+                    runtimeError(statement, "Screen opacity must be a finite number from 0 to 1.",
+                        "Use `set screen opacity to 0.5`. Zero is clear; one is fully black.");
+                    break;
+                }
+                screenEffects_.fadeOpacity = static_cast<float>(opacity);
+                screenFadeStartOpacity_ = screenEffects_.fadeOpacity;
+                screenFadeTargetOpacity_ = screenEffects_.fadeOpacity;
+                screenFadeElapsedSeconds_ = 0.0F;
+                screenFadeDurationSeconds_ = 0.0F;
+                break;
+            }
+            case StatementType::FadeScreen: {
+                const std::string durationText = statement.property == "to_opacity"
+                    ? statement.secondaryExpression : statement.expression;
+                static const std::regex durationPattern(
+                    R"DURATION(^\s*(.+?)\s*(milliseconds?|msecs?|ms|seconds?|secs?|s|ticks?|tick|minutes?|mins?|m|hours?|hrs?|h)\s*$)DURATION",
+                    std::regex::icase);
+                std::smatch durationMatch;
+                if (!std::regex_match(durationText, durationMatch, durationPattern)) {
+                    runtimeError(statement, "A screen fade duration needs a number and a time unit.",
+                        "Use `fade screen to black over 1 second` or `fade screen in over 500 milliseconds`.");
+                    break;
+                }
+                const Value amountValue = evaluateValue(trim(durationMatch[1].str()), context, error);
+                const double amount = amountValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                if (!error.empty() || !amountValue.isNumber() || !std::isfinite(amount) || amount <= 0.0) {
+                    runtimeError(statement, "A screen fade duration must be a positive finite number.",
+                        "Use a duration such as `0.5 seconds` or `250 milliseconds`.");
+                    break;
+                }
+                std::string unit = lower(durationMatch[2].str());
+                double seconds = amount;
+                if (unit == "ms" || unit.starts_with("msec") || unit.starts_with("millisecond")) seconds *= 0.001;
+                else if (unit == "m" || unit.starts_with("min")) seconds *= 60.0;
+                else if (unit == "h" || unit.starts_with("hour") || unit.starts_with("hr")) seconds *= 3600.0;
+                else if (unit == "tick" || unit == "ticks") seconds *= 1.0 / static_cast<double>(std::max(1U, settings_.tickRate));
+                if (!std::isfinite(seconds) || seconds <= 0.0 || seconds > 600.0) {
+                    runtimeError(statement, "A screen fade duration must be no longer than 10 minutes.",
+                        "Use a shorter duration such as `fade screen to black over 1 second`.");
+                    break;
+                }
+                float targetOpacity = 0.0F;
+                if (statement.property == "to_black") targetOpacity = 1.0F;
+                else if (statement.property == "from_black") {
+                    screenEffects_.fadeOpacity = 1.0F;
+                    targetOpacity = 0.0F;
+                } else if (statement.property == "to_opacity") {
+                    const Value opacityValue = evaluateValue(statement.expression, context, error);
+                    const double opacity = opacityValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                    if (!error.empty() || !opacityValue.isNumber() || !std::isfinite(opacity) || opacity < 0.0 || opacity > 1.0) {
+                        runtimeError(statement, "Fade target opacity must be a finite number from 0 to 1.",
+                            "Use `fade screen to opacity 0.5 over 1 second`.");
+                        break;
+                    }
+                    targetOpacity = static_cast<float>(opacity);
+                }
+                screenFadeStartOpacity_ = screenEffects_.fadeOpacity;
+                screenFadeTargetOpacity_ = targetOpacity;
+                screenFadeElapsedSeconds_ = 0.0F;
+                screenFadeDurationSeconds_ = static_cast<float>(seconds);
+                break;
+            }
+            case StatementType::ShakeScreen: {
+                static const std::regex durationPattern(
+                    R"DURATION(^\s*(.+?)\s*(milliseconds?|msecs?|ms|seconds?|secs?|s|ticks?|tick|minutes?|mins?|m|hours?|hrs?|h)\s*$)DURATION",
+                    std::regex::icase);
+                std::smatch durationMatch;
+                if (!std::regex_match(statement.expression, durationMatch, durationPattern)) {
+                    runtimeError(statement, "A screen shake duration needs a number and a time unit.",
+                        "Use `shake screen for 3.5 seconds with amplitude 0.35`.");
+                    break;
+                }
+                const Value amountValue = evaluateValue(trim(durationMatch[1].str()), context, error);
+                const double amount = amountValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                if (!error.empty() || !amountValue.isNumber() || !std::isfinite(amount) || amount <= 0.0) {
+                    runtimeError(statement, "A screen shake duration must be a positive finite number.",
+                        "Use a duration such as `3.5 seconds` or `200 milliseconds`.");
+                    break;
+                }
+                const Value amplitudeValue = evaluateValue(statement.secondaryExpression, context, error);
+                const double amplitude = amplitudeValue.numberOr(std::numeric_limits<double>::quiet_NaN());
+                if (!error.empty() || !amplitudeValue.isNumber() || !std::isfinite(amplitude) || amplitude <= 0.0 || amplitude > 4.0) {
+                    runtimeError(statement, "Screen shake amplitude must be greater than 0 and at most 4 tiles.",
+                        "Use an amplitude such as `0.35`, measured in fractions of the active room tile size.");
+                    break;
+                }
+                std::string unit = lower(durationMatch[2].str());
+                double seconds = amount;
+                if (unit == "ms" || unit.starts_with("msec") || unit.starts_with("millisecond")) seconds *= 0.001;
+                else if (unit == "m" || unit.starts_with("min")) seconds *= 60.0;
+                else if (unit == "h" || unit.starts_with("hour") || unit.starts_with("hr")) seconds *= 3600.0;
+                else if (unit == "tick" || unit == "ticks") seconds *= 1.0 / static_cast<double>(std::max(1U, settings_.tickRate));
+                if (!std::isfinite(seconds) || seconds <= 0.0 || seconds > 600.0) {
+                    runtimeError(statement, "A screen shake duration must be no longer than 10 minutes.",
+                        "Use a shorter duration such as `shake screen for 0.25 seconds with amplitude 0.15`.");
+                    break;
+                }
+                screenEffects_.shakeAmplitudeTiles = static_cast<float>(amplitude);
+                screenEffects_.shakeElapsedSeconds = 0.0F;
+                screenEffects_.shakeDurationSeconds = static_cast<float>(seconds);
+                screenEffects_.shakeRemainingSeconds = static_cast<float>(seconds);
                 break;
             }
             case StatementType::Stop:

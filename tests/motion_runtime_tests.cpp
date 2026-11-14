@@ -62,6 +62,7 @@ on load:
     tween entity "boulder" to (120, 60) over 1 seconds easing linear with arc height 80
 on tween complete for entity "boulder":
     add 1 to {completion_count}
+    set {completion_entity} to {_tween_entity}
     set {completion_x} to {_tween_x}
     set {completion_y} to {_tween_y}
 )CX");
@@ -78,6 +79,7 @@ on tween complete for entity "boulder":
     const auto& arrived = runtime.sprites().at("boulder");
     expect(near(arrived.x, 120.0F) && near(arrived.y, 60.0F), "tween must land exactly on its requested destination");
     expect(runtime.getGlobal("completion_count").numberOr(0.0) == 1.0, "completion handler should run once");
+    expect(runtime.getGlobal("completion_entity").toString() == "boulder", "completion event should expose the completed entity name");
     expect(runtime.getGlobal("completion_x").numberOr(-1.0) == 120.0, "completion event should expose final x coordinate");
     expect(runtime.getGlobal("completion_y").numberOr(-1.0) == 60.0, "completion event should expose final y coordinate");
     for (int i = 0; i < 120; ++i) runtime.tick();

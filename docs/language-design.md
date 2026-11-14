@@ -47,7 +47,7 @@ wait 10 seconds
 play sound {@impact}
 ```
 
-The exact syntax for object handles, event context and optional random streams must be finalized in the audit/implementation work before it is advertised as supported.
+Typed sprite/entity handles and the named random-stream grammar are implemented on the development branch. The standard event-context expression contract remains an open audit item; examples involving event context should not be advertised until that contract and its tests are complete.
 
 ### 3. Parentheses are appropriate when they communicate structure
 
@@ -67,17 +67,18 @@ The preferred form is `set <property> of <object> to <value>`, with a possessive
 
 ```skript
 set x-coordinate of sprite "player" to 15
+set sprite "player"'s x-coordinate to 15
 set rotation of sprite "player" to 90
 set health of entity "guard" to 25
 ```
 
-The current `set entity "guard" health to 25` family may remain accepted as a compatibility form, but should not be the only pattern. Object references stored in variables require an explicit typed-handle/value design; a string variable must not silently become an object.
+The `set entity "guard" health to 25` family remains accepted as a compatibility form; the shared property grammar also supports `set health of entity "guard" to 25` and the equivalent possessive `set entity "guard"'s health to 25`. The development branch stores sprite/entity references as typed values with live-instance identity in local and temporary variables. Ordinary strings never silently become object references, and stale handles are rejected after an object is removed or replaced.
 
 ### 5. Events describe what happened; context values describe who/what
 
-Event headers should be short, recognizable and consistent. Event participants and event-specific data should be available through documented event-context expressions/locals. Avoid requiring every object name to be embedded in the event header when a handler can filter on an entity or condition inside its body.
+Event headers should be short, recognizable and consistent. Event participants and event-specific data should be available through documented event-context expressions/locals. Avoid requiring object names in headers when the runtime can perform a bounded filter inside the handler. However, target-specific selectors are appropriate when they keep event dispatch bounded—for example, the current trigger system walks only explicitly authored actor/trigger pairs instead of scanning every possible combination every tick. Any broader event form must preserve predictable per-tick work and room/object lifetime guarantees.
 
-The current key-press, button, trigger, focus, animation, timing and room lifecycle events should be reviewed for a coherent `on <event>:` grammar. Keep readable aliases when they improve clarity.
+The current key-press, button, trigger, focus, animation, timing and room lifecycle events should be reviewed for a coherent `on <event>:` grammar. Keep readable aliases when they improve clarity. Document the existing event-local payload contract in [event-context.md](event-context.md); generic trigger/collision events remain future work until their dispatch cost and filtering semantics are designed.
 
 ### 6. Conditions should read like conditions
 
@@ -115,9 +116,9 @@ Possible future APIs such as screen overlays/fades and named audio tracks/buses 
 
 ## Randomness contract
 
-The current named deterministic streams are valuable and should be retained. The new surface should include natural expressions such as `a random integer between 1 and 10`, `a random number between 0 and 1`, and `a random item out of {_items::*}`. Named streams should remain available as an optional clause for reproducible gameplay. The default-stream seeding rule must be explicitly designed and tested before implementation; a natural expression must not fail merely because it lacks a `random_int()` function call.
+The v0.11.0 branch supports natural single-value expressions such as `a random integer between 1 and 10`, `a random number between 0 and 1`, and `a random item out of {_items::*}`. They use an automatically initialized runtime-local `"default"` stream unless the optional `using random stream "name"` clause selects another stream. The default stream can be explicitly seeded for reproducibility; other named streams must be seeded before use. The compact `random_float`, `random_int`, and `random_choice` forms remain available.
 
-A weighted selector is a useful optional extension after the base random expression grammar is settled. It is not a prerequisite for the first syntax overhaul.
+The count-prefix/plural form is implemented on the development branch for list assignments, such as `set {rolls::*} to 5 random integers between 5 and 96`. The count may be a numeric expression but must resolve to a whole number from 0 through 4096; zero clears the target list without drawing. Each item is evaluated through the existing scalar random expression path, so CX keeps its scalar `Value` model and uses its indexed-list assignment contract rather than introducing an untyped collection value. CI and full example validation remain required. A weighted selector is a later optional extension, not a prerequisite for the first syntax overhaul.
 
 ## Parser and runtime implementation guidance
 

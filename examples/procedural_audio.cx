@@ -1,7 +1,7 @@
 # Named audio objects can be built, modified, visualized, and reused later.
 # Run this script from the project. Output files are written under assets/audio/.
 on load:
-    create wave "soft_chime" duration 0.35 sample_rate 44100
+    create wave "soft_chime" duration 0.35 sample rate 44100
     add sine wave to "soft_chime" frequency 440 amplitude 0.55 phase 0
     add sine wave to "soft_chime" frequency 660 amplitude 0.22 phase 0.2
     add sine wave to "soft_chime" frequency 880 amplitude 0.10 phase 0.4

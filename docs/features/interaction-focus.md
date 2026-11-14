@@ -39,7 +39,7 @@ on entity "player" focus exit entity "ancient_chest":
     set {focus_started} to false
 ```
 
-Event-local values are `{_focus_actor}`, `{_focus_entity}`, and `{_focused_entity}`. They contain the actor and target names for that specific transition.
+Event-local values are `{_focus_actor}`, `{_focus_entity}`, and `{_focused_entity}`. They contain the actor and target names for that specific transition; `{_focused_entity}` is a compatibility alias for `{_focus_entity}`. See the [event context reference](../event-context.md).
 
 The condition `entity "player" is focused on entity "ancient_chest"` is true only while that exact target instance is currently the actor's selected eligible target. Use it in a keypress handler to decide whether to perform an action. The condition returns false if either entity is missing/replaced or if the current range, center distance, interactable flag, or channel masks no longer permit the relationship—even if the next tick has not yet dispatched its exit event.
 

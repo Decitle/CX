@@ -218,6 +218,20 @@ int editDistance(std::string_view a, std::string_view b) {
     return previous.back();
 }
 
+std::string normalizeCommandWords(std::string value) {
+    value = lower(trim(value));
+    std::string normalized;
+    normalized.reserve(value.size());
+    bool pendingSeparator = false;
+    for (const unsigned char ch : value) {
+        if (std::isspace(ch) || ch == '-') { pendingSeparator = !normalized.empty(); continue; }
+        if (pendingSeparator && !normalized.empty()) normalized.push_back('_');
+        pendingSeparator = false;
+        normalized.push_back(static_cast<char>(ch));
+    }
+    return normalized;
+}
+
 bool containsEventLocalReference(std::string_view source) {
     for (std::size_t i = 0; i < source.size(); ++i) {
         if (source[i] != '{') continue;
@@ -238,8 +252,8 @@ bool referencesEventLocal(const Statement& statement) {
 
 std::string commandHint(std::string_view line) {
     static const std::vector<std::string> commands = {
-        "set {variable} to value", "add amount to {variable}",
-        "subtract amount from {variable}", "toggle {variable}",
+        "set {variable} to value", "add amount to {variable}", "give amount to {variable}",
+        "subtract amount from {variable}", "reset {variable}", "toggle {variable}",
         "broadcast \"message\"", "if condition:", "open canvas \"Name\"",
         "close canvas \"Name\"", "set {entrance1::room1} to an entrance point at (0, 0)",
         "load room \"room_name\"", "unload room \"room_name\"", "reload room \"room_name\"",
@@ -256,7 +270,7 @@ std::string commandHint(std::string_view line) {
     std::string input = trim(line);
     const auto firstSpace = input.find(' ');
     const auto firstWord = lower(input.substr(0, firstSpace));
-    const std::vector<std::string> topWords = {"set", "add", "subtract", "remove", "toggle", "broadcast", "send", "if", "loop", "while", "wait", "open", "close", "stop", "on", "canvas", "function", "return", "delete", "clear", "call"};
+    const std::vector<std::string> topWords = {"set", "add", "give", "subtract", "remove", "reset", "toggle", "broadcast", "send", "if", "loop", "while", "wait", "open", "close", "stop", "on", "canvas", "function", "return", "delete", "clear", "call"};
     int bestDistance = 99;
     std::string closest;
     for (const auto& word : topWords) {
@@ -273,11 +287,11 @@ std::optional<CanvasElement> parseCanvasElement(const SourceLine& line, const st
                                                   std::vector<Diagnostic>& diagnostics) {
     static const std::regex panelPattern(R"REGEX(^create\s+panel\s+at\s+\(([^)]*)\)\s+size\s+\(([^)]*)\)\s+color\s+\(([^)]*)\)\s*$)REGEX", std::regex::icase);
     static const std::regex namedPanelPattern(R"REGEX(^create\s+panel\s+"([^"\n]+)"\s+at\s+\(([^)]*)\)\s+size\s+\(([^)]*)\)\s+color\s+\(([^)]*)\)\s*$)REGEX", std::regex::icase);
-    static const std::regex gridPanelPattern(R"REGEX(^create\s+panel\s+"([^"\n]+)"\s+at\s+grid\s+\(([^)]*)\)(?:\s+anchor\s+([a-z_]+))?\s+size\s+\(([^)]*)\)\s+color\s+\(([^)]*)\)\s*$)REGEX", std::regex::icase);
+    static const std::regex gridPanelPattern(R"REGEX(^create\s+panel\s+"([^"\n]+)"\s+at\s+grid\s+\(([^)]*)\)(?:\s+anchor\s+([a-z_]+(?:\s+[a-z_]+)?))?\s+size\s+\(([^)]*)\)\s+color\s+\(([^)]*)\)\s*$)REGEX", std::regex::icase);
     static const std::regex relativePanelPattern(R"REGEX(^create\s+panel\s+"([^"\n]+)"\s+(?:to\s+the\s+)?(left|right|above|below)(?:\s+of)?\s+(button|panel)\s+"([^"\n]+)"\s+gap\s+([0-9]+(?:\.[0-9]+)?)\s+size\s+\(([^)]*)\)\s+color\s+\(([^)]*)\)\s*$)REGEX", std::regex::icase);
-    static const std::regex gridButtonPattern(R"REGEX(^create\s+button\s+"([^"\n]+)"\s+at\s+grid\s+\(([^)]*)\)(?:\s+anchor\s+([a-z_]+))?\s+size\s+\(([^)]*)\)\s+label\s+("(?:\\.|[^"])*")\s*$)REGEX", std::regex::icase);
+    static const std::regex gridButtonPattern(R"REGEX(^create\s+button\s+"([^"\n]+)"\s+at\s+grid\s+\(([^)]*)\)(?:\s+anchor\s+([a-z_]+(?:\s+[a-z_]+)?))?\s+size\s+\(([^)]*)\)\s+label\s+("(?:\\.|[^"])*")\s*$)REGEX", std::regex::icase);
     static const std::regex relativeButtonPattern(R"REGEX(^create\s+button\s+"([^"\n]+)"\s+(?:to\s+the\s+)?(left|right|above|below)(?:\s+of)?\s+(button|panel)\s+"([^"\n]+)"\s+gap\s+([0-9]+(?:\.[0-9]+)?)\s+size\s+\(([^)]*)\)\s+label\s+("(?:\\.|[^"])*")\s*$)REGEX", std::regex::icase);
-    static const std::regex textPattern(R"REGEX(^create\s+text\s+("(?:\\.|[^"])*")\s+at\s+\(([^)]*)\)\s+font_size\s+(\d+)\s*$)REGEX", std::regex::icase);
+    static const std::regex textPattern(R"REGEX(^create\s+text\s+("(?:\\.|[^"])*")\s+at\s+\(([^)]*)\)\s+font(?:_|\s+)size\s+(\d+)\s*$)REGEX", std::regex::icase);
     static const std::regex buttonPattern(R"REGEX(^create\s+button\s+"([^"\n]+)"\s+at\s+\(([^)]*)\)\s+size\s+\(([^)]*)\)\s+label\s+("(?:\\.|[^"])*")\s*$)REGEX", std::regex::icase);
     std::smatch match;
     CanvasElement element;
@@ -308,7 +322,7 @@ std::optional<CanvasElement> parseCanvasElement(const SourceLine& line, const st
         if (!parseTuple(match[2].str(), position, 2) || !parseNumber(position[0], gx) || !parseNumber(position[1], gy) || gx < 0 || gx > 128 || gy < 0 || gy > 128)
             return bad("Grid positions must be coordinates from 0 to 128.", "Use `at grid (1, 1)` near the top-left or `at grid (127, 127) anchor bottom_right` near the bottom-right.");
         element.type = CanvasElementType::Panel; element.id = match[1].str(); element.layoutMode = CanvasLayoutMode::Grid;
-        element.gridX = gx; element.gridY = gy; element.anchor = match[3].matched ? lower(match[3].str()) : "auto";
+        element.gridX = gx; element.gridY = gy; element.anchor = match[3].matched ? normalizeCommandWords(match[3].str()) : "auto";
         if (!validAnchors.contains(element.anchor)) return bad("Unknown UI anchor `" + element.anchor + "`.", "Use auto, top_left, top_center, top_right, center_left, center, center_right, bottom_left, bottom_center, or bottom_right.");
         if (!parseSize(match[4].str(), element) || !parseColor(match[5].str(), element)) return bad("Grid panel size or color is invalid.", "Example: create panel \"panel1\" at grid (1, 1) size (400, 240) color (40, 40, 40, 220)");
         return element;
@@ -328,7 +342,7 @@ std::optional<CanvasElement> parseCanvasElement(const SourceLine& line, const st
             return bad("Grid positions must be coordinates from 0 to 128.", "Use `at grid (127, 127) anchor bottom_right` to pin a button to the lower-right corner.");
         element.type = CanvasElementType::Button; element.id = match[1].str(); element.text = unquote(match[5].str());
         element.layoutMode = CanvasLayoutMode::Grid; element.gridX = gx; element.gridY = gy;
-        element.anchor = match[3].matched ? lower(match[3].str()) : "auto";
+        element.anchor = match[3].matched ? normalizeCommandWords(match[3].str()) : "auto";
         if (!validAnchors.contains(element.anchor)) return bad("Unknown UI anchor `" + element.anchor + "`.", "Use top_left, top_center, top_right, center_left, center, center_right, bottom_left, bottom_center, or bottom_right.");
         if (!parseSize(match[4].str(), element)) return bad("Grid button size is invalid.", "Use a positive width and height, e.g. size (180, 44).");
         element.red=55; element.green=66; element.blue=86; element.alpha=245;
@@ -426,7 +440,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         appendDiagnostic(diagnostics, {false, source, line.number, std::move(message), std::move(suggestion), column, length});
     };
 
-    static const std::regex createWavePattern(R"REGEX(^create\s+wave\s+"([^"\n]+)"\s+duration\s+([0-9]+(?:\.[0-9]+)?)\s+sample_rate\s+(\d+)\s*$)REGEX", std::regex::icase);
+    static const std::regex createWavePattern(R"REGEX(^create\s+wave\s+"([^"\n]+)"\s+duration\s+([0-9]+(?:\.[0-9]+)?)\s+sample(?:_|\s+)rate\s+(\d+)\s*$)REGEX", std::regex::icase);
     static const std::regex addWaveLayerPattern(R"REGEX(^add\s+(sine|square|triangle|saw|noise)\s+wave\s+to\s+"([^"\n]+)"\s+(.+?)\s*$)REGEX", std::regex::icase);
     static const std::regex setWaveEnvelopePattern(R"REGEX(^set\s+wave\s+"([^"\n]+)"\s+envelope\s+attack\s+([0-9]+(?:\.[0-9]+)?)\s+decay\s+([0-9]+(?:\.[0-9]+)?)\s+sustain\s+([0-9]+(?:\.[0-9]+)?)\s+release\s+([0-9]+(?:\.[0-9]+)?)\s*$)REGEX", std::regex::icase);
     static const std::regex namedWavePattern(R"REGEX(^(normalize\s+wave|save\s+wave|visualize\s+wave|play\s+sound)\s+(.+?)\s*$)REGEX", std::regex::icase);
@@ -460,7 +474,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
 
     static const std::regex entranceSetPattern(R"REGEX(^set\s+(\{[^{}]+\})\s+to\s+an\s+entrance\s+point\s+at\s+\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*$)REGEX", std::regex::icase);
     static const std::regex roomActionPattern(R"REGEX(^(load|unload|reload)\s+room\s+"([^"\n]+)"\s*$)REGEX", std::regex::icase);
-    static const std::regex enterRoomPattern(R"REGEX(^enter\s+room\s+"([^"\n]+)"\s+at\s+(\{[^{}]+\})\s*$)REGEX", std::regex::icase);
+    static const std::regex enterRoomPattern(R"REGEX(^(?:enter|go\s+to|switch\s+to)\s+room\s+"([^"\n]+)"\s+at\s+(\{[^{}]+\}|\(\s*.+\s*\))\s*$)REGEX", std::regex::icase);
     std::smatch roomMatch;
     if (std::regex_match(text, roomMatch, entranceSetPattern)) {
         stmt.type = StatementType::SetEntrance;
@@ -487,6 +501,15 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
             error("An entrance point used to enter a room must be stored in a global variable.",
                   "Use {entrance::room_name::entrance_name} or set a global such as {entrance1::room1}.");
             return std::nullopt;
+        }
+        const auto entry = trim(stmt.expression);
+        if (!entry.empty() && entry.front() == '(' && entry.back() == ')') {
+            const auto coordinates = splitComma(std::string_view(entry).substr(1, entry.size() - 2));
+            if (coordinates.size() != 2) {
+                error("A room entry coordinate pair needs exactly an x and y tile coordinate.",
+                      "Use: enter room \"cave\" at (5, 3)");
+                return std::nullopt;
+            }
         }
         return stmt;
     }
@@ -521,7 +544,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
 
     static const std::regex createBeamPattern(R"REGEX(^create\s+beam\s+"([^"\n]+)"\s+from\s+\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)\s+to\s+\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)\s+using\s+(\{\$[^{}]+\})\s*$)REGEX", std::regex::icase);
     static const std::regex removeBeamPattern(R"REGEX(^remove\s+beam\s+"([^"\n]+)"\s*$)REGEX", std::regex::icase);
-    static const std::regex setBeamPattern(R"REGEX(^set\s+beam\s+"([^"\n]+)"\s+([a-z_]+)\s+to\s+(.+?)\s*$)REGEX", std::regex::icase);
+    static const std::regex setBeamPattern(R"REGEX(^set\s+beam\s+"([^"\n]+)"\s+([a-z_]+(?:\s+[a-z_]+)*)\s+to\s+(.+?)\s*$)REGEX", std::regex::icase);
     if (std::regex_match(text, roomMatch, createBeamPattern)) {
         stmt.type = StatementType::CreateBeam;
         stmt.target = lower(trim(roomMatch[1].str()));
@@ -538,7 +561,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
     if (std::regex_match(text, roomMatch, setBeamPattern)) {
         stmt.type = StatementType::SetBeam;
         stmt.target = lower(trim(roomMatch[1].str()));
-        stmt.property = lower(trim(roomMatch[2].str()));
+        stmt.property = normalizeCommandWords(roomMatch[2].str());
         stmt.expression = trim(roomMatch[3].str());
         static const std::unordered_set<std::string> beamProperties = {
             "start", "end", "width", "opacity", "tint", "layer", "lifetime",
@@ -597,6 +620,29 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         stmt.target = lower(trim(entityMatch[1].str()));
         stmt.expression = lower(trim(entityMatch[2].str()));
         stmt.property = trim(entityMatch[3].str());
+        return stmt;
+    }
+    static const std::regex addEntityTagPattern(R"TAG(^add\s+(?:the\s+)?tag\s+"([^"\n]+)"\s+to\s+(?:the\s+)?entity\s+"([^"\n]+)"\s*$)TAG", std::regex::icase);
+    if (std::regex_match(text, entityMatch, addEntityTagPattern)) {
+        stmt.type = StatementType::SetEntityProperty;
+        stmt.target = lower(trim(entityMatch[2].str()));
+        stmt.property = "add_tag";
+        stmt.expression = trim(entityMatch[1].str());
+        return stmt;
+    }
+    static const std::regex removeEntityTagPattern(R"TAG(^remove\s+(?:the\s+)?tag\s+"([^"\n]+)"\s+from\s+(?:the\s+)?entity\s+"([^"\n]+)"\s*$)TAG", std::regex::icase);
+    if (std::regex_match(text, entityMatch, removeEntityTagPattern)) {
+        stmt.type = StatementType::SetEntityProperty;
+        stmt.target = lower(trim(entityMatch[2].str()));
+        stmt.property = "remove_tag";
+        stmt.expression = trim(entityMatch[1].str());
+        return stmt;
+    }
+    static const std::regex clearEntityTagsPattern(R"TAG(^clear\s+(?:the\s+)?tags\s+of\s+(?:the\s+)?entity\s+"([^"\n]+)"\s*$)TAG", std::regex::icase);
+    if (std::regex_match(text, entityMatch, clearEntityTagsPattern)) {
+        stmt.type = StatementType::SetEntityProperty;
+        stmt.target = lower(trim(entityMatch[1].str()));
+        stmt.property = "clear_tags";
         return stmt;
     }
     static const std::regex setEntityInteractionFlagPattern(R"INTERACT(^set\s+entity\s+"([^"\n]+)"\s+interactable\s+to\s+(true|false)\s*$)INTERACT", std::regex::icase);
@@ -726,14 +772,14 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         return std::nullopt;
     }
     static const std::regex tweenEntityPattern(
-        R"TWEEN(^tween\s+entity\s+"([^"\n]+)"\s+to\s+\((.*)\)\s+over\s+(.+?)\s+seconds?\s+easing\s+(linear|ease_in|ease_out|ease_in_out)(?:\s+with\s+arc\s+height\s+(.+?))?\s*$)TWEEN",
+        R"TWEEN(^tween\s+entity\s+"([^"\n]+)"\s+to\s+\((.*)\)\s+over\s+(.+?)\s+seconds?\s+easing\s+(linear|ease(?:_|\s+)in(?:_|\s+)out|ease(?:_|\s+)in|ease(?:_|\s+)out)(?:\s+with\s+arc\s+height\s+(.+?))?\s*$)TWEEN",
         std::regex::icase);
     if (std::regex_match(text, entityMatch, tweenEntityPattern)) {
         stmt.type = StatementType::TweenEntity;
         stmt.target = lower(trim(entityMatch[1].str()));
         stmt.expression = "(" + trim(entityMatch[2].str()) + ")";
         stmt.secondaryExpression = trim(entityMatch[3].str());
-        stmt.property = lower(trim(entityMatch[4].str()));
+        stmt.property = normalizeCommandWords(entityMatch[4].str());
         if (entityMatch[5].matched) stmt.detailExpression = trim(entityMatch[5].str());
         return stmt;
     }
@@ -822,9 +868,36 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
 
     // Minimal renderer-neutral sprite objects. Coordinates and sizes are in pixels.
     static const std::regex createSpritePattern(R"SPRITE(^create\s+(sprite|entity)\s+"([^"\n]+)"\s+with\s+texture\s+(\{\$[^{}]+\})\s*$)SPRITE", std::regex::icase);
+    static const std::regex setSpritePropertyPattern(R"PROPERTY(^set\s+(?:the\s+)?(x-coordinate|y-coordinate|position|size|rotation|texture|visible|visibility|speed|health|max(?:imum)?[ _-]health|kind|team)\s+of\s+((?:sprite|entity|object)\s+)?("[^"\n]+"|\{[^{}]+\})\s+to\s+(.+?)\s*$)PROPERTY", std::regex::icase);
+    static const std::regex setSpritePossessivePattern(R"PROPERTY(^set\s+(?:the\s+)?((?:sprite|entity|object)\s+)?("[^"\n]+"|\{[^{}]+\})'s\s+(x-coordinate|y-coordinate|position|size|rotation|texture|visible|visibility|speed|health|max(?:imum)?[ _-]health|kind|team)\s+to\s+(.+?)\s*$)PROPERTY", std::regex::icase);
+    std::string normalizedPropertyText = text;
+    if (std::regex_match(text, roomMatch, setSpritePossessivePattern)) {
+        const std::string objectKind = roomMatch[1].matched ? lower(trim(roomMatch[1].str())) : "object";
+        normalizedPropertyText = "set " + trim(roomMatch[3].str()) + " of " + objectKind + " " +
+            trim(roomMatch[2].str()) + " to " + trim(roomMatch[4].str());
+    }
     static const std::regex setSpritePattern(R"SPRITE(^set\s+(sprite|entity)\s+"([^"\n]+)"\s+(position|size|texture|visible|speed)\s+to\s+(.+?)\s*$)SPRITE", std::regex::icase);
     static const std::regex moveSpritePattern(R"SPRITE(^move\s+(sprite|entity)\s+"([^"\n]+)"\s+by\s+\((.*)\)\s*$)SPRITE", std::regex::icase);
     static const std::regex deleteSpritePattern(R"SPRITE(^(?:delete|remove)\s+(?:sprite|entity)\s+"([^"\n]+)"\s*$)SPRITE", std::regex::icase);
+    if (std::regex_match(normalizedPropertyText, roomMatch, setSpritePropertyPattern)) {
+        stmt.type = StatementType::SetSprite;
+        const std::string objectKind = roomMatch[2].matched ? lower(trim(roomMatch[2].str())) : "object";
+        stmt.target = objectKind + " " + trim(roomMatch[3].str());
+        stmt.property = lower(trim(roomMatch[1].str()));
+        if (stmt.property == "visibility") stmt.property = "visible";
+        else if (stmt.property == "max health" || stmt.property == "max-health" ||
+                 stmt.property == "max_health" || stmt.property == "maximum health" ||
+                 stmt.property == "maximum-health" || stmt.property == "maximum_health")
+            stmt.property = "max_health";
+        stmt.expression = trim(roomMatch[4].str());
+        if ((stmt.property == "position" || stmt.property == "size") &&
+            (stmt.expression.size() < 5 || stmt.expression.front() != '(' || stmt.expression.back() != ')')) {
+            error("Sprite position and size need a coordinate pair.",
+                  "Use: set position of sprite \"player\" to (640, 360), or size to (48, 48)");
+            return std::nullopt;
+        }
+        return stmt;
+    }
     if (std::regex_match(text, roomMatch, createSpritePattern)) {
         stmt.type = StatementType::CreateSprite;
         stmt.target = lower(trim(roomMatch[2].str()));
@@ -868,7 +941,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         return stmt;
     }
 
-    static const std::regex loopTimesPattern(R"LOOP(^loop\s+(.+?)\s+times\s*:$)LOOP", std::regex::icase);
+    static const std::regex loopTimesPattern(R"LOOP(^(?:loop|repeat)\s+(.+?)\s+times\s*:$)LOOP", std::regex::icase);
     std::smatch controlMatch;
     if (std::regex_match(text, controlMatch, loopTimesPattern)) {
         stmt.type = StatementType::LoopTimes;
@@ -879,15 +952,96 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         }
         return stmt;
     }
+    // Named list-loop variables follow Skript's grammar. The key/value bindings
+    // are local variables whose previous values are restored after the loop.
+    static const std::regex keyValueLoopPattern(
+        R"FOREACH(^(?:for|loop)\s+(?:each\s+)?(?:key|index)\s+(\{[^{}]+\})\s+(?:and\s+)?(?:value\s+)?(\{[^{}]+\})\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
+        std::regex::icase);
+    static const std::regex keyOnlyLoopPattern(
+        R"FOREACH(^(?:for|loop)\s+(?:each\s+)?(?:key|index)\s+(\{[^{}]+\})\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
+        std::regex::icase);
+    static const std::regex keyValueCommaLoopPattern(
+        R"FOREACH(^(?:for|loop)\s+(?:each\s+)?(\{[^{}]+\})\s*,\s*(?:value\s+)?(\{[^{}]+\})\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
+        std::regex::icase);
+    static const std::regex namedValueLoopPattern(
+        R"FOREACH(^(?:for|loop)\s+(?:each\s+)?(?:value\s+)?(\{[^{}]+\})\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
+        std::regex::icase);
+    std::smatch listLoopMatch;
+    auto acceptListLoop = [&](const std::string& valueVariable, const std::string& indexVariable,
+                              const std::string& listExpression) -> bool {
+        const std::string listName = canonicalVariableName(listExpression);
+        const std::string valueName = valueVariable.empty() ? std::string{} : canonicalVariableName(valueVariable);
+        const std::string indexName = indexVariable.empty() ? std::string{} : canonicalVariableName(indexVariable);
+        if (!listName.ends_with("::*")) {
+            error("A for-each loop needs a list variable ending in double-colon star.",
+                  "Use: for each {_item} in {inventory::*}:");
+            return false;
+        }
+        const auto isLocalBinding = [](const std::string& name) {
+            return name.empty() || (name.size() > 1 && name.front() == '_' && name.find("::*") == std::string::npos);
+        };
+        if (!isLocalBinding(valueName) || !isLocalBinding(indexName)) {
+            error("List loop variables must be local variables such as {_item} and {_index}.",
+                  "Use: for each {_item} in {inventory::*}: or for each key {_index} and value {_item} in {inventory::*}:");
+            return false;
+        }
+        if (!valueName.empty() && valueName == indexName) {
+            error("A list loop's key variable and value variable must be different.",
+                  "Use separate local variables, for example {_index} and {_item}.");
+            return false;
+        }
+        stmt.type = StatementType::LoopList;
+        stmt.target = valueName;
+        stmt.property = indexName;
+        stmt.expression = listName;
+        return true;
+    };
+    if (std::regex_match(text, listLoopMatch, keyValueLoopPattern)) {
+        if (!acceptListLoop(listLoopMatch[2].str(), listLoopMatch[1].str(), listLoopMatch[3].str()))
+            return std::nullopt;
+        return stmt;
+    }
+    if (std::regex_match(text, listLoopMatch, keyOnlyLoopPattern)) {
+        if (!acceptListLoop({}, listLoopMatch[1].str(), listLoopMatch[2].str()))
+            return std::nullopt;
+        return stmt;
+    }
+    if (std::regex_match(text, listLoopMatch, keyValueCommaLoopPattern)) {
+        if (!acceptListLoop(listLoopMatch[2].str(), listLoopMatch[1].str(), listLoopMatch[3].str()))
+            return std::nullopt;
+        return stmt;
+    }
+    if (std::regex_match(text, listLoopMatch, namedValueLoopPattern)) {
+        if (!acceptListLoop(listLoopMatch[1].str(), {}, listLoopMatch[2].str()))
+            return std::nullopt;
+        return stmt;
+    }
+
+    // Compatibility aliases for the earlier prototype grammar.
+    static const std::regex forEachLoopPattern(
+        R"FOREACH(^for\s+each\s+(?:item|element|value)\s+in\s+(\{[^{}]+\})\s*:$)FOREACH",
+        std::regex::icase);
+    if (std::regex_match(text, listLoopMatch, forEachLoopPattern)) {
+        if (!acceptListLoop({}, {}, listLoopMatch[1].str()))
+            return std::nullopt;
+        return stmt;
+    }
     if (startsWithInsensitive(text, "loop ") && endsWithColon(text)) {
-        const std::string listExpression = trim(std::string_view(text).substr(5, text.size() - 6));
-        if (listExpression.size() >= 4 && listExpression.front() == '{' && listExpression.back() == '}' && listExpression.find("::*") != std::string::npos) {
-            stmt.type = StatementType::LoopList;
-            stmt.expression = canonicalVariableName(listExpression);
+        std::string listExpression = trim(std::string_view(text).substr(5, text.size() - 6));
+        const std::string loweredListExpression = lower(listExpression);
+        if (startsWithInsensitive(loweredListExpression, "over ") ||
+            startsWithInsensitive(loweredListExpression, "through ")) {
+            const auto space = listExpression.find(' ');
+            listExpression = trim(std::string_view(listExpression).substr(space + 1));
+        }
+        if (listExpression.size() >= 4 && listExpression.front() == '{' && listExpression.back() == '}' &&
+            listExpression.find("::*") != std::string::npos) {
+            if (!acceptListLoop({}, {}, listExpression))
+                return std::nullopt;
             return stmt;
         }
         error("This loop form is not supported yet. Use a counted loop or a list wildcard.",
-              "Examples: `loop 5 times:` and `loop {inventory::*}:`. List loops visit each stored key/value pair.");
+              "Examples: loop 5 times:, loop over {inventory::*}:, and for each {_item} in {inventory::*}:");
         return std::nullopt;
     }
     if (startsWithInsensitive(text, "while ") && endsWithColon(text)) {
@@ -923,27 +1077,6 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         stmt.type = StatementType::If;
         stmt.expression = trim(std::string_view(text).substr(3, text.size() - 4));
         if (stmt.expression.empty()) error("The if condition is empty.", "Example: if {score} > 10:", 4, 1);
-        else {
-            const auto low = lower(stmt.expression);
-            auto missingIsBeforePhrase = [&](std::string_view phrase) {
-                const auto pos = low.find(phrase);
-                if (pos == std::string::npos) return false;
-                return !trim(std::string_view(low).substr(0, pos)).ends_with("is");
-            };
-            std::size_t badPhraseStart = std::string::npos;
-            std::size_t badPhraseLength = 0;
-            for (const std::string phrase : {" greater than ", " less than ", " equal to "}) {
-                if (!missingIsBeforePhrase(phrase)) continue;
-                badPhraseStart = low.find(phrase) + 1; // skip the leading space; point at the first word
-                badPhraseLength = phrase.size() - 2;   // omit the surrounding spaces from the underline
-                break;
-            }
-            if (badPhraseStart != std::string::npos) {
-                error("That comparison is missing `is` before the words `greater than`, `less than`, or `equal to`.",
-                      "Use the shorter form, for example: if {score} > 10:",
-                      static_cast<int>(4 + badPhraseStart), static_cast<int>(badPhraseLength));
-            }
-        }
         return stmt;
     }
     if (startsWithInsensitive(text, "seed random stream ")) {
@@ -965,7 +1098,7 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         return stmt;
     }
 
-    if (startsWithInsensitive(text, "set ")) {
+    if (startsWithInsensitive(text, "set ") && !startsWithInsensitive(text, "set screen opacity to ")) {
         const auto rest = std::string_view(text).substr(4);
         const auto to = findPhraseOutsideQuotes(rest, "to");
         if (to == std::string_view::npos) {
@@ -999,28 +1132,59 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         }
         return stmt;
     }
-    if (startsWithInsensitive(text, "add ") || startsWithInsensitive(text, "subtract ") || startsWithInsensitive(text, "remove ")) {
-        const bool adding = startsWithInsensitive(text, "add ");
-        const std::size_t prefix = adding ? 4U : (startsWithInsensitive(text, "subtract ") ? 9U : 7U);
+    const bool addToVariable = startsWithInsensitive(text, "add ") || startsWithInsensitive(text, "give ");
+    const bool increaseVariable = startsWithInsensitive(text, "increase ");
+    const bool subtractFromVariable = startsWithInsensitive(text, "subtract ");
+    const bool decreaseVariable = startsWithInsensitive(text, "decrease ");
+    const bool removeFromList = startsWithInsensitive(text, "remove ");
+    if (addToVariable || increaseVariable || subtractFromVariable || decreaseVariable || removeFromList) {
+        const bool adding = addToVariable || increaseVariable;
+        const bool reverseOrder = increaseVariable || decreaseVariable;
+        const bool removeEvery = startsWithInsensitive(text, "remove every ");
+        const bool removeAll = startsWithInsensitive(text, "remove all ") || removeEvery;
+        const std::size_t prefix = addToVariable ? 4U : increaseVariable ? 9U :
+            subtractFromVariable ? 9U : decreaseVariable ? 9U :
+            (removeAll ? (removeEvery ? 13U : 11U) : 7U);
         const std::string_view rest(text.data() + prefix, text.size() - prefix);
-        const auto marker = findPhraseOutsideQuotes(rest, adding ? "to" : "from");
+        const std::string_view markerText = reverseOrder ? "by" : (adding ? "to" : (removeFromList ? "from" : "from"));
+        const auto marker = findPhraseOutsideQuotes(rest, markerText);
         if (marker == std::string_view::npos) {
-            error(adding ? "The add command is missing `to`." : "The subtract command is missing `from`.",
-                  adding ? "Example: add 1 to {score}" : "Example: subtract 1 from {score}", static_cast<int>(prefix + 1U), static_cast<int>(rest.size()));
+            error(adding ? (reverseOrder ? "The increase command is missing `by`." : "The add command is missing `to`.") :
+                  (reverseOrder ? "The decrease command is missing `by`." : "This command is missing `from`."),
+                  adding ? "Use `add 1 to {score}` or `increase {score} by 1`." :
+                  "Use `subtract 1 from {score}`, `decrease {score} by 1`, or `remove \"potion\" from {inventory::*}`.",
+                  static_cast<int>(prefix + 1U), static_cast<int>(rest.size()));
             return std::nullopt;
         }
         stmt.type = adding ? StatementType::Add : StatementType::Subtract;
-        stmt.expression = trim(rest.substr(0, marker));
-        const auto rawTarget = trim(rest.substr(marker + (adding ? 2U : 4U)));
-        stmt.target = canonicalVariableName(rawTarget);
+        if (reverseOrder) {
+            const std::string rawTarget = trim(rest.substr(0, marker));
+            stmt.target = canonicalVariableName(rawTarget);
+            stmt.expression = trim(rest.substr(marker + markerText.size()));
+            if (rawTarget.find('{') == std::string::npos || rawTarget.find('}') == std::string::npos) {
+                error("The variable being increased or decreased must be written inside curly braces.",
+                      "Use `increase {score} by 1` or `decrease {score} by 1`.");
+                return std::nullopt;
+            }
+        } else {
+            stmt.expression = trim(rest.substr(0, marker));
+            const auto rawTarget = trim(rest.substr(marker + markerText.size()));
+            stmt.target = canonicalVariableName(rawTarget);
+            if (rawTarget.find('{') == std::string::npos || rawTarget.find('}') == std::string::npos) {
+                error("The destination must be a variable written inside curly braces.",
+                      adding ? "Use: add 1 to {score}" : "Use: subtract 1 from {score} or remove \"potion\" from {inventory::*}");
+                return std::nullopt;
+            }
+        }
+        if (removeAll) stmt.property = "all";
         if (stmt.target.empty() || stmt.expression.empty()) {
-            error("The amount or destination variable is missing.", adding ? "Example: add 1 to {score}" : "Example: subtract 1 from {score}");
+            error("The amount or destination variable is missing.",
+                  "Use `add 1 to {score}`, `increase {score} by 1`, or `remove \"item\" from {items::*}`.");
             return std::nullopt;
         }
-        if (!lower(rawTarget).starts_with("engine::") && (rawTarget.find('{') == std::string::npos || rawTarget.find('}') == std::string::npos)) {
-            error("The destination must be a variable written inside curly braces.",
-                  adding ? "Use: add 1 to {score}" : "Use: subtract 1 from {score}",
-                  static_cast<int>(text.find(adding ? "to" : "from") + (adding ? 3U : 5U)), static_cast<int>(rawTarget.size()));
+        if (removeFromList && !stmt.target.ends_with("::*")) {
+            error("The `remove` effect removes matching values from a list variable.",
+                  "Use: remove \"potion\" from {inventory::*}. Use `subtract amount from {score}` for numeric subtraction.");
             return std::nullopt;
         }
         return stmt;
@@ -1055,9 +1219,11 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         if (stmt.target.empty()) { error("Close canvas needs a name.", "Example: close canvas \"PauseMenu\""); return std::nullopt; }
         return stmt;
     }
-    if (startsWithInsensitive(text, "delete ") || startsWithInsensitive(text, "clear ")) {
+    if (startsWithInsensitive(text, "delete ") || startsWithInsensitive(text, "clear ") ||
+        startsWithInsensitive(text, "reset ")) {
         stmt.type = StatementType::DeleteVariable;
-        const std::size_t prefix = startsWithInsensitive(text, "delete ") ? 7U : 6U;
+        const std::size_t prefix = startsWithInsensitive(text, "delete ") ? 7U :
+            startsWithInsensitive(text, "clear ") ? 6U : 6U;
         stmt.target = canonicalVariableName(trim(std::string_view(text).substr(prefix)));
         if (stmt.target.empty() || stmt.target.front() == '$' || stmt.target.front() == '@') {
             error("Delete/clear needs a writable variable or list.", "Use `delete {old_value}` or `clear {inventory::*}`.");
@@ -1070,6 +1236,53 @@ std::optional<Statement> parseStatement(const SourceLine& line, const std::files
         stmt.expression = lowered == "return" ? "none" : trim(std::string_view(text).substr(7));
         return stmt;
     }
+    static const std::regex setScreenOpacityPattern(
+        R"SCREEN(^set\s+screen\s+opacity\s+to\s+(.+?)\s*$)SCREEN", std::regex::icase);
+    std::smatch screenMatch;
+    if (std::regex_match(text, screenMatch, setScreenOpacityPattern)) {
+        stmt.type = StatementType::SetScreenOpacity;
+        stmt.expression = trim(screenMatch[1].str());
+        return stmt;
+    }
+
+    static const std::regex fadeScreenPattern(
+        R"SCREEN(^fade\s+screen\s+(to\s+black|from\s+black|to\s+(?:clear|transparent)|in|out)\s+over\s+(.+?)\s*$)SCREEN",
+        std::regex::icase);
+    if (std::regex_match(text, screenMatch, fadeScreenPattern)) {
+        stmt.type = StatementType::FadeScreen;
+        const std::string mode = lower(trim(screenMatch[1].str()));
+        stmt.property = mode == "to black" ? "to_black" :
+            mode == "from black" || mode == "in" ? "from_black" : mode == "out" ? "to_black" : "to_clear";
+        stmt.expression = trim(screenMatch[2].str());
+        return stmt;
+    }
+    static const std::regex fadeScreenOpacityPattern(
+        R"SCREEN(^fade\s+screen\s+to\s+opacity\s+(.+?)\s+over\s+(.+?)\s*$)SCREEN", std::regex::icase);
+    if (std::regex_match(text, screenMatch, fadeScreenOpacityPattern)) {
+        stmt.type = StatementType::FadeScreen;
+        stmt.property = "to_opacity";
+        stmt.expression = trim(screenMatch[1].str());
+        stmt.secondaryExpression = trim(screenMatch[2].str());
+        return stmt;
+    }
+
+    static const std::regex shakeScreenPattern(
+        R"SCREEN(^shake\s+screen\s+for\s+(.+?)\s+with\s+amplitude\s+(.+?)\s*$)SCREEN", std::regex::icase);
+    if (std::regex_match(text, screenMatch, shakeScreenPattern)) {
+        stmt.type = StatementType::ShakeScreen;
+        stmt.expression = trim(screenMatch[1].str());
+        stmt.secondaryExpression = trim(screenMatch[2].str());
+        return stmt;
+    }
+    static const std::regex shakeScreenDefaultPattern(
+        R"SCREEN(^shake\s+screen\s+for\s+(.+?)\s*$)SCREEN", std::regex::icase);
+    if (std::regex_match(text, screenMatch, shakeScreenDefaultPattern)) {
+        stmt.type = StatementType::ShakeScreen;
+        stmt.expression = trim(screenMatch[1].str());
+        stmt.secondaryExpression = "0.25";
+        return stmt;
+    }
+
     if (lowered == "stop") { stmt.type = StatementType::Stop; return stmt; }
 
     if (startsWithInsensitive(text, "if ") && !endsWithColon(text))
@@ -1120,8 +1333,21 @@ std::vector<Statement> parseStatements(const std::vector<SourceLine>& lines, std
 
 bool parseEventHeader(const std::string& header, EventHandler& event) {
     const auto text = lower(trim(header));
-    if (text == "on load:") { event.type = EventType::Load; return true; }
-    if (text == "on tick:" || text == "every tick:") { event.type = EventType::Tick; return true; }
+    const auto canonicalSelector = [](const std::string& raw) {
+        return lower(trim(raw));
+    };
+    // Startup aliases are equivalent: all run once when the project becomes active.
+    if (text == "on load:" || text == "on start:" || text == "on startup:" ||
+        text == "on project start:" || text == "on project load:" || text == "on initialize:") {
+        event.type = EventType::Load;
+        return true;
+    }
+    // A tick is one fixed logic update, not a rendered frame.
+    if (text == "on tick:" || text == "every tick:" || text == "on every tick:" ||
+        text == "each tick:" || text == "on each tick:") {
+        event.type = EventType::Tick;
+        return true;
+    }
     static const std::regex periodicPattern(R"PERIODIC(^(?:on\s+)?every\s+(\d+(?:\.\d+)?)\s*(milliseconds?|msecs?|ms|seconds?|secs?|s|ticks?|tick|minutes?|mins?|m|hours?|hrs?|h)\s*:$)PERIODIC", std::regex::icase);
     std::smatch periodicMatch;
     if (std::regex_match(text, periodicMatch, periodicPattern)) {
@@ -1140,12 +1366,17 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
             return true;
         } catch (...) { return false; }
     }
-    if (text == "on file attach:") { event.type = EventType::FileAttach; return true; }
+    if (text == "on file attach:" || text == "on file attached:") {
+        event.type = EventType::FileAttach;
+        return true;
+    }
     static const std::regex projectileHitPattern(R"HIT(^on\s+projectile\s+hit\s+entity\s+"([^"\n]+)"\s*:$)HIT", std::regex::icase);
     std::smatch projectileHitMatch;
     if (std::regex_match(header, projectileHitMatch, projectileHitPattern)) {
+        const auto selector = canonicalSelector(projectileHitMatch[1].str());
+        if (selector.empty()) return false;
         event.type = EventType::ProjectileHit;
-        event.selector = lower(trim(projectileHitMatch[1].str()));
+        event.selector = selector;
         return true;
     }
     static const std::regex tweenCompletePattern(
@@ -1153,8 +1384,10 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         std::regex::icase);
     std::smatch tweenCompleteMatch;
     if (std::regex_match(header, tweenCompleteMatch, tweenCompletePattern)) {
+        const auto selector = canonicalSelector(tweenCompleteMatch[1].str());
+        if (selector.empty()) return false;
         event.type = EventType::TweenComplete;
-        event.selector = lower(trim(tweenCompleteMatch[1].str()));
+        event.selector = selector;
         return true;
     }
     static const std::regex animationCompletePattern(
@@ -1162,9 +1395,12 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         std::regex::icase);
     std::smatch animationCompleteMatch;
     if (std::regex_match(header, animationCompleteMatch, animationCompletePattern)) {
+        const auto clipName = canonicalSelector(animationCompleteMatch[1].str());
+        const auto entityName = canonicalSelector(animationCompleteMatch[2].str());
+        if (clipName.empty() || entityName.empty()) return false;
         event.type = EventType::AnimationComplete;
-        event.secondarySelector = lower(trim(animationCompleteMatch[1].str())); // clip name
-        event.selector = lower(trim(animationCompleteMatch[2].str()));          // entity name
+        event.secondarySelector = clipName;  // clip name
+        event.selector = entityName;         // entity name
         return true;
     }
     static const std::regex interactionFocusPattern(
@@ -1172,10 +1408,13 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         std::regex::icase);
     std::smatch interactionFocusMatch;
     if (std::regex_match(header, interactionFocusMatch, interactionFocusPattern)) {
+        const auto actorName = canonicalSelector(interactionFocusMatch[1].str());
+        const auto targetName = canonicalSelector(interactionFocusMatch[3].str());
+        if (actorName.empty() || targetName.empty()) return false;
         event.type = lower(interactionFocusMatch[2].str()) == "enter"
             ? EventType::FocusEnter : EventType::FocusExit;
-        event.selector = lower(trim(interactionFocusMatch[1].str()));
-        event.secondarySelector = lower(trim(interactionFocusMatch[3].str()));
+        event.selector = actorName;
+        event.secondarySelector = targetName;
         return true;
     }
     static const std::regex triggerPattern(
@@ -1183,36 +1422,62 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         std::regex::icase);
     std::smatch triggerMatch;
     if (std::regex_match(header, triggerMatch, triggerPattern)) {
+        const auto actorName = canonicalSelector(triggerMatch[1].str());
+        const auto triggerName = canonicalSelector(triggerMatch[3].str());
+        if (actorName.empty() || triggerName.empty()) return false;
         event.type = lower(triggerMatch[2].str()) == "enter"
             ? EventType::TriggerEnter : EventType::TriggerExit;
-        event.selector = lower(trim(triggerMatch[1].str()));
-        event.secondarySelector = lower(trim(triggerMatch[3].str()));
+        event.selector = actorName;
+        event.secondarySelector = triggerName;
         return true;
     }
-    if (text == "on press escape:" || text == "on press key escape:") { event.type = EventType::KeyPress; event.selector = "ESCAPE"; return true; }
-    static const std::regex keyPattern(R"REGEX(^on\s+press\s+key\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
-    static const std::regex keyPatternAlt(R"REGEX(^on\s+key\s+press\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
-    static const std::regex buttonPattern(R"REGEX(^on\s+click\s+button\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
-    std::smatch match;
-    if (std::regex_match(header, match, keyPattern) || std::regex_match(header, match, keyPatternAlt)) {
-        event.type = EventType::KeyPress; event.selector = canonicalEventKey(match[1].str()); return true;
+    if (text == "on press escape:" || text == "on press key escape:" ||
+        text == "when escape is pressed:") {
+        event.type = EventType::KeyPress;
+        event.selector = "ESCAPE";
+        return true;
     }
-    if (std::regex_match(header, match, buttonPattern)) {
-        event.type = EventType::ButtonClick; event.selector = lower(match[1].str()); return true;
+    static const std::regex keyPattern(R"REGEX(^on\s+(?:press\s+key|key\s+press)\s+"?([^"\s:]+)"?\s*:$)REGEX", std::regex::icase);
+    static const std::regex keyPressedPattern(R"REGEX(^on\s+key\s+"([^"\n]+)"\s+pressed\s*:$)REGEX", std::regex::icase);
+    static const std::regex whenKeyPressedPattern(R"REGEX(^when\s+key\s+"([^"\n]+)"\s+is\s+pressed\s*:$)REGEX", std::regex::icase);
+    static const std::regex buttonPattern(R"REGEX(^on\s+click\s+button\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
+    static const std::regex buttonClickPattern(R"REGEX(^on\s+button\s+click\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
+    static const std::regex buttonClickedPattern(R"REGEX(^on\s+button\s+"([^"\n]+)"\s+(?:click|clicked)\s*:$)REGEX", std::regex::icase);
+    static const std::regex whenButtonClickedPattern(R"REGEX(^when\s+button\s+"([^"\n]+)"\s+is\s+clicked\s*:$)REGEX", std::regex::icase);
+    std::smatch match;
+    if (std::regex_match(header, match, keyPattern) ||
+        std::regex_match(header, match, keyPressedPattern) ||
+        std::regex_match(header, match, whenKeyPressedPattern)) {
+        const auto rawKey = trim(match[1].str());
+        if (rawKey.empty()) return false;
+        event.type = EventType::KeyPress;
+        event.selector = canonicalEventKey(rawKey);
+        return true;
+    }
+    if (std::regex_match(header, match, buttonPattern) ||
+        std::regex_match(header, match, buttonClickPattern) ||
+        std::regex_match(header, match, buttonClickedPattern) ||
+        std::regex_match(header, match, whenButtonClickedPattern)) {
+        const auto buttonId = canonicalSelector(match[1].str());
+        if (buttonId.empty()) return false;
+        event.type = EventType::ButtonClick;
+        event.selector = buttonId;
+        return true;
     }
     return false;
 }
 
 std::string eventHeaderHint(const std::string& line) {
-    if (lower(line).find("load") != std::string::npos) return "Use exactly: on load:";
+    if (lower(line).find("load") != std::string::npos || lower(line).find("start") != std::string::npos)
+        return "Use `on load:` or its aliases `on start:` and `on startup:`.";
     if (lower(line).find("every") != std::string::npos) return "Use `every 1 second:` or `every 250 milliseconds:`. The interval must be positive and no longer than 7 days.";
     if (lower(line).find("tick") != std::string::npos) return "Use `on tick:` for every logic tick, or `every 1 second:` for a scheduled interval.";
     if (lower(line).find("press") != std::string::npos || lower(line).find("key") != std::string::npos)
-        return "Use: on press key \"SPACE\": (replace SPACE with a key name)";
-    if (lower(line).find("click") != std::string::npos)
-        return "Use: on click button \"resume_btn\":";
+        return "Use `on press key \"SPACE\":`, `on key \"SPACE\" pressed:`, or `when key \"SPACE\" is pressed:`.";
+    if (lower(line).find("click") != std::string::npos || lower(line).find("button") != std::string::npos)
+        return "Use `on click button \"resume_btn\":`, `on button click \"resume_btn\":`, or `when button \"resume_btn\" is clicked:`.";
     if (lower(line).find("file") != std::string::npos || lower(line).find("attach") != std::string::npos)
-        return "Use exactly: on file attach:";
+        return "Use: on file attach: or on file attached:";
     if (lower(line).find("tween") != std::string::npos)
         return "Use: on tween complete for entity \"boulder\":";
     if (lower(line).find("focus") != std::string::npos)
@@ -1440,10 +1705,11 @@ ScriptProgram ScriptParser::parseText(const std::string& text, const std::filesy
             continue;
         }
         if (startsWithInsensitive(line.text, "set ") || startsWithInsensitive(line.text, "add ") ||
-            startsWithInsensitive(line.text, "subtract ") || startsWithInsensitive(line.text, "remove ") ||
-            startsWithInsensitive(line.text, "toggle ") || startsWithInsensitive(line.text, "broadcast ") ||
-            startsWithInsensitive(line.text, "send ") || startsWithInsensitive(line.text, "delete ") ||
-            startsWithInsensitive(line.text, "clear ") || startsWithInsensitive(line.text, "return")) {
+            startsWithInsensitive(line.text, "give ") || startsWithInsensitive(line.text, "subtract ") ||
+            startsWithInsensitive(line.text, "remove ") || startsWithInsensitive(line.text, "toggle ") ||
+            startsWithInsensitive(line.text, "broadcast ") || startsWithInsensitive(line.text, "send ") ||
+            startsWithInsensitive(line.text, "delete ") || startsWithInsensitive(line.text, "clear ") ||
+            startsWithInsensitive(line.text, "reset ") || startsWithInsensitive(line.text, "return")) {
             std::vector<Diagnostic> statementDiagnostics;
             auto statement = parseStatement(line, sourceName, statementDiagnostics);
             appendDiagnostics(program.diagnostics, std::move(statementDiagnostics));

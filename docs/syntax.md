@@ -1,8 +1,8 @@
-# CX Script syntax guide (reviewed against v0.10.14)
+# CX Script syntax guide — v0.11.0 development branch
 
-> This page describes syntax accepted by the current v0.10.14 source line. The v0.11.0 language overhaul has a separate [design charter](language-design.md) and [source-backed syntax audit](SKRIPT_SYNTAX_AUDIT.md). Target examples in those documents are not necessarily accepted by this release yet.
+> This guide describes the syntax currently implemented on the `v0.11.0-language-overhaul` development branch. It is a pre-release guide: these additions are **not** part of the published v0.10.14 release yet. The searchable [`reference.html`](reference.html) and its versioned release snapshot remain intentionally pinned to v0.10.14 until v0.11.0 is accepted and published.
 >
-> Feature headings retain the version in which each capability was introduced. They are historical introduction labels, not the version coverage of this whole guide. For detailed lifecycle guarantees, also read the focused feature notes.
+> Examples in this guide are intended to match the branch parser/runtime and its tests. The [language design charter](language-design.md) describes the target direction, while the [source-backed syntax audit](SKRIPT_SYNTAX_AUDIT.md) identifies remaining gaps. Feature headings retain their historical introduction versions; they do not imply that the entire guide describes that release.
 
 CX is designed to read like plain English. Indentation is forgiving: CX auto-detects conventional four-space or two-space style per file, treats a tab as one level in the detected style, and normalizes both styles to the same internal block levels. In a two-space file, four spaces count as two levels. Align sibling statements; if an indentation level is ambiguous, the parser points it out. When a line is malformed, the runtime diagnostic output reports its file and line; the graphical runtime also retains reload diagnostics in the Ctrl+Tab drawer, shows the source and a caret, explains the problem, and suggests a correction.
 
@@ -31,7 +31,25 @@ on tween complete for entity "boulder":
     set {last_boulder_x} to {_tween_x}
 ```
 
-An event header ends with `:`. Its commands are indented under it. `on tick:` uses the fixed logic rate, so avoid file I/O, expensive searches, and unbounded loops there. Use `{^...}` for high-frequency counters that do not need persistence, so they do not trigger unnecessary variable-file writes. Named trigger handlers run once when an actor starts overlapping a trigger area and once when that contact ends. Tween completion handlers run once when a deterministic entity movement finishes; see the trigger and tween sections below for event-local values and lifecycle limits.
+An event header ends with `:`. Its commands are indented under it. Required quoted selectors—entity, trigger, clip, key, and button IDs—must contain a non-whitespace name; leading and trailing whitespace is trimmed and selector matching is case-insensitive. `on tick:` uses the fixed logic rate, so avoid file I/O, expensive searches, and unbounded loops there. Use `{^...}` for high-frequency counters that do not need persistence, so they do not trigger unnecessary variable-file writes. Named trigger handlers run once when an actor starts overlapping a trigger area and once when that contact ends. Tween completion handlers run once when a deterministic entity movement finishes. Event-specific local values are catalogued in the [event context reference](event-context.md).
+
+### Currently accepted event headers
+
+| Event | Canonical form | Accepted compatibility aliases |
+|---|---|---|
+| Startup | `on load:` | `on start:`, `on startup:`, `on project start:`, `on project load:`, `on initialize:` |
+| Fixed logic tick | `on tick:` | `every tick:`, `on every tick:`, `each tick:`, `on each tick:` |
+| Periodic | `every 1 second:` | Optional `on` prefix; positive numeric intervals in milliseconds, seconds, ticks, minutes, or hours (including documented abbreviations) |
+| File attachment | `on file attach:` | `on file attached:` |
+| Key press | `on press key "SPACE":` | `on key press "SPACE":`, `on key "SPACE" pressed:`, `when key "SPACE" is pressed:`, `on press escape:`, `on press key escape:`, `when escape is pressed:` |
+| Canvas button click | `on click button "resume_btn":` | `on button click "resume_btn":`, `on button "resume_btn" click:`, `on button "resume_btn" clicked:`, `when button "resume_btn" is clicked:` |
+| Projectile hit | `on projectile hit entity "warden":` | — |
+| Trigger enter/exit | `on entity "player" enter trigger "door":` / `on entity "player" exit trigger "door":` | — |
+| Focus enter/exit | `on entity "player" focus enter entity "chest":` / `on entity "player" focus exit entity "chest":` | — |
+| Tween completion | `on tween complete for entity "boulder":` | — |
+| Animation completion | `on animation complete "wake" for entity "player":` | — |
+
+Entity, clip, key, and button selectors are matched case-insensitively after trimming surrounding whitespace. A quoted selector containing only whitespace is invalid. This table records what the v0.11.0 development parser accepts today; it is not a claim that the event vocabulary has reached its final Skript-first design. In particular, general mouse, window-focus, room-lifecycle and wildcard collision events remain future design work.
 
 ## Global and event-local variables
 
@@ -57,11 +75,28 @@ set {game_started} to true
 set {player_name} to "Player One"
 set {missing_value} to none
 add 1 to {lives}
+give 2 to {lives}
 subtract 2 from {lives}
+reset {player_name}
 toggle {game_started}
 ```
 
-Basic values are numbers, booleans, `none`, quoted text, and variable references. Values inside quoted strings are interpolated. Initialize number variables before using arithmetic for clear behavior.
+Basic values are numbers, booleans, `none`, quoted text, and variable references. Values inside quoted strings are interpolated. Initialize number variables before using arithmetic for clear behavior. `give amount to {variable}` is an alias for `add amount to {variable}`; `reset {variable}` clears one variable or an entire list namespace, like `delete`/`clear`.
+
+### Object references and property getters
+
+```skript
+on load:
+    set {_hero} to sprite "hero"
+    set {hero_x} to x-coordinate of {_hero}
+    set {hero_width} to width of {_hero}
+    set {hero_height} to height of sprite {_hero}
+    set {hero_texture} to texture of sprite "hero"
+        set sprite "hero"'s x-coordinate to 15
+    set entity "guard"'s health to 25
+```
+
+Sprite/entity references stored in event/function locals or temporary variables identify a particular live object instance. Property expressions use the same `<property> of <object>` shape as the setters. Scalar getters include `x`/`x-coordinate`, `y`/`y-coordinate`, `width`, `height`, `texture`, `rotation`, `speed`, and `visible`/`visibility`. Entity references also expose `health`, `max health` (also written `max-health` or `max_health`), `kind`, and `team`; these classification/health properties are not available on sprites. Use `set kind of entity "guard" to "boss"` and `set team of entity "guard" to "hostile"`; the earlier `set entity "guard" kind/team to ...` commands remain accepted. Compound position and size values remain coordinate pairs in setters; read their components through the scalar coordinate/dimension getters.
 
 ## Conditions
 
@@ -72,7 +107,7 @@ else:
     broadcast "Keep going!"
 ```
 
-Use `>`, `<`, `>=`, `<=`, `is`, `is not`, `equals`, `contains`, `and`, `or`, `not`, and parentheses. Prefer symbols for numeric comparisons, such as `if {score} > 10:`.
+Use `>`, `<`, `>=`, `<=`, `is`, `is not`, `equals`, `contains`, `and`, `or`, `not`, and parentheses. Natural numeric comparisons accept forms such as `is greater than`, `higher than`, `bigger than`, `larger than`, `more than`, `is less than`, `lower than`, and `smaller than`.
 
 
 ## Loops, wait, and scheduled events
@@ -87,7 +122,7 @@ on press key "SPACE":
     send "Countdown over!"
 ```
 
-`loop 5 times:` runs its body five times. `loop {_count} times:` accepts a variable containing a non-negative whole number. Inside a counted loop, `loop-number` and `loop-value` both refer to the current iteration number (starting at 1). In strings, use Skript-style interpolation such as `"%{_num}%"` or `"%loop-number%"`.
+`loop 5 times:` runs its body five times. `loop {_count} times:` accepts a variable containing a non-negative whole number. Inside a counted, list, or while loop, `loop-number`, `loop-counter`, and `loop-iteration` refer to the current one-based iteration count. The aliases also accept a space instead of a hyphen and an optional leading `the` (for example, `the loop counter`). In a counted loop, `loop-value` also refers to the iteration number; in a list loop it refers to the current list value, while `loop-index` preserves that entry's key. The counter aliases work as expressions and inside Skript-style interpolation such as `"%loop-counter%"` or `"%the loop iteration%"`.
 
 `while condition:` re-checks its condition after each iteration. Use `exit loop` (also `stop loop`) to leave the nearest active loop, or `continue loop` (also `continue`) to skip the remainder of that iteration and move to the next one. Every active loop must have a reachable exit condition unless it intentionally runs over time with a wait.
 
@@ -115,16 +150,19 @@ List variables reuse the normal variable syntax. Entries can have integer indexe
 set {_items::*} to "potion", "key", "map"
 set {_items::favorite} to "compass"
 add "torch" to {_items::*}
+give "coin" to {_items::*}
 
 loop {_items::*}:
     broadcast "%loop-index%: %loop-value%"
 
 remove "key" from {_items::*}
+remove every "potion" from {_items::*}
 delete {_items::favorite}
 clear {_items::*}
+reset {_items::*}
 ```
 
-`loop-value` returns the value and `loop-index` returns the original entry key (such as `1` or `favorite`). List loops iterate over a snapshot, so adding/removing entries inside a loop does not alter the current iteration. `set {copy::*} to {source::*}` copies all entries and keeps their keys. `set {_items::*} to "a", "b"` creates sequential numeric entries. `clear {items::*}` or `delete {items::*}` removes every entry; `delete {items::key}` removes one entry. `add value to {items::*}` appends at the next numeric index, and `remove value from {items::*}` removes the first matching value. List entries use the same variable persistence format as other global variables.
+`loop-value` returns the value and `loop-index` returns the original entry key (such as `1` or `favorite`). List loops iterate over a snapshot, so adding/removing entries inside a loop does not alter the current iteration. `set {copy::*} to {source::*}` copies all entries and keeps their keys. `set {_items::*} to "a", "b"` creates sequential numeric entries. `clear {items::*}`, `delete {items::*}`, or `reset {items::*}` removes every entry; `delete {items::key}` removes one entry. `add value to {items::*}` and `give value to {items::*}` append at the next numeric index. `remove value from {items::*}` removes the first matching value; `remove all value from {items::*}` and `remove every value from {items::*}` remove all matches. List entries use the same variable persistence format as other global variables.
 
 ## Reusable functions and expressions
 
@@ -141,9 +179,9 @@ on load:
     set {double_score} to ({score} + 3) * 2
 ```
 
-Function parameters become event-like locals named `{_value}`, `{_minimum}`, and `{_maximum}`. A function returns a value with `return`; calls can be used where a value is expected. Functions are synchronous and cannot use `wait`. Recursion is limited to 64 nested calls. Arithmetic uses parentheses and conventional precedence: `*`, `/`, `%` before `+` and `-`. `+` concatenates values when either operand is text. Numeric functions include `sin`, `cos`, `tan`, `sine`, `noise2d`, `fbm2d`, `clamp`, and `lerp`. Seeded random functions are documented in the next section.
+Function parameters become event-like locals named `{_value}`, `{_minimum}`, and `{_maximum}`. A function returns a value with `return`; calls can be used where a value is expected. Functions are synchronous and cannot use `wait`. Recursion is limited to 64 nested calls. Arithmetic uses parentheses and conventional precedence: `*`, `/`, `%` before `+` and `-`. `+` concatenates values when either operand is text. Common numeric operations have English-first forms, including `the sine of 90`, `the square root of 81`, `the average of {scores::*}`, and `clamp 15 between 0 and 10`. `sin`, `cos`, `tan`, `sine`, `noise2d`, `fbm2d`, `clamp`, and `lerp` function calls remain available as compact/technical forms. Seeded random functions are documented in the next section.
 
-### Deterministic random streams
+### Random expressions and streams
 
 ```skript
 on load:
@@ -153,18 +191,26 @@ on load:
 on tick:
     if random_float("encounters") < 0.002:
         set {next_encounter_kind} to random_choice("encounters", "slime", "bat", "guard")
+    set {ambient_roll} to a random integer between 1 and 100
+    set {rolls::*} to 5 random integers between 1 and 6
+    set {drop_fractions::*} to 3 random numbers from 0 to 1 using random stream "loot"
 
 on press key "L":
-    set {loot_roll} to random_int("loot", 1, 100)
+    set {loot_roll} to a random integer from 1 to 100 using random stream "loot"
+    set {random_number} to a random number between 0 and 1
+    set {random_item} to a random item out of {items::*} using random stream "loot"
 ```
 
-A random stream must be seeded explicitly before it is used. `seed random stream "name" with integer` creates or resets a case-insensitive named stream in the current runtime. Names are trimmed, limited to 64 characters, and separate streams do not consume one another's sequence. The seed must be a whole number in the exact JavaScript-safe integer range `-9007199254740991` through `9007199254740991`. Seed streams once during startup (typically in `on load:`), not on every tick unless repeatedly restarting a sequence is intentional.
+Natural single-value expressions such as `a random integer between 1 and 10`, `random number from 0 to 1`, and `a random item out of {items::*}` return one value. Count-prefix forms such as `5 random integers between 1 and 6` and `3 random numbers from 0 to 1` generate multiple values when assigned to a list variable (`{rolls::*}`). The count is a numeric expression that must evaluate to a whole number from 0 through 4096. A zero count clears the destination list and makes no random draws. Each generated item uses the same typed single-value random expression and appends to the list in index order. Both single-value and count-prefix forms use the runtime-local `"default"` stream unless they include `using random stream "name"`. The default stream is initialized automatically for each runtime with best-effort runtime entropy, so ordinary random expressions do not need setup but are not reproducible between sessions by default. To make the default stream reproducible, seed it explicitly with `seed random stream "default" with integer`.
 
-- `random_float("stream")` returns a deterministic number in `[0, 1)` using the high 53 bits of SplitMix64.
+`seed random stream "name" with integer` creates or resets a case-insensitive stream. Names are trimmed and limited to 64 characters; separate names do not consume one another's sequences. Seeds must be whole numbers in the exact JavaScript-safe integer range `-9007199254740991` through `9007199254740991`. Seed named streams once during startup (typically in `on load:`), not on every tick unless repeatedly restarting a sequence is intentional. Any named stream other than the pre-created `"default"` stream must be seeded before use.
+
+- `random_float("stream")` returns a number in `[0, 1)` using the high 53 bits of SplitMix64.
 - `random_int("stream", minimum, maximum)` returns an unbiased integer in the inclusive range. Both bounds must be finite safe integers and `minimum` must not exceed `maximum`. Even an equal-endpoint range consumes one draw.
 - `random_choice("stream", option1, option2, ...)` accepts 1–256 value expressions and returns the selected value without converting its type. With multiple options, one bounded draw selects the option; only that option expression is evaluated. A single-option choice does not advance the stream.
+- Random natural expressions also accept the optional `using random stream "name"` clause. `random item` and `random element` are equivalent list-choice forms.
 
-Each runtime instance owns its stream state. A successful `/reload` rebuilds streams by replaying the new program's seed statements; a failed reload leaves the running program and its exact stream positions unchanged. Stream state is not written to `variables.csv` and is recreated from script seeds on process startup. Use separate stream names for independent systems (for example `"loot"`, `"encounters"`, and `"decoration"`) so adding a draw in one system does not perturb another. This generator is for repeatable game logic, not cryptography or security-sensitive tokens.
+Each runtime instance owns its stream state. A successful `/reload` builds a new default stream and replays the new program's explicit seed statements; a failed reload preserves the last-good runtime and its exact stream positions. Stream states are not written to `variables.csv`. Explicitly seeded streams reproduce their sequences; the automatically initialized default stream is regenerated on runtime reset. SplitMix64 is for game logic, not cryptography or security-sensitive tokens.
 
 
 
@@ -211,9 +257,9 @@ A canvas keeps the existing panel/text/button declaration system. Grid coordinat
 
 ```skript
 canvas "HUD":
-    create panel "map_panel" at grid (127, 1) anchor top_right size (220, 150) color (18, 26, 40, 220)
-    create button "map_btn" at grid (127, 1) anchor top_right size (200, 42) label "Map"
-    create button "hotbar" at grid (64, 127) anchor bottom_center size (520, 54) label "Hotbar"
+    create panel "map_panel" at grid (127, 1) anchor top right size (220, 150) color (18, 26, 40, 220)
+    create button "map_btn" at grid (127, 1) anchor top right size (200, 42) label "Map"
+    create button "hotbar" at grid (64, 127) anchor bottom center size (520, 54) label "Hotbar"
     create panel "tooltip_bg" to the left of button "map_btn" gap 10 size (180, 42) color (32, 42, 60, 235)
 
 on press key "H":
@@ -226,7 +272,7 @@ on click button "resume_btn":
     close canvas "PauseMenu"
 ```
 
-Absolute `at (x, y)` declarations remain useful for pixel layouts and are scaled from the configured reference resolution. `at grid (x, y)` uses coordinates 0–128 and the optional anchors `top_left`, `top_center`, `top_right`, `center_left`, `center`, `center_right`, `bottom_left`, `bottom_center`, and `bottom_right`. `anchor auto` chooses the nearest edge based on the grid coordinate. Relative elements support `to the left/right/above/below of button|panel "id" gap N`; the target must be declared earlier in the same canvas. Use `engine::ui_scale` to scale control sizes globally without changing their edge anchor. `engine::resolution_mode` accepts `"responsive"` (adapt to the resizable window) or `"fixed"` (keep the configured window dimensions). `engine::ui_reference_width` and `engine::ui_reference_height` provide the design reference for legacy absolute-position UI coordinates. World rendering has its own tile-based view: `engine::world_view_height_tiles` defines the view height and view width follows window aspect ratio. The world is not stretched to different aspect ratios; the camera shows more or less world horizontally. Screen UI is resolved separately against the actual viewport dimensions. Panel colors are RGBA channels, each clamped to `0–255`. IDs are unique within a canvas. The canvas/button syntax remains unchanged; GUI left clicks hit-test resolved button bounds and run `on click button "id":`.
+Absolute `at (x, y)` declarations remain useful for pixel layouts and are scaled from the configured reference resolution. `at grid (x, y)` uses coordinates 0–128 and the canonical anchors `top left`, `top center`, `top right`, `center left`, `center`, `center right`, `bottom left`, `bottom center`, and `bottom right`. Underscored aliases such as `top_right` remain accepted for compatibility. `anchor auto` chooses the nearest edge based on the grid coordinate. Relative elements support `to the left/right/above/below of button|panel "id" gap N`; the target must be declared earlier in the same canvas. Use `engine::ui_scale` to scale control sizes globally without changing their edge anchor. `engine::resolution_mode` accepts `"responsive"` (adapt to the resizable window) or `"fixed"` (keep the configured window dimensions). `engine::ui_reference_width` and `engine::ui_reference_height` provide the design reference for legacy absolute-position UI coordinates. World rendering has its own tile-based view: `engine::world_view_height_tiles` defines the view height and view width follows window aspect ratio. The world is not stretched to different aspect ratios; the camera shows more or less world horizontally. Screen UI is resolved separately against the actual viewport dimensions. Panel colors are RGBA channels, each clamped to `0–255`. IDs are unique within a canvas. The canvas/button syntax remains unchanged; GUI left clicks hit-test resolved button bounds and run `on click button "id":`.
 
 ## Oblique room projection and transparent overlays
 
@@ -298,7 +344,7 @@ if entity "warden" has tag "flying":
     set {boss_can_fly} to true
 ```
 
-`kind` says what the entity is, `team` says who it belongs to, and `tags` records additional author-defined traits. These are separate metadata fields; the engine does not automatically infer damage, behavior or allegiance from their values. Tag assignment replaces the set, and an empty string clears it. Identifiers are limited to 1–40 letters, digits, underscores or hyphens; an entity can have at most 32 tags.
+`kind` says what the entity is, `team` says who it belongs to, and `tags` records additional author-defined traits. These are separate metadata fields; the engine does not automatically infer damage, behavior or allegiance from their values. Tag assignment replaces the set, and an empty string clears it. Use `add tag "flying" to entity "warden"` or `remove tag "flying" from entity "warden"` to change one tag, and `clear tags of entity "warden"` to remove them all. Adding an existing tag and removing a missing tag are no-ops. Identifiers are limited to 1–40 letters, digits, underscores or hyphens; an entity can have at most 32 tags.
 
 Collision channels are `actors`, `projectiles`, `props`, `triggers`, `effects`, `pickups`, `hazards` and `sensors`. A layer may contain a comma-separated combination. A mask lists channels an object accepts; `all` and `none` are shortcuts. The relationship is mutual: each object's mask must include at least one channel assigned to the other object. Collision-enabled state and AABB overlap must also pass. `entity "a" overlaps entity "b"` uses this same filter. Room solid-tile collision remains a separate grid system.
 
@@ -338,12 +384,12 @@ create beam "sun shaft" from (320, -80) to (320, 240) using {$beam_strip}
 set beam "sun shaft" width to 48
 set beam "sun shaft" opacity to 0.72
 set beam "sun shaft" tint to (255, 230, 190)
-set beam "sun shaft" texture_repeat to 64
+set beam "sun shaft" texture repeat to 64
 set beam "sun shaft" layer to "background" # or "world" / "foreground"
-set beam "sun shaft" endpoint_light to true
-set beam "sun shaft" endpoint_light_radius to 180
-set beam "sun shaft" endpoint_light_intensity to 0.72
-set beam "sun shaft" endpoint_light_color to (255, 196, 132)
+set beam "sun shaft" endpoint light to true
+set beam "sun shaft" endpoint light radius to 180
+set beam "sun shaft" endpoint light intensity to 0.72
+set beam "sun shaft" endpoint light color to (255, 196, 132)
 set beam "sun shaft" end to (360, 260)
 set beam "sun shaft" lifetime to 2.5 # zero is persistent
 remove beam "sun shaft"
@@ -355,7 +401,7 @@ remove beam "sun shaft"
 
 ```cx
 on press key "SPACE":
-    tween entity "boulder" to (700, 360) over 0.9 seconds easing ease_in_out with arc height 120
+    tween entity "boulder" to (700, 360) over 0.9 seconds easing ease in out with arc height 120
 
 on press key "C":
     cancel tween for entity "boulder"
@@ -366,7 +412,7 @@ on tween complete for entity "boulder":
     set {boulder_name} to {_tween_entity}
 ```
 
-The tween moves an ordinary entity's top-left position in world pixels. Supported easing values are `linear`, `ease_in`, `ease_out`, and `ease_in_out`. The optional non-negative `arc height` adds an upward parabola above the straight path, peaking halfway through. Duration is evaluated when the command runs and rounded up to a fixed tick count using the tick rate at that moment; changing the tick rate later does not change the active tween's tick count.
+The tween moves an ordinary entity's top-left position in world pixels. Canonical easing values are `linear`, `ease in`, `ease out`, and `ease in out`; the earlier underscored forms remain accepted aliases. The optional non-negative `arc height` adds an upward parabola above the straight path, peaking halfway through. Duration is evaluated when the command runs and rounded up to a fixed tick count using the tick rate at that moment; changing the tick rate later does not change the active tween's tick count.
 
 `on tween complete for entity "name":` runs once after the exact destination is reached. Event locals are `{_tween_entity}`, `{_tween_x}`, and `{_tween_y}`. New tweens replace old ones without completing them; cancellation is silent. Explicit position changes, nonzero manual movement, pressed directional input, assigning a tile path, deletion, or same-name replacement cancel the tween. A room-context change discards stale tweens without completion. Successful startup tweens created during a transactional script load are preserved.
 
@@ -450,14 +496,16 @@ on load:
     set entity "player" animation sheet to (32, 32) columns 4 rows 8
     set entity "player" hitbox to (15, 12) offset (8, 17)
     set entity "player" avoids solid tiles to true
-    set entity "player" health to 6
-    set entity "player" max_health to 6
+    set max health of entity "player" to 6
+    set health of entity "player" to 6
+    set kind of entity "player" to "hero"
+    set team of entity "player" to "adventurer"
 
 on tick:
     move entity "player" using WASD at speed 170
 ```
 
-The movement speed is in world pixels per second and diagonal movement is normalized. A spritesheet declaration gives frame width/height in pixels and the frame grid dimensions. This build advances the frame while moving and uses eight directional rows. Hitboxes are AABBs; hitbox dimensions are followed by an offset from the entity origin. Health values are exposed through `{entity::name::health}` and `{entity::name::max_health}` for UI bars or conditions.
+The movement speed is in world pixels per second and diagonal movement is normalized. A spritesheet declaration gives frame width/height in pixels and the frame grid dimensions. This build advances the frame while moving and uses eight directional rows. Hitboxes are AABBs; hitbox dimensions are followed by an offset from the entity origin. Health can be read with `health of entity "player"` and `max health of entity "player"`, and can be assigned with the matching `set <property> of entity <object> to <number>` form. Both setters keep `{entity::name::health}` and `{entity::name::max_health}` synchronized for existing UI scripts. The legacy `set entity "player" health/max_health to ...` form remains supported.
 
 ### NPC paths and obstacle avoidance
 
@@ -610,7 +658,7 @@ Drop `.wav`, `.ogg`, `.flac`, `.aiff`, or `.aif` files into `assets/audio/`; the
 
 ```skript
 on load:
-    create wave "chime" duration 0.35 sample_rate 44100
+    create wave "chime" duration 0.35 sample rate 44100
     add sine wave to "chime" frequency 440 amplitude 0.55 phase 0
     add sine wave to "chime" frequency 660 amplitude 0.22 phase 0.2
     set wave "chime" envelope attack 0.01 decay 0.08 sustain 0.55 release 0.18
@@ -620,7 +668,7 @@ on load:
     play sound "chime"
 ```
 
-A wave is a named reusable sample buffer. Add sine, square, triangle, saw, or seeded noise layers. Parameters include frequency in Hz, amplitude, phase in radians, and optional noise seed. `sine(hz, seconds[, phase])`, `noise2d(x, y[, seed])`, and `fbm2d(x, y[, seed[, octaves]])` are numeric expressions for procedural synthesis/terrain parameters. `visualize wave` exports an SVG graph; it is not a live audio oscilloscope. Audio generation/export works in the core/CLI, while sound playback requires the optional graphical SFML Audio backend. There is not yet a DAW-grade mixer or VST host.
+A wave is a named reusable sample buffer. Use `sample rate` as the canonical phrase; `sample_rate` remains accepted as a compatibility alias. Add sine, square, triangle, saw, or seeded noise layers. Parameters include frequency in Hz, amplitude, phase in radians, and optional noise seed. `sine(hz, seconds[, phase])`, `noise2d(x, y[, seed])`, and `fbm2d(x, y[, seed[, octaves]])` are numeric expressions for procedural synthesis/terrain parameters. `visualize wave` exports an SVG graph; it is not a live audio oscilloscope. Audio generation/export works in the core/CLI, while sound playback requires the optional graphical SFML Audio backend. There is not yet a DAW-grade mixer or VST host.
 
 ## Color formatting and fonts
 

@@ -1,6 +1,6 @@
 # CX Script / Skript syntax audit
 
-**Audit baseline:** CX Engine `main` commit `b00b8b6ff851462f58eea3a15ff37e0de419e40f` (v0.10.14-preview.8 source line)  
+**Comparison baseline:** CX Engine `main` commit `b00b8b6ff851462f58eea3a15ff37e0de419e40f` (v0.10.14-preview.8 source line). Implementation status below is rechecked against the active v0.11.0 development branch.  
 **Reference baseline:** official Skript core documentation 2.17.1  
 **Purpose:** establish the current CX language surface, identify syntax drift, and set the work required for the v0.11.0 overhaul.
 
@@ -51,7 +51,7 @@ The 55 `StatementType` values cover variable assignment/deletion/mutation, rando
 - `on entity "actor" focus enter entity "target":`
 - `on entity "actor" focus exit entity "target":`
 
-**Audit result:** lifecycle and periodic events are already close to Skript. Key press has two word orders, but the event family is narrow: a consistent key/mouse press/release vocabulary, window focus, room lifecycle and standard event-context expressions still need design. Several newer event headers embed concrete entity names and multiple clauses directly in the header. That is more verbose than necessary; event participants should generally be exposed through documented context expressions/locals and filterable inside the body.
+**Audit result:** lifecycle and periodic events are already close to Skript. Key press has two word orders, but the event family is narrow: a consistent key/mouse press/release vocabulary, window focus, and room lifecycle still need design. The complete set of existing payload locals is catalogued in [event-context.md](event-context.md) and now has direct runtime field assertions across each payload-bearing event family. The parser rejects missing and whitespace-only required selectors. Some newer event headers name both entities explicitly; this is intentionally retained for trigger pairs because the runtime checks authored pairs rather than scanning every actor/trigger combination each tick. Broader header vocabulary and body-level filtering still need design without introducing unbounded dispatch work.
 
 ### Variables — 7
 
@@ -74,16 +74,18 @@ The 55 `StatementType` values cover variable assignment/deletion/mutation, rando
 - `sine(hz, seconds[, phase])`
 - `noise2d(x, y[, seed])`
 - `fbm2d(x, y[, seed[, octaves]])`
-- `random_float("stream")`
-- `random_int("stream", minimum, maximum)`
-- `random_choice("stream", option1, option2, ...)`
-- `clamp(value, min, max)` and `lerp(a, b, t)`
+- `random_float("stream")`, `random_int("stream", minimum, maximum)` and `random_choice("stream", option1, option2, ...)`
+- Natural single-value forms: `a random integer between 1 and 10` and `a random number from 0 to 1`
+- Random selection from list variables: `a random element/item out of {items::*}`
+- Optional `using random stream "name"` clause for natural forms
+- The runtime-local `"default"` stream is initialized automatically; other named streams must be seeded explicitly
+- Natural numeric helpers include `the sine of ...`, `the square root of ...`, `the average of ...`, and `clamp value between minimum and maximum`
 
-<badge color="warning">P0 syntax gap</badge>
+<badge color="warning">P0 validation gate</badge>
 
-Common random values and several common mathematical operations are exposed only as function calls. In particular, the requested `set {_var} to a random integer between 1 and 10` is **not accepted as a random expression by the current v0.10.14 grammar**. The implementation documents `random_int("stream", min, max)` and requires an already seeded named stream. A plain-English equivalent should be a first-class expression, with the named deterministic stream retained as an optional clause.
+Count-prefix/plural random forms are now implemented on the development branch for list assignments, for example `set {rolls::*} to 5 random integers between 5 and 96` and `set {fractions::*} to 3 random numbers from 0 to 1`. A count expression may be a number, variable or arithmetic expression and must evaluate to a whole number from 0 through 4096. Zero clears the target list without drawing. Each generated value reuses the single-value evaluator, preserving integer/number types, inclusive integer bounds, the half-open floating-point range and named-stream behavior. The new runtime tests cover these contracts; the current-head six-target CI run must pass before this gap is considered validated.
 
-Numeric helpers should offer natural aliases such as “the sine of …”, “noise at (x, y) using seed …” and “clamp … between …” while compact function aliases remain available. Parentheses remain appropriate for coordinate/vector tuples, grouping and advanced function calls.
+The branch already implements natural aliases for common scalar operations (absolute value, square root, floor/ceiling, trigonometry, rounding, averages, min/max and collection aggregates). Natural clamp syntax now accepts `clamp value between minimum and maximum` and reuses the existing range validation. Procedural `noise2d`/`fbm2d` and interpolation `lerp` remain function-call forms for now; they have more technical parameter structures and are not everyday beginner operations. Parentheses remain appropriate for coordinate/vector tuples, grouping and advanced function calls.
 
 ### Conditions — 10 groups
 
@@ -117,13 +119,13 @@ Numeric helpers should offer natural aliases such as “the sine of …”, “n
 - Place/clear tile
 - Place/clear overlay tile
 
-**Audit result:** variable mutation and basic control effects are reasonably Skript-like. Newer properties tend to use command-specific forms such as `set entity "id" health to ...`, instead of the more consistent property grammar `set health of entity "id" to ...`. `send` also needs clearer audience semantics rather than being treated as a generic synonym for log output. Retain good `play sound {@impact}`-style forms.
+**Audit result:** variable mutation and basic control effects are reasonably Skript-like. The typed object-property grammar now covers entity health as well as common visual/geometry properties, using forms such as `set health of entity "id" to 5`; the older `set entity "id" health to 5` form remains as a compatibility alias. Entity kind and team now use the shared property grammar; tags and advanced collision settings still use command-specific forms. `send` also needs clearer audience semantics rather than being treated as a generic synonym for log output. Retain good `play sound {@impact}`-style forms.
 
 ### Functions and loops
 
 - `function name(parameters):`
 - `return value`
-- Counted loops, list loops, `while`, `wait`/`halt`, loop exit, loop continue, and loop-number/value/index context values
+- Counted loops, list loops, `while`, `wait`/`halt`, loop exit, loop continue, and loop-number/counter/iteration/value/index context values
 
 **Audit result:** these are already close to Skript's readable block model. Preserve them, test scope and scheduler lifecycle, and improve error messages/aliases rather than rewriting them without a reason. Functions are synchronous today and cannot suspend with `wait`; this limitation must stay explicit until task semantics change.
 
@@ -137,13 +139,13 @@ The reference adds 23 world/entity entries, 6 project-structure entries, 7 UI en
 
 | Priority | Gap | Required direction |
 |---|---|---|
-| P0 | Random values require function syntax | Add natural `a random integer between ...` and `a random number between ...`; retain named streams as an optional reproducibility extension. |
-| P0 | Built-in math helpers are function-only | Add English expression forms and keep compact aliases. |
-| P0 | Property setter grammar varies by subsystem | Standardize `set <property> of <object> to <value>` and a natural possessive alias. |
-| P0 | No first-class object references in `Value` | Define typed sprite/entity/room references before accepting `{_object}` as an object target. Current `Value` holds only none, bool, number and string. |
+| [x] P0 validation gate | Count-prefix random list assignment | The implementation, typed output/range/zero-count tests, all-example syntax checks, and six-target run #100 passed on the pre-subsystem-syntax head. |
+| P1 | Advanced math helpers retain function-call forms | Common scalar operations now have natural-English forms; technical procedural helpers such as `noise2d`, `fbm2d`, and `lerp` remain function calls by design. |
+| P1 | Property grammar refinements remain | Typed sprite/entity references, the shared `set <property> of <object> to <value>` grammar, and its natural possessive setter alias are implemented for supported properties; review remaining subsystem-specific properties. |
+| P1 | Typed object references currently cover sprites/entities | Live-instance-safe sprite/entity handles are implemented. Review whether room handles are needed and keep object-reference lifetime rules consistent. |
 | P1 | Event headers are inconsistent and sometimes over-specific | Define a short event vocabulary plus standard event-context expressions/locals and filtering conditions. |
 | P1 | English comparison aliases are incomplete | Support common worded comparisons alongside symbols with identical semantics. |
-| P1 | UI/graphics/audio phrases are mixed with underscore-style implementation terms | Offer word-spaced canonical syntax; preserve existing forms as aliases. |
+| [x] | UI/graphics/audio phrases expose underscore-style implementation terms | Natural `font size`, spaced anchors, `sample rate`, `ease in out`, and spaced beam properties now normalize to existing internal keys; underscored spellings remain aliases. The new CTest corpus checks both. |
 | P1 | Event payload and object naming are inconsistent | Publish one event-value naming contract and one object-reference grammar. |
 | P2 | Screen opacity/fade and audio-track/bus controls are absent | Treat as future engine capabilities; design their script surface in the same English-first style. They are not implemented in v0.10.14. |
 | P2 | Weighted random selection is absent | Consider after the natural equal-weight/random-expression syntax is established. |
@@ -164,12 +166,12 @@ Official references:
 
 1. Freeze this inventory as the source audit; resolve every item into canonical syntax, aliases, implementation status and tests.
 2. Design grammar/AST support for English expressions and property access. Avoid implementing the entire overhaul as one-off regex additions.
-3. Implement the random expression grammar first, including a carefully specified implicit default stream and optional named deterministic stream. Keep old function-call syntax working as an alias.
-4. Add natural math/helper expressions and worded comparisons.
-5. Introduce explicit object references/handles, then standard property getter/setter syntax.
-6. Normalize event grammar and event-context values; preserve existing handlers through aliases.
-7. Normalize UI/graphics/audio/settings command wording and document the limits of currently unavailable screen/audio capabilities.
-8. Run all examples and a dedicated syntax corpus through `cx-cli --check`; add positive tests for every alias and negative tests for ambiguity, invalid types and missing context.
+3. Validate the implemented count-prefix/plural random list assignment, including count/range rejection, bounded work, integer/number typing, zero-count semantics and deterministic-stream behavior. Retain the existing function-call API.
+4. Audit the implemented natural math helpers and worded comparisons, adding missing edge-case tests rather than treating them as wholly absent.
+5. Typed object references, shared property getters/setters and the possessive setter alias are implemented; continue auditing remaining subsystem-specific properties and edge cases.
+6. Keep the now-documented event-context values consistent as new event families are added. Review event-header aliases and filter syntax; any generalized trigger/collision form must preserve bounded dispatch work and room/object lifetime guarantees.
+7. Continue auditing UI/graphics/audio/settings wording. This increment normalizes canvas font size and anchors, audio sample rate, tween easing, and textured-beam property names; remaining settings and subsystem commands still need a complete pass.
+8. CI runs every standalone `.cx` example and each multi-file example project through `cx-cli --check`. A first dedicated positive/negative CTest corpus now covers natural and compatibility subsystem forms, parser normalization, invalid values, ambiguous anchors, and missing explicit event selectors; expand it to every advertised syntax family and add runtime payload-lifetime coverage.
 9. Update the searchable reference, syntax guide, beginner guide, examples, generated release reference and complete-first-project tutorial together.
 10. Pass the native six-target CI matrix and all packaging checks before tagging `v0.11.0`.
 

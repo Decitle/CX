@@ -10,7 +10,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - The six-target build/test workflow passed in [run 42959350359](https://github.com/Decitle/CX/actions/runs/42959350359).
 - The tagged package assembly and publication workflow passed in [run 42961733306](https://github.com/Decitle/CX/actions/runs/42961733306).
 - The README/download route, direct platform-aware download page, release-reference filename automation and dark Pages documentation work are in place.
-- The last verified six-target CI and Pages baseline before this roadmap update passed in [run 42969227408](https://github.com/Decitle/CX/actions/runs/42969227408) and [run 42969227621](https://github.com/Decitle/CX/actions/runs/42969227621).
+- The published Pages baseline remains [run 42969227621](https://github.com/Decitle/CX/actions/runs/42969227621). The active v0.11.0 branch passed its six-target native CI matrix at [run #100](https://github.com/Decitle/CX/actions/runs/43505981740). The next subsystem parser/corpus increment is awaiting its own run. These represent different trees: main/Pages remains on v0.10.14 until the draft overhaul is accepted.
 
 ## Active next milestone — Skript-like language overhaul (v0.11.0)
 
@@ -21,25 +21,27 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Inventory every event, variable form, expression, condition, effect/statement, function, loop and project-facing API.
 - Choose a canonical English form and useful aliases for each supported family.
 - Mark current syntax, accepted aliases, planned syntax and unsupported concepts distinctly.
-- Settle the typed object-reference and event-context contracts before designing property access.
-- Keep the design charter and audit visible from the public documentation and Library.
+- Typed sprite/entity references and shared property getter/setter rules are implemented for supported properties. The event-context contract is catalogued in one source-of-truth page and runtime-tested for every documented payload field; event-header vocabulary and suspended-handler edge cases remain open.
+- Keep the design charter and audit linked from the repository's public documentation and learning resources.
 
-**Status:** the design charter and source-backed audit are written. They are the acceptance contract for implementation, not a claim that the planned syntax already works.
+**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, worded comparisons, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #103 validated the latest parser/example increment on all six platforms. A new runtime test increment now covers the complete documented event payload field set and will receive its own current-head validation.
 
 ### Phase 2 — expressions and common language
 
-- Add natural random number expressions: `a random integer between 1 and 10`, `a random number between 0 and 1`, and a natural random-item/choice form.
-- Retain deterministic named random streams as an optional reproducibility clause; specify and test the implicit default stream.
-- Add English-readable math/helper expressions while retaining compact function aliases.
-- Add natural comparison wording alongside symbolic operators.
-- Preserve list syntax, interpolation, function semantics and the current reliable loop/wait foundation.
+- [x] Add natural single-value random number expressions and random item/element selection from lists.
+- [x] Retain deterministic named random streams as an optional reproducibility clause and initialize the default stream automatically.
+- [x] Add English-readable forms for common math operations while retaining compact function aliases.
+- [x] Add natural comparison wording alongside symbolic operators.
+- [x] Validate count-prefix/plural random list assignment for its 0–4096 count range, range semantics, typed outputs and deterministic streams on all six native targets.
+- [x] Preserve list syntax, interpolation, function semantics and the current loop/wait foundation; continue the compatibility audit.
 
 ### Phase 3 — object properties and events
 
-- Define typed sprite/entity/room references so variables can hold actual object handles rather than only text, numbers, booleans or none.
-- Standardize `set <property> of <object> to <value>`, property getters and possessive aliases.
-- Introduce short, consistent event headers with standard event-context values. Preserve old header spellings as compatibility aliases where possible.
-- Keep coordinates as conventional tuples; use English around them rather than removing parentheses.
+- [x] Define typed sprite/entity references so local and temporary variables can hold live object handles with instance identity.
+- [x] Standardize `set <property> of <object> to <value>` and matching property getters for the currently supported object properties.
+- [x] Add a natural possessive property setter alias that normalizes to the shared object-property operation.
+- [ ] Introduce short, consistent event headers while preserving old spellings as compatibility aliases. The current event-context local contract is documented and runtime-tested, and required event selectors reject whitespace-only values; broader header vocabulary design remains open.
+- [x] Keep coordinates as conventional tuples; use English around them rather than removing parentheses.
 
 ### Phase 4 — all subsystem surfaces
 
@@ -51,8 +53,10 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 ### Phase 5 — examples, reference and release verification
 
 - Rewrite examples so the canonical English grammar is what new users encounter first.
+- [x] Add a CI syntax pass for every standalone `.cx` example and every multi-file example project using `tools/check_examples.py` (syntax only; runtime/GUI behavior is checked separately).
 - Update the searchable reference, syntax guide, learning guide, feature pages, quickstart, standalone versioned HTML docs and package instructions together.
-- Build a parser syntax corpus covering every advertised form and alias, with invalid-form and ambiguous-parse tests.
+- [x] Add an initial positive/negative subsystem syntax corpus for natural/legacy UI, graphics, audio and event forms; expand it to every advertised language family, invalid type, and event-context boundary.
+- [x] Add runtime assertions for every documented event payload field, including file-attachment path, cursor coordinates, and the empty/no-button case. Keep callback identity and room-context lifecycle checks in their subsystem integration tests.
 - Test old v0.10.14 examples through compatibility aliases wherever practical.
 - Pass all six native CI targets and the normal release package verifier.
 
