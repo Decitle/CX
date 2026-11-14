@@ -4,7 +4,7 @@ This guide is for someone who wants to make a game before learning C++. You can 
 
 ## 1. Start with one tiny file
 
-Open `examples/first_steps.cx`. It is intentionally small and commented. Copy it into any `.cx` file under a game project's `scripts/` folder, run the project, and press Space. `main.cx` is a common filename but is not required; all scripts under `scripts/` are discovered. To check syntax without opening the game window, run:
+Open `examples/first_steps.cx`. It is intentionally small and commented; it opens a simple on-screen HUD with a live score and milestone message. Copy it into any `.cx` file under a game project's `scripts/` folder, run the project, and press Space. `main.cx` is a common filename but is not required; all scripts under `scripts/` are discovered. To check syntax without opening the game window, run:
 
 ```sh
 ./build/cx-cli --check /path/to/your-game-project

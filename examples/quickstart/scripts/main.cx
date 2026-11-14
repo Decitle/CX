@@ -1,14 +1,21 @@
 # CX Engine quickstart
 # Press Space to increment the score. Press R to reset it.
 set {score} to 0
+set {status_message} to "Press SPACE to score. Press R to reset."
+
+canvas "HUD":
+    create panel "score_panel" at (20, 20) size (460, 126) color (12, 20, 32, 225)
+    create text "Score: {score}" at (42, 38) font size 32
+    create text "{status_message}" at (42, 88) font size 18
 
 on load:
-    broadcast "Welcome to CX Engine! Press SPACE to score."
+    open canvas "HUD"
 
 on press key "SPACE":
     add 1 to {score}
-    broadcast "Score: {score}"
+    if {score} is at least 5:
+        set {status_message} to "Milestone reached! Keep going."
 
 on press key "R":
     set {score} to 0
-    broadcast "Score reset."
+    set {status_message} to "Score reset. Press SPACE to start again."

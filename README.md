@@ -50,7 +50,7 @@ The graphical executable is `build/cx-engine` on Linux/macOS and commonly `build
 ./build/cx-engine examples/quickstart
 ```
 
-The starter project demonstrates a simple event-driven script. Press Space to increment its score and R to reset it. On Windows, run the corresponding `cx-engine.exe` and pass the same project directory.
+The starter project displays a live score HUD. Press Space to increment the score and R to reset it. On Windows, run the corresponding `cx-engine.exe` and pass the same project directory.
 
 ### Validate scripts from the command line
 
