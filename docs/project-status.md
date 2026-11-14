@@ -46,8 +46,9 @@ Other remaining acceptance work includes:
 - Complete the subsystem-by-subsystem grammar audit. Some APIs intentionally retain technical arguments or specialized commands; their language surface still needs a consistency review.
 - The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage, including getter/setter aliases and live-instance validation. Event payload locals are catalogued in one source-of-truth page and now have direct runtime assertions for all documented fields; the event-header vocabulary and suspended-handler lifecycle audit remain open.
 - The first-steps example and quickstart now demonstrate a live canvas score HUD, and the beginner/getting-started guides explain that on-screen text is distinct from developer-log output.
+- Added an asset-free first complete game, Number Hunt, with a multi-file example project, step-by-step tutorial, and runtime coverage of a full round lifecycle.
 - Expand the initial positive/negative syntax corpus across all advertised language families and compatibility aliases. The current subsystem corpus checks canonical/legacy forms, normalized parser meaning, invalid values, ambiguous anchors, missing selectors, and whitespace-only quoted event selectors. Runtime CTest coverage now checks every documented event payload field and the full implemented English comparison operator vocabulary; broader condition lifecycle cases remain part of the audit.
-- Continue the beginner learning path and write a complete-first-game tutorial around the canonical English grammar; the first-steps and quickstart examples now demonstrate a visible HUD.
+- Continue polishing the beginner learning path and consider a larger follow-up game; the complete Number Hunt tutorial and runtime-tested project now provide a first end-to-end game.
 - Pass CI and release/package verification on the final accepted branch head.
 
 ## Documentation and public reference

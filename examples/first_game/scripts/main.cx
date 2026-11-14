@@ -1,0 +1,96 @@
+set {score} to 0
+set {attempts} to 0
+set {secret} to a random integer between 1 and 5
+set {round_won} to false
+set {status_message} to "Pick a number from 1 to 5."
+
+canvas "NumberHunt":
+    create panel "game_panel" at (20, 20) size (480, 270) color (12, 20, 32, 230)
+    create text "Number Hunt" at (40, 35) font size 28
+    create text "Score: {score}   Attempts: {attempts}" at (40, 78) font size 18
+    create text "{status_message}" at (40, 110) font size 18
+    create button "guess_1" at (40, 155) size (65, 50) label "1"
+    create button "guess_2" at (125, 155) size (65, 50) label "2"
+    create button "guess_3" at (210, 155) size (65, 50) label "3"
+    create button "guess_4" at (295, 155) size (65, 50) label "4"
+    create button "guess_5" at (380, 155) size (65, 50) label "5"
+    create button "new_round" at (40, 220) size (405, 44) label "New Round"
+
+on load:
+    open canvas "NumberHunt"
+
+on click button "guess_1":
+    if {round_won} is false:
+        set {guess} to 1
+        add 1 to {attempts}
+        if {guess} is equal to {secret}:
+            add 1 to {score}
+            set {round_won} to true
+            set {status_message} to "Correct! You found the secret number."
+        else:
+            if {guess} greater than {secret}:
+                set {status_message} to "Too high. Try a smaller number."
+            else:
+                set {status_message} to "Too low. Try a larger number."
+
+on click button "guess_2":
+    if {round_won} is false:
+        set {guess} to 2
+        add 1 to {attempts}
+        if {guess} is equal to {secret}:
+            add 1 to {score}
+            set {round_won} to true
+            set {status_message} to "Correct! You found the secret number."
+        else:
+            if {guess} greater than {secret}:
+                set {status_message} to "Too high. Try a smaller number."
+            else:
+                set {status_message} to "Too low. Try a larger number."
+
+on click button "guess_3":
+    if {round_won} is false:
+        set {guess} to 3
+        add 1 to {attempts}
+        if {guess} is equal to {secret}:
+            add 1 to {score}
+            set {round_won} to true
+            set {status_message} to "Correct! You found the secret number."
+        else:
+            if {guess} greater than {secret}:
+                set {status_message} to "Too high. Try a smaller number."
+            else:
+                set {status_message} to "Too low. Try a larger number."
+
+on click button "guess_4":
+    if {round_won} is false:
+        set {guess} to 4
+        add 1 to {attempts}
+        if {guess} is equal to {secret}:
+            add 1 to {score}
+            set {round_won} to true
+            set {status_message} to "Correct! You found the secret number."
+        else:
+            if {guess} greater than {secret}:
+                set {status_message} to "Too high. Try a smaller number."
+            else:
+                set {status_message} to "Too low. Try a larger number."
+
+on click button "guess_5":
+    if {round_won} is false:
+        set {guess} to 5
+        add 1 to {attempts}
+        if {guess} is equal to {secret}:
+            add 1 to {score}
+            set {round_won} to true
+            set {status_message} to "Correct! You found the secret number."
+        else:
+            if {guess} greater than {secret}:
+                set {status_message} to "Too high. Try a smaller number."
+            else:
+                set {status_message} to "Too low. Try a larger number."
+
+on click button "new_round":
+    set {secret} to a random integer between 1 and 5
+    set {attempts} to 0
+    set {round_won} to false
+    set {status_message} to "A new number has been picked."

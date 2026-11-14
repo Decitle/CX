@@ -64,7 +64,7 @@ This checks syntax and emits file/line diagnostics. It does not prove that a beh
 
 ## 6. Learn what to try next
 
-The `examples/` folder has small independent examples for loops, lists, functions, entities, collision filters, triggers, interaction focus, projectiles, animation clips, tweens, lighting effects, and audio generation. Read one example at a time and check it with `cx-cli --check`.
+After the quickstart, try the [First game: Number Hunt](first-game.md) tutorial. It builds a complete button-driven game using only script variables, random integers, canvas text, buttons, conditions, and events. The `examples/` folder also has focused examples for loops, lists, functions, entities, collision filters, triggers, interaction focus, projectiles, animation clips, tweens, lighting effects, and audio generation. Read one example at a time and check it with `cx-cli --check`.
 
 ## Troubleshooting
 

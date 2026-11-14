@@ -83,6 +83,7 @@ The documentation site is the main learning path:
 - **[Interactive reference](https://decitle.github.io/CX/reference.html):** searchable catalogue of language events, variables, expressions, statements, engine APIs, settings, and limitations.
 - **[Getting started](https://decitle.github.io/CX/getting-started.html):** install or build the engine, launch a project, and write a first script.
 - **[Learn CX Script](https://decitle.github.io/CX/learn-cx-script.html):** a guided introduction to the scripting language.
+- **[First game: Number Hunt](https://decitle.github.io/CX/first-game.html):** a complete, asset-free button game with a step-by-step walkthrough.
 - **[Full syntax guide](https://decitle.github.io/CX/syntax.html):** language syntax, execution behavior, variable lifetimes, and error handling.
 - **[World and entity systems](https://decitle.github.io/CX/world-and-entities.html):** rooms, sprites, entities, movement, collision, triggers, projectiles, and animation.
 - **[Engine settings](https://decitle.github.io/CX/engine-settings.html):** supported settings, defaults, accepted values, and when they take effect.

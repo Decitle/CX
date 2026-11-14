@@ -54,7 +54,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 
 ### Phase 5 — examples, reference and release verification
 
-- Rewrite examples so the canonical English grammar is what new users encounter first. The first-steps example and quickstart now show a live score HUD instead of relying on developer-log messages.
+- Rewrite examples so the canonical English grammar is what new users encounter first. The first-steps example and quickstart now show a live score HUD; Number Hunt is the first complete asset-free tutorial game.
 - [x] Add a CI syntax pass for every standalone `.cx` example and every multi-file example project using `tools/check_examples.py` (syntax only; runtime/GUI behavior is checked separately).
 - Update the searchable reference, syntax guide, learning guide, feature pages, quickstart, standalone versioned HTML docs and package instructions together.
 - [x] Add an initial positive/negative subsystem syntax corpus for natural/legacy UI, graphics, audio and event forms; expand it to every advertised language family, invalid type, and event-context boundary.

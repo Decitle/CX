@@ -15,6 +15,7 @@ CX is a C++20 graphical 2D game engine with an approachable, Skript-inspired scr
 - [Skript syntax audit](SKRIPT_SYNTAX_AUDIT.md) — source-backed feature inventory and concrete syntax gaps.
 - [Event context](event-context.md) — local values supplied by trigger, focus, projectile, tween, animation, and file-attachment handlers.
 - [Getting started](getting-started.md) — choose a runtime or build from source, launch the graphical engine, and open a starter project.
+- [First game: Number Hunt](first-game.md) — a complete, asset-free game project with a step-by-step walkthrough.
 - [Full CX Script syntax guide](syntax.md) — detailed syntax and language behavior.
 - [Engine settings](engine-settings.md) — supported settings, defaults, accepted values, and when they take effect.
 - [World and entity systems](world-and-entities.md) — sprites, entities, collision, triggers, projectiles, tweens, and animation.
@@ -41,7 +42,7 @@ Feature-specific contracts are documented under [features/](features/), includin
 
 ## Repository and release status
 
-The latest published runtime remains [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8). The v0.11.0 Skript-like overhaul is being developed on an open draft branch and is not yet merged or released. Its latest verified development CI matrix passed all six native targets in [run #91](https://github.com/Decitle/CX/actions/runs/43491377925).
+The latest published runtime remains [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8). The v0.11.0 Skript-like overhaul is being developed on an open draft branch and is not yet merged or released. Recent six-platform CI runs [#109](https://github.com/Decitle/CX/actions/runs/43629646878) and [#111](https://github.com/Decitle/CX/actions/runs/43630125248) passed; later canvas interpolation, example canonicalization, and the event/audit documentation updates are being validated in the current branch runs.
 
 The searchable `reference.html` continues to describe v0.10.14 until the v0.11.0 language surface is accepted. The development syntax guide and audit are separate on purpose. Recent branch commits added count-prefix random list assignment, possessive property setters, and CI syntax checks for all `.cx` examples; the current-head CI run must pass before those additions are considered validated. For the exact repository/PR state and remaining release gates, see [Project status](project-status.md).
 

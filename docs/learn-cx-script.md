@@ -99,9 +99,10 @@ Prefer the plain-English commands already supported by `syntax.md`. Do not assum
 
 ## 9. Where to go next
 
-1. `examples/first_steps.cx` — variables, events, conditions.
-2. `examples/list_functions.cx` — lists, functions, and arithmetic.
-3. `examples/loops_and_timing.cx` — loops and non-blocking waits.
-4. `examples/ui_grid_layout.cx` — canvas layout.
-5. `examples/procedural_audio.cx` and `examples/ui_audio_import.cx` — audio.
-6. `syntax.md` — complete reference; `engine-settings.md` — engine settings; `world-and-entities.md` — rooms/entities/paths/projectiles.
+1. `examples/first_steps.cx` — variables, events, conditions, and a live HUD.
+2. [First game: Number Hunt](first-game.md) — build and understand a complete button-driven game.
+3. `examples/list_functions.cx` — lists, functions, and arithmetic.
+4. `examples/loops_and_timing.cx` — loops and non-blocking waits.
+5. `examples/ui_grid_layout.cx` — canvas layout.
+6. `examples/procedural_audio.cx` and `examples/ui_audio_import.cx` — audio.
+7. `syntax.md` — complete reference; `engine-settings.md` — engine settings; `world-and-entities.md` — rooms/entities/paths/projectiles.
