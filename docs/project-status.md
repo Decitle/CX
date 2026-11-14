@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI:** [run #109](https://github.com/Decitle/CX/actions/runs/43629646878) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for commit `d24bdb`; Linux and Windows also passed graphical startup smoke tests. [Run #111](https://github.com/Decitle/CX/actions/runs/43630125248) is validating object-property runtime assertions on `f3959de`. [Run #112](https://github.com/Decitle/CX/actions/runs/43630365700) is queued for the current head `50f743e`, including the beginner-project HUD examples and guide alignment.
+**Latest completed six-target development CI:** [run #109](https://github.com/Decitle/CX/actions/runs/43629646878) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for commit `d24bdb`; Linux and Windows also passed graphical startup smoke tests. [Run #111](https://github.com/Decitle/CX/actions/runs/43630125248) is validating object-property runtime assertions on `f3959de`; five platform jobs are green and Windows ARM64 is still running. [Run #114](https://github.com/Decitle/CX/actions/runs/43630765763) is queued for the current branch head `76f3a9d`, which includes the live canvas interpolation test, beginner HUD examples, and canonicalized example syntax.
 
 ## Repository state
 
@@ -29,7 +29,7 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Cross-platform runtime packaging fixes and successful six-target validation.
 - CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
-The latest fully validated six-platform commit is `d24bdb`, which passed run #109 with the complete comparison-alias matrix. The later object-property runtime assertions are tracked by run #111, and the current branch head with beginner HUD examples is queued in run #112. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
+The latest fully validated six-platform commit is `d24bdb`, which passed run #109 with the complete comparison-alias matrix. The later object-property runtime assertions are tracked by run #111, and the current branch head with live canvas interpolation, beginner HUD examples and canonicalized feature examples is queued in run #114. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
 
 ## Remaining v0.11.0 acceptance work
 

@@ -24,7 +24,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Typed sprite/entity references and shared property getter/setter rules are implemented for supported properties. The event-context contract is catalogued in one source-of-truth page and runtime-tested for every documented payload field; event-header vocabulary and suspended-handler edge cases remain open.
 - Keep the design charter and audit linked from the repository's public documentation and learning resources.
 
-**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, the implemented worded comparison vocabulary, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #109 passed the comparison matrix on all six platforms. Run #111 is validating object-property coverage; run #112 is queued for the current head, including the first-steps and quickstart HUD examples and beginner-guide alignment.
+**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, the implemented worded comparison vocabulary, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #109 passed the comparison matrix on all six platforms. Run #111 is validating object-property coverage; run #114 is queued for the current head, including live canvas interpolation coverage, the first-steps and quickstart HUD examples, beginner-guide alignment, and canonicalized feature examples.
 
 ### Phase 2 — expressions and common language
 
