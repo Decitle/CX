@@ -303,6 +303,8 @@ The editor disables canvas smoothing; the game defaults to `engine::texture_filt
 
 A canvas keeps the existing panel/text/button declaration system. Grid coordinates are normalized on a 0–128 reference grid, then resolved against the actual viewport. `(0, 0)` is the top-left corner and `(128, 128)` is the bottom-right reference point. Anchors position the element relative to the selected point so, for example, a minimap can remain at the upper-right regardless of window size.
 
+Canvas text and button labels interpolate ordinary global variables such as `{score}` or `%{score}%`. The renderer resolves those placeholders on every frame, so a HUD value updates when a script changes the global without closing or rebuilding the canvas. Event-local values such as `{_amount}` are not global display variables.
+
 ```skript
 canvas "HUD":
     create panel "map_panel" at grid (127, 1) anchor top right size (220, 150) color (18, 26, 40, 220)

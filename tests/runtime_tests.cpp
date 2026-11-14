@@ -1284,6 +1284,45 @@ on load:
     std::filesystem::remove_all(root);
 }
 
+
+void testCanvasTextInterpolatesLiveGlobalValues() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-engine-test-live-canvas-text";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root / "scripts");
+    {
+        std::ofstream script(root / "scripts" / "main.cx");
+        script << R"CX(
+set {score} to 0
+canvas "HUD":
+    create text "Score: {score}" at (20, 20) font size 24
+on load:
+    open canvas "HUD"
+on press key "SPACE":
+    add 1 to {score}
+)CX";
+    }
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "live canvas-text fixture should load");
+    expect(runtime.program().canvases.size() == 1 &&
+           runtime.program().canvases.front().elements.size() == 1,
+           "the HUD should contain one text element");
+    if (runtime.program().canvases.size() == 1 &&
+        runtime.program().canvases.front().elements.size() == 1) {
+        const std::string& templateText = runtime.program().canvases.front().elements.front().text;
+        expect(runtime.formatDisplayText(templateText) == "Score: 0",
+               "canvas interpolation should show the initial global value");
+        runtime.pressKey("SPACE");
+        expect(runtime.formatDisplayText(templateText) == "Score: 1",
+               "canvas interpolation should reflect an event-driven variable update without rebuilding the canvas");
+        runtime.executeInline("set {score} to 25");
+        expect(runtime.formatDisplayText(templateText) == "Score: 25",
+               "canvas interpolation should read the latest value after an inline state change");
+    }
+    expect(!runtime.hasErrors(), "live canvas interpolation should not produce runtime diagnostics");
+    std::filesystem::remove_all(root);
+}
+
 void testResponsiveCanvasGridAndRelativeLayout() {
     const auto parsed = cx::ScriptParser{}.parseText(R"CX(
 canvas "HUD":
@@ -2038,6 +2077,7 @@ int main() {
         testLoopsWaitAndFlexibleIndentation();
         testPeriodicEvents();
         testListsFunctionsAndMathExpressions();
+        testCanvasTextInterpolatesLiveGlobalValues();
         testResponsiveCanvasGridAndRelativeLayout();
         testSpriteObjectsAndHeldKeyInput();
         testEntityPathsProjectilesAndTilePlacement();
