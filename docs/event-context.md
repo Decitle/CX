@@ -120,7 +120,7 @@ The runtime payload contract is checked in CTest alongside the subsystem behavio
 - Hit target, projectile ID and applied damage: `tests/projectile_runtime_tests.cpp`.
 - Tween entity name and captured final coordinates: `tests/motion_runtime_tests.cpp`.
 - Animation entity name, clip name, final frame and resolved row: `tests/animation_runtime_tests.cpp`.
-- Attached absolute path, cursor coordinates, the empty button-ID case, and preservation of event locals across `wait` suspension: `tests/event_context_runtime_tests.cpp`.
+- Attached absolute path, cursor coordinates, matching and empty button-ID cases, and preservation of all captured file-attachment locals across `wait` suspension: `tests/event_context_runtime_tests.cpp`.
 
 A suspended event keeps its own local-variable scope and resumes with the same captured payload as long as its room context remains valid. Room changes still cancel stale continuations, as covered by `tests/task_lifecycle_tests.cpp`.
 
