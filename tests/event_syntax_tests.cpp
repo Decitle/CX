@@ -84,7 +84,9 @@ on click button "resume":
 on button click "settings":
     set {settings_seen} to true
 on button "quit" click:
-    set {quit_seen} to true
+    set {quit_click_seen} to true
+on button "confirm" clicked:
+    set {confirm_clicked_seen} to true
 when button "save" is clicked:
     set {save_seen} to true
 )CX";
@@ -132,7 +134,8 @@ when button "save" is clicked:
     expect(hasEvent(cx::EventType::ButtonClick, "resume"), "click-button syntax should remain valid");
     expect(hasEvent(cx::EventType::ButtonClick, "settings"), "button-click syntax should remain valid");
     expect(countType(cx::EventType::ButtonClick) == 5, "all documented button-click aliases should map to button click");
-    expect(hasEvent(cx::EventType::ButtonClick, "quit"), "button click/clicked syntax should remain valid");
+    expect(hasEvent(cx::EventType::ButtonClick, "quit"), "button click syntax should remain valid");
+    expect(hasEvent(cx::EventType::ButtonClick, "confirm"), "button clicked syntax should remain valid");
     expect(hasEvent(cx::EventType::ButtonClick, "save"), "when-button-clicked syntax should remain valid");
 
     if (failures != 0) {
