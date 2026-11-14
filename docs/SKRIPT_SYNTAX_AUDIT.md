@@ -100,7 +100,7 @@ The branch already implements natural aliases for common scalar operations (abso
 - Entity tag query
 - Comparisons and boolean operators
 
-**Audit result:** symbolic comparisons and the English alias families are implemented and now have a runtime regression matrix covering every comparison spelling in the evaluator, including inclusive bounds, equality/inequality, string containment, list membership, and boolean composition. Presence checks, type/parity/sign/emptiness predicates, held-key state and the existing geometry/focus queries remain distinct condition families. Future condition work should add language only where it improves clarity, without changing query lifecycle or filtering semantics.
+**Audit result:** symbolic comparisons and the English alias families are implemented and now have a runtime regression matrix covering every comparison spelling in the evaluator, including inclusive bounds, equality/inequality, string containment, list membership, and boolean composition. Type/value predicates now also have runtime cases for sign, parity, zero, text/string, number, boolean, list and empty values, including negative type-coercion checks. Presence checks, held-key state and existing geometry/focus queries remain distinct condition families. Future condition work should add language only where it improves clarity, without changing query lifecycle or filtering semantics.
 
 ### Effects — 15 groups
 

@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI:** [run #114](https://github.com/Decitle/CX/actions/runs/43630765763) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for commit `76f3a9d`; Linux and Windows also passed graphical startup smoke tests. [Run #116](https://github.com/Decitle/CX/actions/runs/43631353115) is validating the event/audit documentation on `075cf25`; three platform jobs have passed, and the other three are building. Run #117 was cancelled as superseded. [Run #118](https://github.com/Decitle/CX/actions/runs/43631797904) is queued for current head `d8e517d`, which includes the Number Hunt game, its full-round runtime test, and the completed tutorial recovery exercise.
+**Latest completed six-target development CI:** [run #116](https://github.com/Decitle/CX/actions/runs/43631353115) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for commit `075cf25`; Linux and Windows also passed graphical startup smoke tests. [Run #119](https://github.com/Decitle/CX/actions/runs/43631897796) is validating Number Hunt on `6b883d1`; Linux x86_64/ARM64 and macOS ARM64 have passed so far, with the remaining three jobs running. The type/value predicate matrix was added after #119 started and still needs its own current-head validation.
 
 ## Repository state
 
@@ -20,7 +20,7 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 
 - Natural single-value random integer and number expressions, plus random item/element selection from CX lists. An automatically initialized default random stream is available, with explicitly seeded named streams as an optional deterministic facility.
 - English-first numeric expressions for common operations, including absolute value, square root, floor/ceiling, sine/cosine/tangent, rounding, average/mean/median, sum/product, minimum/maximum and natural clamp syntax. Technical helpers and compact function forms remain available.
-- Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions; the full implemented comparison vocabulary has a dedicated runtime regression matrix.
+- Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions; the full implemented comparison vocabulary and sign/parity/type/emptiness predicates now have dedicated runtime regression coverage.
 - `send` and `broadcast` are currently identical developer-log output effects, not player-directed messaging; the docs state this explicitly and the core runtime suite verifies the equivalence.
 - Engine setting names remain stable underscore identifiers shared with `config.json`; their technical spelling is intentional rather than an incomplete prose alias.
 - Typed sprite/entity object references with live-instance identity, property getters, the shared `<property> of <object>` setter grammar, and its equivalent possessive setter form. Supported getter/setter aliases, texture/visibility writes, maximum-health spellings, type restrictions and stale-handle behavior have expanded runtime test coverage.

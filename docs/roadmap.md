@@ -32,6 +32,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - [x] Retain deterministic named random streams as an optional reproducibility clause and initialize the default stream automatically.
 - [x] Add English-readable forms for common math operations while retaining compact function aliases.
 - [x] Add natural comparison wording alongside symbolic operators and validate every implemented operator spelling with runtime tests.
+- [x] Validate natural sign, parity, zero, type, and emptiness predicates with positive and negative runtime cases.
 - [x] Validate count-prefix/plural random list assignment for its 0–4096 count range, range semantics, typed outputs and deterministic streams on all six native targets.
 - [x] Preserve list syntax, interpolation, function semantics and the current loop/wait foundation; continue the compatibility audit.
 
