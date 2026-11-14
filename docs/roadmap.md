@@ -24,7 +24,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - Typed sprite/entity references and shared property getter/setter rules are implemented for supported properties. The event-context contract is catalogued in one source-of-truth page and runtime-tested for every documented payload field; event-header vocabulary and suspended-handler edge cases remain open.
 - Keep the design charter and audit linked from the repository's public documentation and learning resources.
 
-**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, the implemented worded comparison vocabulary, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #108 validated the previous event/parser increment on all six platforms. A complete runtime matrix for comparison aliases has now been added and requires current-head CI.
+**Status:** the design charter and source-backed audit govern the active branch. Natural single-value and count-prefix random expressions, common natural math forms, the implemented worded comparison vocabulary, typed sprite/entity references with shared/possessive property setters, and collection-oriented entity tags are implemented. Run #108 validated the event/parser increment on all six platforms. The comparison matrix and output/settings audit are tracked by runs #109–#110; the supported object-property alias matrix has now been expanded and awaits current-head CI.
 
 ### Phase 2 — expressions and common language
 
@@ -40,6 +40,7 @@ The roadmap is dependency-ordered, not a delivery-date promise. A feature is not
 - [x] Define typed sprite/entity references so local and temporary variables can hold live object handles with instance identity.
 - [x] Standardize `set <property> of <object> to <value>` and matching property getters for the currently supported object properties.
 - [x] Add a natural possessive property setter alias that normalizes to the shared object-property operation.
+- [x] Validate supported object-property aliases, texture/visibility setters, entity-only health/classification properties, maximum-health spellings, and stale-handle behavior.
 - [ ] Introduce short, consistent event headers while preserving old spellings as compatibility aliases. The current event-context local contract is documented and runtime-tested, and required event selectors reject whitespace-only values; broader header vocabulary design remains open.
 - [x] Keep coordinates as conventional tuples; use English around them rather than removing parentheses.
 

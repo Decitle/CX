@@ -23,6 +23,7 @@ std::filesystem::path makeProject(const std::string& name, const std::string& sc
     const auto root = std::filesystem::temp_directory_path() / ("cx-object-reference-" + name);
     std::filesystem::remove_all(root);
     write(root / "assets" / "textures" / "object.png", "placeholder texture data");
+    write(root / "assets" / "textures" / "alternate.png", "alternate texture data");
     write(root / "scripts" / "main.cx", script);
     return root;
 }
@@ -37,6 +38,9 @@ on load:
     set y-coordinate of sprite {_object} to 25
     set position of object {_object} to (30, 40)
     set size of object {_object} to (24, 28)
+    set texture of sprite {_object} to {$alternate}
+    set {read_alternate_texture} to texture of sprite {_object}
+    set texture of object {_object} to {$object}
     set sprite "hero"'s x-coordinate to 35
     set rotation of sprite {_object} to 90
     set sprite "hero"'s rotation to 45
@@ -55,14 +59,20 @@ on load:
     set max-health of entity {_entity} to 14
     set the health of {_entity} to {_target_health}
     set entity {_entity}'s health to 6
+    set maximum health of entity {_entity} to 16
+    set {read_maximum_health} to maximum health of {_entity}
+    set max_health of entity {_entity} to 14
     set {read_health} to health of entity {_entity}
     set {read_max_health} to the max health of {_entity}
     set {read_health_global} to {entity::npc::health}
     set {read_max_health_global} to {entity::npc::max_health}
+    set visible of sprite {_object} to true
     set {_hide} to false
     set visibility of sprite {_object} to {_hide}
     set {read_x} to x-coordinate of sprite "hero"
+    set {read_short_x} to x of {_object}
     set {read_y} to y-coordinate of {_object}
+    set {read_short_y} to y of sprite {_object}
     set {read_rotation} to rotation of {_object}
     set {read_speed} to speed of entity {_entity}
     set {read_visibility} to visibility of {_object}
@@ -81,6 +91,8 @@ on load:
         expect(hero.width == 24.0F && hero.height == 28.0F, "size setter should update both dimensions");
         expect(hero.rotationDegrees == 45.0F, "possessive rotation setter should update the live sprite property");
         expect(!hero.visible, "visibility should accept a boolean expression");
+        expect(runtime.getGlobal("read_alternate_texture").toString() == "alternate",
+               "texture setters should accept discovered texture references and update the live object");
     } else expect(false, "hero sprite should exist");
     if (runtime.sprites().contains("npc")) {
         const auto& npc = runtime.sprites().at("npc");
@@ -89,7 +101,11 @@ on load:
         expect(npc.health == 6 && npc.maxHealth == 14, "possessive entity-handle health setter should preserve health/max-health rules");
     } else expect(false, "npc entity should exist");
     expect(runtime.getGlobal("read_x").numberOr(-1.0) == 35.0, "x-coordinate getter should read the current value after a possessive setter");
+    expect(runtime.getGlobal("read_short_x").numberOr(-1.0) == 35.0,
+           "x should remain a concise getter alias for x-coordinate");
     expect(runtime.getGlobal("read_y").numberOr(-1.0) == 40.0, "property getters should work with a local object handle");
+    expect(runtime.getGlobal("read_short_y").numberOr(-1.0) == 40.0,
+           "y should remain a concise getter alias for y-coordinate");
     expect(runtime.getGlobal("read_rotation").numberOr(-1.0) == 45.0, "rotation getter should read the value assigned by the possessive form");
     expect(runtime.getGlobal("read_speed").numberOr(-1.0) == 125.0, "speed getter should work for entity handles");
     expect(!runtime.getGlobal("read_visibility").truthy(), "visibility getter should return the live boolean property");
@@ -106,6 +122,8 @@ on load:
     expect(runtime.getGlobal("read_health").numberOr(-1.0) == 6.0, "health getter should observe the possessive entity-handle setter");
     expect(runtime.getGlobal("read_max_health").numberOr(-1.0) == 14.0,
            "max health getter should read the live entity maximum health");
+    expect(runtime.getGlobal("read_maximum_health").numberOr(-1.0) == 16.0,
+           "maximum health should be accepted as an expanded getter/setter spelling");
     expect(runtime.getGlobal("read_health_global").numberOr(-1.0) == 6.0,
            "entity health property writes should keep the public health variable synchronized");
     expect(runtime.getGlobal("read_max_health_global").numberOr(-1.0) == 14.0,

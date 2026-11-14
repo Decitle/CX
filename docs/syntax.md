@@ -106,11 +106,20 @@ on load:
     set {hero_width} to width of {_hero}
     set {hero_height} to height of sprite {_hero}
     set {hero_texture} to texture of sprite "hero"
-        set sprite "hero"'s x-coordinate to 15
+    set sprite "hero"'s x-coordinate to 15
     set entity "guard"'s health to 25
+    set texture of sprite {_hero} to {$hero_alt}
+    set visible of sprite {_hero} to false
+    set maximum health of entity "guard" to 30
 ```
 
-Sprite/entity references stored in event/function locals or temporary variables identify a particular live object instance. Property expressions use the same `<property> of <object>` shape as the setters. Scalar getters include `x`/`x-coordinate`, `y`/`y-coordinate`, `width`, `height`, `texture`, `rotation`, `speed`, and `visible`/`visibility`. Entity references also expose `health`, `max health` (also written `max-health` or `max_health`), `kind`, and `team`; these classification/health properties are not available on sprites. Use `set kind of entity "guard" to "boss"` and `set team of entity "guard" to "hostile"`; the earlier `set entity "guard" kind/team to ...` commands remain accepted. Compound position and size values remain coordinate pairs in setters; read their components through the scalar coordinate/dimension getters.
+Sprite/entity references stored in event/function locals or temporary variables identify a particular live object instance. A quoted object ID or a local/temporary handle can be used as the object operand; the optional kind word is `sprite`, `entity`, or `object`. Property getters and setters use the shared `<property> of <object>` shape, and setters also accept the possessive form `set <object>'s <property> to <value>`.
+
+The supported scalar getters are `x`/`x-coordinate`, `y`/`y-coordinate`, `width`, `height`, `texture`, `rotation`, `speed`, and `visible`/`visibility`. The concise `x` and `y` spellings are getter aliases; coordinate setters use `x-coordinate` and `y-coordinate`. Texture can be read or assigned with a discovered texture reference such as `{$hero_alt}`. `visible` and `visibility` are interchangeable for both reads and writes.
+
+Entity references also expose `health`, `max health`, `maximum health`, `kind`, and `team`; health/classification properties are not available on sprites. Maximum health accepts `max health`, `max-health`, `max_health`, `maximum health`, `maximum-health`, and `maximum_health` in both getters and setters. Use `set kind of entity "guard" to "boss"` and `set team of entity "guard" to "hostile"`; the earlier `set entity "guard" kind/team to ...` commands remain accepted. Compound `position` and `size` values remain coordinate pairs in setters; read their components through the scalar coordinate/dimension getters.
+
+The runtime validates object kind and live instance identity. A stale handle cannot silently target a new object that happens to reuse the same name, and object handles cannot be stored in persistent global variables.
 
 ## Conditions
 

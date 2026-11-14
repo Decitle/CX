@@ -3,7 +3,7 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI before the current language-condition increment:** [run #108](https://github.com/Decitle/CX/actions/runs/43568367748) — all six native targets passed build, CTest, all-example syntax checks, and native package creation for branch head `77ee733`; Linux and Windows also passed graphical startup smoke tests. [Run #109](https://github.com/Decitle/CX/actions/runs/43629646878) is validating the comparison-alias runtime matrix on commit `d24bdb`; the subsequent `send` output test and settings documentation update are newer than that run and still need current-head CI.
+**Latest completed six-target development CI:** [run #108](https://github.com/Decitle/CX/actions/runs/43568367748) — all six native targets passed build, CTest, example syntax checks, and native package creation for branch head `77ee733`; Linux and Windows also passed graphical startup smoke tests. Run [#109](https://github.com/Decitle/CX/actions/runs/43629646878) is validating the comparison-alias matrix on an intermediate commit; Linux x86_64, Linux ARM64 and macOS ARM64 have passed so far, while the other jobs are still running. Run [#110](https://github.com/Decitle/CX/actions/runs/43629839134) is queued for `aac16dd`, including the `send` output test and stable settings-name documentation. The new object-property regression coverage in this increment will require another run on the latest head.
 
 ## Repository state
 
@@ -23,13 +23,13 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions; the full implemented comparison vocabulary has a dedicated runtime regression matrix.
 - `send` and `broadcast` are currently identical developer-log output effects, not player-directed messaging; the docs state this explicitly and the core runtime suite verifies the equivalence.
 - Engine setting names remain stable underscore identifiers shared with `config.json`; their technical spelling is intentional rather than an incomplete prose alias.
-- Typed sprite/entity object references with live-instance identity, property getters, the shared `<property> of <object>` setter grammar, and its equivalent possessive setter form for supported transform/render/health/classification properties.
+- Typed sprite/entity object references with live-instance identity, property getters, the shared `<property> of <object>` setter grammar, and its equivalent possessive setter form. Supported getter/setter aliases, texture/visibility writes, maximum-health spellings, type restrictions and stale-handle behavior have expanded runtime test coverage.
 - Entity classification and tag collection operations, including whole-set tags, add, remove, clear and has-tag checks.
 - Expanded tests for expressions, loops, event syntax and runtime payloads, object references, variable effects, room transitions, screen effects, entity tags, and packaging.
 - Cross-platform runtime packaging fixes and successful six-target validation.
 - CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
-The latest fully validated code commit before the current event-context test increment passed Linux x86_64/ARM64, Windows x86_64/ARM64 and macOS x86_64/ARM64 in run #103. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
+The latest fully validated six-platform commit is `77ee733`, which passed run #108 after the event-context and event-header validation work. Later comparison, output-semantics, settings-documentation and object-property increments are tracked separately in runs #109–#110 and the next current-head run. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
 
 ## Remaining v0.11.0 acceptance work
 
@@ -44,7 +44,7 @@ The implementation accepts a numeric count expression from 0 through 4096 and ex
 Other remaining acceptance work includes:
 
 - Complete the subsystem-by-subsystem grammar audit. Some APIs intentionally retain technical arguments or specialized commands; their language surface still needs a consistency review.
-- The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage. Event payload locals are catalogued in one source-of-truth page and now have direct runtime assertions for all documented fields; the event-header vocabulary and suspended-handler lifecycle audit remain open.
+- The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage, including getter/setter aliases and live-instance validation. Event payload locals are catalogued in one source-of-truth page and now have direct runtime assertions for all documented fields; the event-header vocabulary and suspended-handler lifecycle audit remain open.
 - Expand the initial positive/negative syntax corpus across all advertised language families and compatibility aliases. The current subsystem corpus checks canonical/legacy forms, normalized parser meaning, invalid values, ambiguous anchors, missing selectors, and whitespace-only quoted event selectors. Runtime CTest coverage now checks every documented event payload field and the full implemented English comparison operator vocabulary; broader condition lifecycle cases remain part of the audit.
 - Update the beginner learning path, complete-first-game example, subsystem pages and versioned generated reference to match the accepted v0.11.0 grammar.
 - Pass CI and release/package verification on the final accepted branch head.
@@ -57,7 +57,7 @@ The development documentation changes are still confined to the unmerged branch.
 
 ## Next priorities
 
-1. Continue the event-header vocabulary and suspended-handler lifecycle audit; the documented payload fields and complete comparison alias family now have direct runtime regression coverage.
+1. Continue the event-header vocabulary and suspended-handler lifecycle audit; the documented payload fields, complete comparison alias family, and supported object-property contract now have direct runtime regression coverage.
 2. Expand the positive/negative syntax corpus to every advertised syntax family and compatibility alias.
 3. Bring examples, beginner materials, feature pages and versioned reference generation into alignment with accepted canonical grammar.
 4. Run current-head six-target CI and final clean extraction/launch checks after the syntax increment.
