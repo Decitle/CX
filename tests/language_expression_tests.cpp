@@ -1,3 +1,4 @@
+#include "cx/diagnostics.hpp"
 #include "cx/runtime.hpp"
 
 #include <algorithm>
