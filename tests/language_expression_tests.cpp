@@ -457,7 +457,7 @@ function sprite_x(target: sprite) returns number:
 on load:
     create entity "player" with texture {$blank}
     create sprite "crate" with texture {$blank}
-    set sprite "crate" x-coordinate to 23
+    set sprite "crate"'s x-coordinate to 23
     set {_entity_copy} to entity_identity(entity "player")
     set {entity_result} to entity_is_visible({_entity_copy})
     set {sprite_result} to sprite_x(sprite "crate")
