@@ -480,6 +480,14 @@ on load:
     write(root / "assets" / "textures" / "blank.png", "placeholder texture data");
     cx::ScriptParser parser;
     const auto parsed = parser.parseDirectory(root / "scripts");
+    if (cx::hasErrors(parsed.diagnostics)) {
+        for (const auto& diagnostic : parsed.diagnostics) {
+            if (!diagnostic.warning) {
+                std::cerr << "PARSE DIAGNOSTIC: " << diagnostic.file.string() << ':'
+                          << diagnostic.line << ": " << diagnostic.message << '\n';
+            }
+        }
+    }
     expect(!cx::hasErrors(parsed.diagnostics),
            "typed function headers, defaults, and return types should parse");
     expect(parsed.functions.size() == 14, "all typed and legacy functions should be collected");
@@ -505,7 +513,16 @@ on load:
     }
 
     cx::Runtime runtime(root);
-    expect(runtime.loadScripts(), "typed and legacy function calls should execute");
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics()) {
+            if (!diagnostic.warning) {
+                std::cerr << "RUNTIME DIAGNOSTIC: " << diagnostic.file.string() << ':'
+                          << diagnostic.line << ": " << diagnostic.message << '\n';
+            }
+        }
+    }
+    expect(loaded, "typed and legacy function calls should execute");
     expect(runtime.getGlobal("typed_default").numberOr(-1.0) == 7.0,
            "omitted trailing parameters should use their declared default");
     expect(runtime.getGlobal("typed_explicit").numberOr(-1.0) == 12.0,
