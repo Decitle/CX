@@ -3,14 +3,14 @@
 **Published release:** [v0.10.14-preview.8](https://github.com/Decitle/CX/releases/tag/v0.10.14-preview.8)  
 **Development milestone:** v0.11.0 Skript-like language overhaul  
 **Integration PR:** [#2 — v0.11.0-language-overhaul](https://github.com/Decitle/CX/pull/2) (open, draft, targets `main`)  
-**Latest completed six-target development CI:** [run #124](https://github.com/Decitle/CX/actions/runs/43639249143) — all six native targets passed build, CTest, all-example syntax checks, runtime package creation, and configured graphical smoke tests for commit `21aee93`. This validates shared `else if` parsing across bootstrap, nested, and event-handler blocks. The typed-function signature increment is being prepared for its own six-platform validation.
+**Latest completed six-target runtime/source CI:** [run #129](https://github.com/Decitle/CX/actions/runs/43687589060) — all six native targets passed build, CTest, all-example syntax checks, runtime package creation, and configured graphical startup smoke tests for runtime/source commit `3b3c9cc`. This includes the typed-function/default-argument regression suite and boolean comparison defaults.
 
 ## Repository state
 
 The repository has two branches:
 
 - `main` remains the published v0.10.14 line and has not been modified by the v0.11.0 work.
-- `v0.11.0-language-overhaul` contains the active development work and is the head of draft PR #2. It is ahead of `main` with no commits behind at the time of this status snapshot.
+- `v0.11.0-language-overhaul` contains the active development work and is the head of draft PR #2. It is 107 commits ahead of `main` with no commits behind at the time of this status snapshot.
 
 The branches are **not merged**. That is intentional. PR #2 must remain a draft until the language acceptance work, documentation, examples, compatibility coverage, release verification and owner review are complete. Do not tag or publish v0.11.0 based on one isolated syntax improvement or a green CI run.
 
@@ -21,8 +21,8 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Natural single-value random integer and number expressions, plus random item/element selection from CX lists. An automatically initialized default random stream is available, with explicitly seeded named streams as an optional deterministic facility.
 - English-first numeric expressions for common operations, including absolute value, square root, floor/ceiling, sine/cosine/tangent, rounding, average/mean/median, sum/product, minimum/maximum and natural clamp syntax. Technical helpers and compact function forms remain available.
 - Worded comparison aliases alongside symbolic operators, plus list membership and type/presence conditions; the full implemented comparison vocabulary and sign/parity/type/emptiness predicates now have dedicated runtime regression coverage.
-- Skript-style `else if` chains are parsed into nested conditional branches and have runtime tests for first-match behavior, fall-through, final `else`, and nested chains; run #124 passed all six native targets.
-- Function signatures accept typed parameters, optional trailing defaults, and declared return types in both `returns type` and Skript `:: type` forms. Runtime checks validate argument counts, value types, and return types while preserving legacy untyped functions; current-head validation is pending.
+- Skript-style `else if` chains are parsed into nested conditional branches and have runtime tests for first-match behavior, fall-through, final `else`, and nested chains.
+- Function signatures accept typed parameters, optional trailing defaults, and declared return types in both `returns type` and Skript `:: type` forms. Runtime checks validate argument counts, value types, and return types while preserving legacy untyped functions. Defaults run at call time from left to right; typed boolean defaults can evaluate comparison expressions such as `{_value} == 5`. This feature set passed six-target run #129.
 - `send` and `broadcast` are currently identical developer-log output effects, not player-directed messaging; the docs state this explicitly and the core runtime suite verifies the equivalence.
 - Engine setting names remain stable underscore identifiers shared with `config.json`; their technical spelling is intentional rather than an incomplete prose alias.
 - Typed sprite/entity object references with live-instance identity, property getters, the shared `<property> of <object>` setter grammar, and its equivalent possessive setter form. Supported getter/setter aliases, texture/visibility writes, maximum-health spellings, type restrictions and stale-handle behavior have expanded runtime test coverage.
@@ -31,17 +31,17 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Cross-platform runtime packaging fixes and successful six-target validation.
 - CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
-The latest fully validated six-platform commit is `76f3a9d`, which passed run #114 with live canvas interpolation, canonicalized examples, and package validation. Run #116 is still checking the subsequent event/audit documentation; run #118 will validate Number Hunt and its complete-round runtime test on the current head. Earlier CI attempts, including run #90, caught an intermediate reserved-token compile error; that issue was corrected and later runs passed. This historical failure is retained for an honest validation trail, not as a current blocker.
+Run #129 validates the exact runtime/source commit `3b3c9cc` across all six native targets. This commit also refreshes the syntax and project-status documentation without changing runtime code; later source changes must receive their own validation.
 
 ## Remaining v0.11.0 acceptance work
 
-The principal P0 random-expression gap, **count-prefix/plural random list assignment**, has now been implemented and covered by runtime tests. Its current-head six-target CI passed in run #100, so the random-list milestone is validated for that exact head:
+The principal P0 random-expression gap, **count-prefix/plural random list assignment**, has been implemented and covered by runtime tests. Its initial feature milestone passed six-target CI in run #100; the current runtime/source commit was later validated in run #129:
 
 ```skript
 set {rolls::*} to 5 random integers between 5 and 96
 ```
 
-The implementation accepts a numeric count expression from 0 through 4096 and expands the results into sequential indexed list entries through the existing scalar `Value` evaluator. It covers integer/number output, `between`/`from`, named streams and zero-count clearing. Current-head CI and example validation are still required.
+The implementation accepts a numeric count expression from 0 through 4096 and expands the results into sequential indexed list entries through the existing scalar `Value` evaluator. It covers integer/number output, `between`/`from`, named streams and zero-count clearing. The current runtime/source commit was included in the successful six-target run #129.
 
 Other remaining acceptance work includes:
 
@@ -61,11 +61,12 @@ The development documentation changes are still confined to the unmerged branch.
 
 ## Next priorities
 
-1. Continue the event-header vocabulary and suspended-handler lifecycle audit; the documented payload fields, comparison predicates, conditional chains, and supported object-property contract now have direct runtime regression coverage.
+1. Continue the event-header vocabulary and suspended-handler lifecycle audit; documented payload fields, comparison predicates, conditional chains, and the object-property contract now have direct runtime regression coverage.
 2. Use `docs/ENGINE_INTEROPERABILITY_AUDIT.md` to choose cross-system end-to-end scenarios; do not treat isolated subsystem tests as proof of whole-game composition.
-2. Expand the positive/negative syntax corpus to every advertised syntax family and compatibility alias.
-3. Bring examples, beginner materials, feature pages and versioned reference generation into alignment with accepted canonical grammar.
-4. Run current-head six-target CI and final clean extraction/launch checks after the syntax increment.
-5. Present the completed draft for owner review; merge and publish only after acceptance.
+3. Expand the positive/negative syntax corpus to every advertised syntax family and compatibility alias.
+4. Bring examples, beginner materials, feature pages, and versioned reference generation into alignment with accepted canonical grammar.
+5. Verify Number Hunt through a clean download, extraction, and launch using an installed package.
+6. Run fresh six-target CI and final clean extraction/launch checks on the final accepted branch head.
+7. Present the completed draft for owner review; merge and publish only after acceptance.
 
 CX remains an experimental pre-release engine. The v0.11.0 milestone is not complete and v1.0 readiness is a later milestone.

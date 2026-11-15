@@ -247,6 +247,13 @@ function add_bonus(score: number, bonus: number = {_score} * 2) returns number:
     return {_score} + {_bonus}
 ```
 
+Boolean defaults can also use comparison expressions. The comparison is evaluated as a boolean value at call time:
+
+```skript
+function is_five(value: number, matches: boolean = {_value} == 5) returns boolean:
+    return {_matches}
+```
+
 The canonical return declaration is `returns type`. Skript's traditional `:: type` spelling is accepted as an equivalent form:
 
 ```skript
