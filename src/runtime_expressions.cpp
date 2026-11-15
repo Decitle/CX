@@ -228,6 +228,30 @@ std::optional<OperatorMatch> findOperator(std::string_view expression,
     }
     return std::nullopt;
 }
+
+// Keep comparison tokens shared between condition parsing and scalar expression
+// evaluation. A comparison is a boolean Value when it appears in a value expression.
+const std::vector<std::pair<std::string, std::string>>& comparisonOperators() {
+    static const std::vector<std::pair<std::string, std::string>> operators = {
+        {" is greater than or equal to ", ">="}, {" is less than or equal to ", "<="},
+        {" greater than or equal to ", ">="}, {" less than or equal to ", "<="},
+        {" is not equal to ", "!="}, {" does not equal ", "!="}, {" is not in ", "not_in"},
+        {" is greater than ", ">"}, {" is higher than ", ">"}, {" is bigger than ", ">"}, {" is larger than ", ">"},
+        {" are greater than ", ">"}, {" are more than ", ">"}, {" are higher than ", ">"}, {" are bigger than ", ">"}, {" are larger than ", ">"},
+        {" is less than ", "<"}, {" is lower than ", "<"}, {" is smaller than ", "<"},
+        {" are less than ", "<"}, {" are lower than ", "<"}, {" are smaller than ", "<"},
+        {" is more than ", ">"},
+        {" is at least ", ">="}, {" is at most ", "<="}, {" is above ", ">"}, {" is below ", "<"},
+        {" greater than ", ">"}, {" higher than ", ">"}, {" bigger than ", ">"}, {" larger than ", ">"}, {" less than ", "<"}, {" lower than ", "<"}, {" smaller than ", "<"}, {" more than ", ">"},
+        {" at least ", ">="}, {" at most ", "<="}, {" above ", ">"}, {" below ", "<"},
+        {" is equal to ", "=="}, {" equal to ", "=="}, {" is in ", "in"}, {" in ", "in"},
+        {" is not ", "!="}, {" does not contain ", "not_contains"}, {" contains ", "contains"},
+        {" equals ", "=="}, {" >= ", ">="}, {" <= ", "<="}, {" != ", "!="},
+        {" == ", "=="}, {" > ", ">"}, {" < ", "<"}, {" is ", "=="}
+    };
+    return operators;
+}
+
 std::string stripOuterParentheses(std::string expression) {
     expression = trim(expression);
     while (expression.size() >= 2 && expression.front() == '(' && expression.back() == ')') {
@@ -1188,6 +1212,13 @@ Value Runtime::evaluateValue(std::string_view rawExpression, const ExecutionCont
         error = "Unknown function `" + function + "`. Built-ins: abs, sqrt, floor, ceil, round, exp, ln, log, root, pow, factorial, combinations, permutations, toBase, fromBase, formatNumber, concat, min, max, mean, median, sum, product, mod, isNaN, isFinite, sin, cos, tan, asin, acos, atan, atan2, sin_radians, cos_radians, tan_radians, sine, noise2d, fbm2d, random_float, random_int, random_choice, clamp, lerp. You can define reusable script functions with `function name(parameters):`.";
         return {};
     }
+    // Conditions and value expressions share the same comparison semantics. This
+    // lets typed boolean defaults evaluate expressions such as `{_value} == 5`.
+    if (findOperator(expression, comparisonOperators())) {
+        bool comparisonResult = false;
+        if (!evaluateCondition(expression, context, comparisonResult, error)) return {};
+        return Value(comparisonResult);
+    }
     if (expression.find('{') != std::string::npos || expression.find('}') != std::string::npos) {
         error = "Variables must be written as {name}, and text containing variables must be inside quotes.";
         return {};
@@ -1401,25 +1432,7 @@ bool Runtime::evaluateCondition(std::string_view rawExpression, const ExecutionC
         return true;
     }
 
-    static const std::vector<std::pair<std::string, std::string>> compareOps = {
-        // More specific multi-word operators come first. The same operation also has
-        // concise forms so a script can read naturally without forcing one exact phrase.
-        {" is greater than or equal to ", ">="}, {" is less than or equal to ", "<="},
-        {" greater than or equal to ", ">="}, {" less than or equal to ", "<="},
-        {" is not equal to ", "!="}, {" does not equal ", "!="}, {" is not in ", "not_in"},
-        {" is greater than ", ">"}, {" is higher than ", ">"}, {" is bigger than ", ">"}, {" is larger than ", ">"},
-        {" are greater than ", ">"}, {" are more than ", ">"}, {" are higher than ", ">"}, {" are bigger than ", ">"}, {" are larger than ", ">"},
-        {" is less than ", "<"}, {" is lower than ", "<"}, {" is smaller than ", "<"},
-        {" are less than ", "<"}, {" are lower than ", "<"}, {" are smaller than ", "<"},
-        {" is more than ", ">"},
-        {" is at least ", ">="}, {" is at most ", "<="}, {" is above ", ">"}, {" is below ", "<"},
-        {" greater than ", ">"}, {" higher than ", ">"}, {" bigger than ", ">"}, {" larger than ", ">"}, {" less than ", "<"}, {" lower than ", "<"}, {" smaller than ", "<"}, {" more than ", ">"},
-        {" at least ", ">="}, {" at most ", "<="}, {" above ", ">"}, {" below ", "<"},
-        {" is equal to ", "=="}, {" equal to ", "=="}, {" is in ", "in"}, {" in ", "in"},
-        {" is not ", "!="}, {" does not contain ", "not_contains"}, {" contains ", "contains"},
-        {" equals ", "=="}, {" >= ", ">="}, {" <= ", "<="}, {" != ", "!="},
-        {" == ", "=="}, {" > ", ">"}, {" < ", "<"}, {" is ", "=="}
-    };
+    const auto& compareOps = comparisonOperators();
     if (const auto op = findOperator(expression, compareOps)) {
         const std::string_view leftText = std::string_view(expression).substr(0, op->position);
         const std::string_view rightText = std::string_view(expression).substr(op->position + op->length);
