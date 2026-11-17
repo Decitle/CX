@@ -2,11 +2,13 @@
 #include "cx/runtime.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 namespace {
 
@@ -60,6 +62,39 @@ on load:
     std::filesystem::remove_all(root);
 }
 
+void testTagMutationCommands() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-tag-mutation-tests";
+    std::filesystem::remove_all(root);
+    createTextures(root);
+    write(root / "scripts" / "main.cx", R"CX(
+create entity "warden" with texture {$boss}
+create entity "cleanme" with texture {$boss}
+set entity "warden" tags to "armored, flying"
+set entity "cleanme" tags to "temporary, marked"
+on load:
+    add tag "elite" to entity "warden"
+    add the tag "elite" to entity "warden"
+    remove tag "flying" from entity "warden"
+    remove tag "not_present" from entity "warden"
+    if entity "warden" has tag "elite" and entity "warden" has tag "armored":
+        set {tag_mutations_match} to true
+    if entity "warden" has tag "flying":
+        set {removed_tag_still_there} to true
+    clear the tags of entity "cleanme"
+    if entity "cleanme" has tag "temporary":
+        set {tag_clear_failed} to true
+)CX");
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "tag add/remove/clear commands should parse and execute");
+    expect(globalIsTrue(runtime, "tag_mutations_match"), "tag additions and removals should update tag queries");
+    expect(runtime.sprites().at("warden").tagIds.size() == 2,
+           "adding the same tag twice should be idempotent and removing a tag should remove only that tag");
+    expect(!globalIsTrue(runtime, "removed_tag_still_there"), "removed tags should no longer match tag queries");
+    expect(runtime.sprites().at("cleanme").tagIds.empty(), "clear tags should remove the complete tag set");
+    expect(!globalIsTrue(runtime, "tag_clear_failed"), "cleared tags should no longer match tag queries");
+    std::filesystem::remove_all(root);
+}
 void testCollisionLayerAndMaskFilteringForOverlapQueries() {
     const auto root = std::filesystem::temp_directory_path() / "cx-collision-overlap-filter-tests";
     std::filesystem::remove_all(root);
@@ -317,6 +352,65 @@ on entity "player" exit trigger "gate":
     std::filesystem::remove_all(root);
 }
 
+void testSuspendedTriggerHandlerIsCancelledAfterRoomTransition() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-trigger-event-suspended-room-context-tests";
+    std::filesystem::remove_all(root);
+    createTextures(root);
+    const auto writeRoom = [&](const std::string& name) {
+        write(root / "rooms" / (name + ".room.json"),
+            "{\"schema\":\"cx-room\",\"version\":1,\"name\":\"" + name +
+            "\",\"width\":3,\"height\":3,\"tileSize\":16,"
+            "\"tiles\":[[null,null,null],[null,null,null],[null,null,null]],"
+            "\"entrances\":{\"spawn\":{\"x\":1,\"y\":1}}}");
+    };
+    writeRoom("hall");
+    writeRoom("cave");
+    write(root / "scripts" / "main.cx", R"CX(
+load room "hall"
+load room "cave"
+create entity "player" with texture {$player}
+create entity "gate" with texture {$crate}
+set entity "player" position to (32, 32)
+set entity "gate" position to (32, 32)
+set entity "player" collision layer to "actors"
+set entity "player" collision mask to "triggers"
+set entity "gate" collision layer to "triggers"
+set entity "gate" collision mask to "actors"
+on load:
+    enter room "hall" at {entrance::hall::spawn}
+on entity "player" enter trigger "gate":
+    set {trigger_wait_started_actor} to {_trigger_actor}
+    set {trigger_wait_started_gate} to {_trigger_entity}
+    wait 100 milliseconds
+    set {trigger_wait_resumed_actor} to {_trigger_actor}
+    set {trigger_wait_resumed_gate} to {_trigger_entity}
+on press key "SPACE":
+    delete sprite "player"
+    enter room "cave" at {entrance::cave::spawn}
+)CX");
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "suspended trigger-context fixture should load");
+    runtime.tick();
+    expect(runtime.getGlobal("trigger_wait_started_actor").toString() == "player" &&
+           runtime.getGlobal("trigger_wait_started_gate").toString() == "gate",
+           "a trigger handler should receive its captured locals before it suspends");
+    expect(runtime.getGlobal("trigger_wait_resumed_actor").isNull(),
+           "the trigger handler should yield at wait before running its continuation");
+
+    runtime.pressKey("SPACE");
+    expect(runtime.rooms().activeRoomName() == "cave",
+           "the second event should transition away from the trigger's room");
+    runtime.tick(); // Drop the old-room continuation before its deadline.
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    runtime.tick();
+    expect(runtime.getGlobal("trigger_wait_resumed_actor").isNull() &&
+           runtime.getGlobal("trigger_wait_resumed_gate").isNull(),
+           "a suspended trigger handler must not resume with stale payload after its room changes");
+    expect(!runtime.hasErrors(), "cancelling a suspended trigger handler should not create diagnostics");
+    std::filesystem::remove_all(root);
+}
+
 void testEntityProximityQueries() {
     const auto root = std::filesystem::temp_directory_path() / "cx-entity-proximity-query-tests";
     std::filesystem::remove_all(root);
@@ -482,12 +576,14 @@ void testSharedSweptAabbGeometry() {
 int main() {
     try {
         testClassificationAndTagQueries();
+        testTagMutationCommands();
         testCollisionLayerAndMaskFilteringForOverlapQueries();
         testOutgoingProjectileMaskFiltersHits();
         testTargetMaskFiltersProjectileHits();
         testTriggerEnterExitLifecycleAndInstanceIdentity();
         testTriggerCallbacksMayDeleteContactEntitiesSafely();
         testTriggerContactsResetAcrossRoomContextChanges();
+        testSuspendedTriggerHandlerIsCancelledAfterRoomTransition();
         testEntityProximityQueries();
         testEntityProximityRejectsInvalidRadius();
         testEntityProximityRejectsNonNumericRadius();

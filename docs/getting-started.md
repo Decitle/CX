@@ -25,7 +25,7 @@ With a prebuilt runtime package, run the executable against the `CX-Engine/` fol
 - Windows: `CX-Engine\\cx-engine.exe CX-Engine`
 - Linux/macOS: `./CX-Engine/cx-engine ./CX-Engine`
 
-The included quickstart demonstrates a working project rather than an empty engine shell. Press Space to increment the sample score and R to reset it. The in-game terminal can display script messages and engine diagnostics.
+The included quickstart demonstrates a working project rather than an empty engine shell. An on-screen HUD shows the sample score and status. Press Space to increment the score and R to reset it; the HUD updates as the script changes its variables. The in-game terminal remains available for engine diagnostics and developer-log messages.
 
 ## 3. Create your own project
 
@@ -35,16 +35,23 @@ Create a new empty folder and launch the engine with that folder as the project 
 
 ```skript
 set {score} to 0
+set {status_message} to "Press SPACE to score."
+
+canvas "HUD":
+    create panel "score_panel" at (20, 20) size (420, 100) color (12, 20, 32, 225)
+    create text "Score: {score}" at (42, 35) font size 28
+    create text "{status_message}" at (42, 73) font size 18
 
 on load:
-    broadcast "Welcome! Press SPACE."
+    open canvas "HUD"
 
 on press key "SPACE":
     add 1 to {score}
-    broadcast "Score: {score}"
+    if {score} is at least 5:
+        set {status_message} to "Milestone reached!"
 ```
 
-The event header describes when a block runs. Indented statements are the actions. Variables in braces are values managed by the runtime. See the [CX Script learning guide](learn-cx-script.md) and [full syntax reference](syntax.md).
+The event header describes when a block runs. Indented statements are the actions. Variables in braces are values managed by the runtime. Canvas text interpolates their current values on screen, so the score changes without rebuilding the canvas. See the [CX Script learning guide](learn-cx-script.md) and [full syntax reference](syntax.md).
 
 ## 5. Check scripts
 
@@ -57,7 +64,7 @@ This checks syntax and emits file/line diagnostics. It does not prove that a beh
 
 ## 6. Learn what to try next
 
-The `examples/` folder has small independent examples for loops, lists, functions, entities, collision filters, triggers, interaction focus, projectiles, animation clips, tweens, lighting effects, and audio generation. Read one example at a time and check it with `cx-cli --check`.
+After the quickstart, try the [First game: Number Hunt](first-game.md) tutorial. It builds a complete button-driven game using only script variables, random integers, canvas text, buttons, conditions, and events. The `examples/` folder also has focused examples for loops, lists, functions, entities, collision filters, triggers, interaction focus, projectiles, animation clips, tweens, lighting effects, and audio generation. Read one example at a time and check it with `cx-cli --check`.
 
 ## Troubleshooting
 

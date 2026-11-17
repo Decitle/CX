@@ -86,6 +86,41 @@ on press key "SPACE":
     std::filesystem::remove_all(root);
 }
 
+
+void testSendAndBroadcastShareTheDeveloperLogSink() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-engine-test-send-broadcast-alias";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root / "scripts");
+    {
+        std::ofstream file(root / "scripts" / "main.cx");
+        file << R"CX(
+on load:
+    broadcast "same output"
+    send "same output"
+)CX";
+    }
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "send/broadcast alias fixture should load");
+    expect(runtime.program().handlers.size() == 1, "one load handler should be parsed");
+    if (runtime.program().handlers.size() == 1) {
+        const auto& body = runtime.program().handlers.front().body;
+        expect(body.size() == 2, "the handler should retain both output statements");
+        if (body.size() == 2) {
+            expect(body[0].type == cx::StatementType::Broadcast &&
+                   body[1].type == cx::StatementType::Broadcast,
+                   "send and broadcast should normalize to the same statement type");
+            expect(body[0].expression == body[1].expression,
+                   "send and broadcast should evaluate the same message expression");
+        }
+    }
+    const auto matchingLogs = std::count(runtime.logs().begin(), runtime.logs().end(), "same output");
+    expect(matchingLogs == 2,
+           "send and broadcast should append the same message to the developer log sink");
+    expect(!runtime.hasErrors(), "valid send/broadcast aliases should not produce runtime diagnostics");
+    std::filesystem::remove_all(root);
+}
+
 void testSyntaxSuggestions() {
     cx::ScriptParser parser;
     const auto program = parser.parseText("on pres key \"SPACE\":\n    broadcast \"hello\"\n", "<memory>");
@@ -97,9 +132,9 @@ void testSyntaxSuggestions() {
     expect(malformed.diagnostics.front().suggestion.find("set {score} to 10") != std::string::npos,
            "set syntax error should show the correct command shape");
 
-    const auto badComparison = parser.parseText("on load:\n    if {score} greater than 10:\n        broadcast \"oops\"\n", "<memory>");
-    expect(cx::hasErrors(badComparison.diagnostics), "a comparison missing `is` should be rejected");
-    expect(badComparison.diagnostics.front().column == 12, "comparison caret should point at `greater`, not the start of the condition");
+    const auto naturalComparison = parser.parseText("on load:\n    if {score} greater than 10:\n        broadcast \"natural\"\n    if {score} is greater than 10:\n        broadcast \"explicit\"\n", "<memory>");
+    expect(!cx::hasErrors(naturalComparison.diagnostics),
+           "Skript-style greater-than conditions should accept both concise and explicit English forms");
 
     const auto leakedLocal = parser.parseText("set {score} to {_temporary}\n", "<memory>");
     expect(cx::hasErrors(leakedLocal.diagnostics), "an event-local read at top level should be rejected");
@@ -1249,6 +1284,200 @@ on load:
     std::filesystem::remove_all(root);
 }
 
+
+
+void testFirstGameNumberHuntRoundLifecycle() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-engine-test-first-game-number-hunt";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root / "scripts");
+    {
+        std::ofstream script(root / "scripts" / "main.cx");
+        script << R"CX(
+set {score} to 0
+set {attempts} to 0
+set {secret} to a random integer between 1 and 5
+set {round_won} to false
+set {status_message} to "Pick a number from 1 to 5."
+
+canvas "NumberHunt":
+    create panel "game_panel" at (20, 20) size (480, 270) color (12, 20, 32, 230)
+    create text "Number Hunt" at (40, 35) font size 28
+    create text "Score: {score}   Attempts: {attempts}" at (40, 78) font size 18
+    create text "{status_message}" at (40, 110) font size 18
+    create button "guess_1" at (40, 155) size (65, 50) label "1"
+    create button "guess_2" at (125, 155) size (65, 50) label "2"
+    create button "guess_3" at (210, 155) size (65, 50) label "3"
+    create button "guess_4" at (295, 155) size (65, 50) label "4"
+    create button "guess_5" at (380, 155) size (65, 50) label "5"
+    create button "new_round" at (40, 220) size (405, 44) label "New Round"
+
+on load:
+    open canvas "NumberHunt"
+
+on click button "guess_1":
+    if {round_won} is false:
+        set {guess} to 1
+        add 1 to {attempts}
+        if {guess} is equal to {secret}:
+            add 1 to {score}
+            set {round_won} to true
+            set {status_message} to "Correct! You found the secret number."
+        else:
+            if {guess} greater than {secret}:
+                set {status_message} to "Too high. Try a smaller number."
+            else:
+                set {status_message} to "Too low. Try a larger number."
+
+on click button "guess_2":
+    if {round_won} is false:
+        set {guess} to 2
+        add 1 to {attempts}
+        if {guess} is equal to {secret}:
+            add 1 to {score}
+            set {round_won} to true
+            set {status_message} to "Correct! You found the secret number."
+        else:
+            if {guess} greater than {secret}:
+                set {status_message} to "Too high. Try a smaller number."
+            else:
+                set {status_message} to "Too low. Try a larger number."
+
+on click button "guess_3":
+    if {round_won} is false:
+        set {guess} to 3
+        add 1 to {attempts}
+        if {guess} is equal to {secret}:
+            add 1 to {score}
+            set {round_won} to true
+            set {status_message} to "Correct! You found the secret number."
+        else:
+            if {guess} greater than {secret}:
+                set {status_message} to "Too high. Try a smaller number."
+            else:
+                set {status_message} to "Too low. Try a larger number."
+
+on click button "guess_4":
+    if {round_won} is false:
+        set {guess} to 4
+        add 1 to {attempts}
+        if {guess} is equal to {secret}:
+            add 1 to {score}
+            set {round_won} to true
+            set {status_message} to "Correct! You found the secret number."
+        else:
+            if {guess} greater than {secret}:
+                set {status_message} to "Too high. Try a smaller number."
+            else:
+                set {status_message} to "Too low. Try a larger number."
+
+on click button "guess_5":
+    if {round_won} is false:
+        set {guess} to 5
+        add 1 to {attempts}
+        if {guess} is equal to {secret}:
+            add 1 to {score}
+            set {round_won} to true
+            set {status_message} to "Correct! You found the secret number."
+        else:
+            if {guess} greater than {secret}:
+                set {status_message} to "Too high. Try a smaller number."
+            else:
+                set {status_message} to "Too low. Try a larger number."
+
+on click button "new_round":
+    set {secret} to a random integer between 1 and 5
+    set {attempts} to 0
+    set {round_won} to false
+    set {status_message} to "A new number has been picked."
+)CX";
+    }
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "Number Hunt tutorial project should load");
+    const int secret = static_cast<int>(runtime.getGlobal("secret").numberOr(0.0));
+    expect(secret >= 1 && secret <= 5, "the game should choose a secret number in the displayed range");
+    expect(runtime.getGlobal("score").numberOr(-1.0) == 0.0,
+           "a new project should begin with a zero score");
+    expect(runtime.getGlobal("attempts").numberOr(-1.0) == 0.0,
+           "a new round should begin with zero attempts");
+
+    const int wrongGuess = secret == 1 ? 2 : 1;
+    runtime.clickButton("guess_" + std::to_string(wrongGuess));
+    expect(runtime.getGlobal("attempts").numberOr(-1.0) == 1.0,
+           "a wrong guess should increment the attempt counter");
+    expect(runtime.getGlobal("status_message").toString() ==
+               (wrongGuess > secret ? "Too high. Try a smaller number." : "Too low. Try a larger number."),
+           "a wrong guess should give the correct directional hint");
+
+    runtime.clickButton("guess_" + std::to_string(secret));
+    expect(runtime.getGlobal("score").numberOr(-1.0) == 1.0,
+           "a correct guess should award exactly one point");
+    expect(runtime.getGlobal("attempts").numberOr(-1.0) == 2.0,
+           "the winning guess should count as an attempt");
+    expect(runtime.getGlobal("round_won").truthy(),
+           "a correct guess should mark the round as complete");
+    expect(runtime.getGlobal("status_message").toString() ==
+               "Correct! You found the secret number.",
+           "the HUD status should explain that the round was won");
+
+    const int postWinGuess = secret == 5 ? 4 : secret + 1;
+    runtime.clickButton("guess_" + std::to_string(postWinGuess));
+    expect(runtime.getGlobal("attempts").numberOr(-1.0) == 2.0,
+           "guess buttons should be ignored after the round has been won");
+    expect(runtime.getGlobal("score").numberOr(-1.0) == 1.0,
+           "clicks after a win must not award extra points");
+
+    runtime.clickButton("new_round");
+    const int nextSecret = static_cast<int>(runtime.getGlobal("secret").numberOr(0.0));
+    expect(nextSecret >= 1 && nextSecret <= 5, "a new round should choose another in-range secret value");
+    expect(runtime.getGlobal("attempts").numberOr(-1.0) == 0.0,
+           "starting a new round should reset only the attempt counter");
+    expect(runtime.getGlobal("round_won").truthy() == false,
+           "starting a new round should clear the completed-round state");
+    expect(runtime.getGlobal("score").numberOr(-1.0) == 1.0,
+           "starting a new round should preserve the player's score");
+    expect(!runtime.hasErrors(), "a complete Number Hunt round should not produce runtime diagnostics");
+    std::filesystem::remove_all(root);
+}
+
+void testCanvasTextInterpolatesLiveGlobalValues() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-engine-test-live-canvas-text";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root / "scripts");
+    {
+        std::ofstream script(root / "scripts" / "main.cx");
+        script << R"CX(
+set {score} to 0
+canvas "HUD":
+    create text "Score: {score}" at (20, 20) font size 24
+on load:
+    open canvas "HUD"
+on press key "SPACE":
+    add 1 to {score}
+)CX";
+    }
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "live canvas-text fixture should load");
+    expect(runtime.program().canvases.size() == 1 &&
+           runtime.program().canvases.front().elements.size() == 1,
+           "the HUD should contain one text element");
+    if (runtime.program().canvases.size() == 1 &&
+        runtime.program().canvases.front().elements.size() == 1) {
+        const std::string& templateText = runtime.program().canvases.front().elements.front().text;
+        expect(runtime.formatDisplayText(templateText) == "Score: 0",
+               "canvas interpolation should show the initial global value");
+        runtime.pressKey("SPACE");
+        expect(runtime.formatDisplayText(templateText) == "Score: 1",
+               "canvas interpolation should reflect an event-driven variable update without rebuilding the canvas");
+        runtime.executeInline("set {score} to 25");
+        expect(runtime.formatDisplayText(templateText) == "Score: 25",
+               "canvas interpolation should read the latest value after an inline state change");
+    }
+    expect(!runtime.hasErrors(), "live canvas interpolation should not produce runtime diagnostics");
+    std::filesystem::remove_all(root);
+}
+
 void testResponsiveCanvasGridAndRelativeLayout() {
     const auto parsed = cx::ScriptParser{}.parseText(R"CX(
 canvas "HUD":
@@ -1974,6 +2203,7 @@ int main() {
     try {
         testValueConversions();
         testParserAndLocalVariables();
+        testSendAndBroadcastShareTheDeveloperLogSink();
         testSyntaxSuggestions();
         testFriendlyTerminalDiagnostics();
         testConfigAndScriptOverride();
@@ -2002,6 +2232,8 @@ int main() {
         testLoopsWaitAndFlexibleIndentation();
         testPeriodicEvents();
         testListsFunctionsAndMathExpressions();
+        testFirstGameNumberHuntRoundLifecycle();
+        testCanvasTextInterpolatesLiveGlobalValues();
         testResponsiveCanvasGridAndRelativeLayout();
         testSpriteObjectsAndHeldKeyInput();
         testEntityPathsProjectilesAndTilePlacement();

@@ -19,7 +19,7 @@ The start and end values are finite world-space pixel coordinates and must not b
 set beam "sun shaft" width to 48
 set beam "sun shaft" opacity to 0.72
 set beam "sun shaft" tint to (255, 230, 190)
-set beam "sun shaft" texture_repeat to 64
+set beam "sun shaft" texture repeat to 64
 set beam "sun shaft" layer to "background"
 set beam "sun shaft" start to (320, -80)
 set beam "sun shaft" end to (360, 260)
@@ -32,7 +32,7 @@ set beam "sun shaft" lifetime to 2.5
 | `width` | 1–2048 | Constant full width in world pixels |
 | `opacity` | 0–1 | Vertex alpha multiplier for the textured quad |
 | `tint` | integer RGB channels, 0–255 | Color multiplied with the sampled texture |
-| `texture_repeat` | 1–4096 | World-pixel distance represented by one horizontal texture repeat |
+| `texture repeat` | 1–4096 | World-pixel distance represented by one horizontal texture repeat |
 | `layer` | `"background"`, `"world"`, `"foreground"` | Draw ordering relative to rooms and entities |
 | `lifetime` | 0–3600 seconds | Fixed-tick lifetime; zero means persistent |
 
@@ -49,13 +49,13 @@ For oblique rooms, the frontend projects each world endpoint to the room's 2:1 d
 ## Endpoint light
 
 ```cx
-set beam "sun shaft" endpoint_light to true
-set beam "sun shaft" endpoint_light_radius to 180
-set beam "sun shaft" endpoint_light_intensity to 0.72
-set beam "sun shaft" endpoint_light_color to (255, 196, 132)
+set beam "sun shaft" endpoint light to true
+set beam "sun shaft" endpoint light radius to 180
+set beam "sun shaft" endpoint light intensity to 0.72
+set beam "sun shaft" endpoint light color to (255, 196, 132)
 ```
 
-`endpoint_light` takes a boolean. Radius is 1–4096 pixels, intensity is 0–1, and color is an integer RGB triple from 0–255. The light is radial (360 degrees) and centered at the projected end point. It is appended to the existing additive light mesh and participates in the normal light geometry cache; beam create/edit/remove/expiry advances the beam revision so the cache is rebuilt when needed. Endpoint light only appears while engine lighting is enabled. It is independent of beam tint and opacity: changing the visible beam does not implicitly change the light.
+`endpoint light` takes a boolean. Radius is 1–4096 pixels, intensity is 0–1, and color is an integer RGB triple from 0–255. The light is radial (360 degrees) and centered at the projected end point. It is appended to the existing additive light mesh and participates in the normal light geometry cache; beam create/edit/remove/expiry advances the beam revision so the cache is rebuilt when needed. Endpoint light only appears while engine lighting is enabled. It is independent of beam tint and opacity: changing the visible beam does not implicitly change the light.
 
 ## Lifetime and runtime behavior
 
@@ -66,3 +66,6 @@ See [`../examples/textured_beam.cx`](../examples/textured_beam.cx). It expects `
 ## Deliberate limits
 
 This is a lightweight 2D textured quad plus an optional radial endpoint light. It is not volumetric lighting, a shader effect, bloom, occlusion shadows, or physically based scattering. Beams are straight and constant-width; there are no curved paths, taper, procedural noise, animated UV speed, independent start/end lights, tile occlusion, collision or hit detection, or renderer-neutral falloff profile. The `world` layer uses one midpoint depth key rather than splitting a beam around intersecting entities. Texture and light performance should be benchmarked with the actual target scene before making throughput claims.
+
+
+The underscored property names (`texture_repeat`, `endpoint_light_radius`, `endpoint_light_intensity`, and related forms) remain accepted compatibility aliases.

@@ -17,7 +17,7 @@ on load:
     enter room "workshop" at {entrance::workshop::spawn}
 
 on press key "SPACE":
-    tween entity "player" to (240, 160) over 1 second easing ease_in_out
+    tween entity "player" to (240, 160) over 1 second easing ease in out
 
 on tween complete for entity "player":
     # With slide response, these are the actual final coordinates.

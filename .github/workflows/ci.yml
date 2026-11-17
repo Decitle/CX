@@ -93,14 +93,14 @@ jobs:
       - name: Run CTest
         run: ctest --test-dir build --build-config Release --output-on-failure
 
-      - name: Check quickstart scripts (Windows)
+      - name: Check all example scripts (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./build/Release/cx-cli.exe --check examples/quickstart
+        run: python tools/check_examples.py --cli ./build/Release/cx-cli.exe --examples examples
 
-      - name: Check quickstart scripts (Linux and macOS)
+      - name: Check all example scripts (Linux and macOS)
         if: runner.os != 'Windows'
-        run: ./build/cx-cli --check examples/quickstart
+        run: python tools/check_examples.py --cli ./build/cx-cli --examples examples
 
       - name: Graphical startup smoke test (Windows)
         if: runner.os == 'Windows'

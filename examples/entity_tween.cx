@@ -4,7 +4,7 @@ create entity "boulder" with texture {$stone}
 set entity "boulder" position to (180, 440)
 
 on press key "SPACE":
-    tween entity "boulder" to (700, 360) over 0.9 seconds easing ease_in_out with arc height 120
+    tween entity "boulder" to (700, 360) over 0.9 seconds easing ease in out with arc height 120
 
 on press key "C":
     cancel tween for entity "boulder"

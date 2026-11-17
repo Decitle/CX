@@ -1,6 +1,6 @@
 # CX Engine settings reference (v0.10.14)
 
-This is the canonical reference for all **21** settings in `EngineSettings` for CX Engine v0.10.14. Settings are optional: the built-in defaults are already chosen to make a new project usable without a long configuration block.
+This reference lists all **21** settings in `EngineSettings`. The names and value contracts remain unchanged on the v0.11.0 development branch. Settings are optional: the built-in defaults are already chosen to make a new project usable without a long configuration block. Setting names are stable machine-readable identifiers shared between scripts and `config.json`; retain their underscores rather than inventing word-spaced alternatives.
 
 A setting can be supplied in the project's `config.json` file or changed by a `.cx` statement in the reserved `engine::` namespace:
 

@@ -28,7 +28,7 @@ Launching the runtime against an empty project folder can create missing standar
 
 ## Room data
 
-Rooms are JSON data files that describe dimensions, tiles, collision metadata, and optional visual layers. The engine supports transitions, named entrances, and room-local content. Use the included room examples to see the schema in context. Room Studio can create and edit room files through a local server.
+Rooms are JSON data files that describe dimensions, tiles, collision metadata, and optional visual layers. The engine supports transitions, named entrances, and room-local content. `load room "hall"` loads a room definition and creates point variables such as `{entrance::hall::spawn}` from its named entrances. Entering a different room unloads the previous active room definition and removes that room's generated entrance variables. To use one of those named entrances later, load that room again before evaluating the entrance variable; alternatively, pass explicit tile coordinates with `enter room "hall" at (1, 1)`. Room files can be explored with the included examples, and Room Studio can create and edit them through a local server.
 
 ## Persistent variables
 

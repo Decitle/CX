@@ -13,8 +13,18 @@ Two related behaviors in the first projectile implementation were surprising and
 - During projectile map traversal, the runtime records the target, projectile ID, and damage, and marks the projectile for removal. It does not run script callbacks while traversing the sprite map.
 - After traversal, removed projectiles are erased and live-projectile accounting is updated.
 - The queued hit events then resolve in stable projectile-name/map order. Before each hit is applied, the target must still exist as an entity and have health above zero.
-- Each accepted hit subtracts damage, updates `entity::name::health` and `entity::name::max_health`, and immediately runs `on projectile hit entity "name":`. The callback sees the health after that specific hit.
+- Each accepted hit subtracts damage, updates `entity::name::health` and `entity::name::max_health`, and immediately runs `on projectile hit entity "name":`. The callback sees the health after that specific hit. Its event-local values are {_hit_entity} (target name), {_hit_projectile} (projectile ID), and {_hit_damage} (damage applied).
 - If a callback deletes the target or an earlier hit reduces its health to zero, later queued impacts are skipped. The projectiles that had already collided are still consumed; they do not later fly through the scene.
+
+## Projectile-hit event context
+
+    on projectile hit entity "warden":
+        set {last_hit_target} to {_hit_entity}
+        set {last_hit_projectile} to {_hit_projectile}
+        set {last_hit_damage} to {_hit_damage}
+        set {warden_health_after_hit} to {entity::warden::health}
+
+These locals belong to that single hit-handler invocation. The health read reflects the current hit after its damage has been applied. The same names and meanings are listed in the [event context reference](../event-context.md).
 
 ## Generated projectile IDs and live-count invariant
 

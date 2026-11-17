@@ -669,7 +669,9 @@ on load:
 on projectile hit entity "player":
     add 1 to {hit_count}
     if {hit_count} is 1:
+        set {first_hit_entity} to {_hit_entity}
         set {first_hit_projectile} to {_hit_projectile}
+        set {first_hit_damage} to {_hit_damage}
 )CX";
     }
 
@@ -678,8 +680,12 @@ on projectile hit entity "player":
     runtime.tick();
     expect(runtime.getGlobal("hit_count").numberOr(0.0) == 3.0,
            "all three projectiles should cross the target during the same tick");
+    expect(runtime.getGlobal("first_hit_entity").toString() == "player",
+           "projectile-hit callbacks should expose the impacted entity name");
     expect(runtime.getGlobal("first_hit_projectile").toString() == "projectile_3",
            "the closest projectile should resolve first even though it was spawned last");
+    expect(runtime.getGlobal("first_hit_damage").numberOr(-1.0) == 1.0,
+           "projectile-hit callbacks should expose the damage applied by that impact");
     expect(runtime.sprites().at("player").health == 7,
            "each accepted same-tick impact should apply exactly one damage");
     std::filesystem::remove_all(root);

@@ -138,7 +138,7 @@ std::string serializeCsv(const VariableStorage::VariableMap& input) {
     sorted.reserve(input.size());
     for (const auto& [name, value] : input) {
         if (name.empty() || name.starts_with("engine::") || name.starts_with("_") ||
-            name.starts_with("^") || name.starts_with("$")) continue;
+            name.starts_with("^") || name.starts_with("$") || value.isObjectReference()) continue;
         sorted.emplace_back(name, value);
     }
     std::sort(sorted.begin(), sorted.end(), [](const auto& a, const auto& b) { return a.first < b.first; });

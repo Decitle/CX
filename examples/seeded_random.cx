@@ -3,10 +3,13 @@ on load:
     seed random stream "encounters" with 4815
     seed random stream "loot" with 90210
     seed random stream "decoration" with 22017
-    set {encounter_kind} to random_choice("encounters", "slime", "bat", "guard")
-    set {starting_loot_count} to random_int("loot", 1, 4)
-    set {decoration_offset} to random_float("decoration")
+    set {enemy_kinds::*} to "slime", "bat", "guard"
+    set {encounter_kind} to a random item out of {enemy_kinds::*} using random stream "encounters"
+    set {encounter_rolls::*} to 5 random integers between 1 and 100 using random stream "encounters"
+    set {starting_loot_count} to a random integer between 1 and 4 using random stream "loot"
+    set {decoration_offset} to a random number from 0 to 1 using random stream "decoration"
 
 on press key "L":
-    set {loot_roll} to random_int("loot", 1, 100)
+    set {loot_roll} to a random integer between 1 and 100 using random stream "loot"
+    set {loot_batch::*} to 3 random integers between 10 and 20 using random stream "loot"
     broadcast "Loot roll: {loot_roll}"

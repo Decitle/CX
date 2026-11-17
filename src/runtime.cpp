@@ -18,6 +18,7 @@
 #include <sstream>
 #include <utility>
 #include <queue>
+#include <random>
 #include <tuple>
 
 namespace cx {
@@ -66,6 +67,12 @@ std::chrono::duration<double> periodicDuration(const EventHandler& handler, unsi
     else if (unit == "h" || unit.starts_with("hour") || unit.starts_with("hr")) seconds *= 3600.0;
     else if (unit == "t" || unit.starts_with("tick")) seconds *= 1.0 / static_cast<double>(std::max(1U, tickRate));
     return std::chrono::duration<double>(seconds);
+}
+
+bool periodicIntervalWithinLimit(const EventHandler& handler, unsigned int tickRate) {
+    constexpr double maximumSeconds = 604800.0; // Seven days.
+    const double seconds = periodicDuration(handler, tickRate).count();
+    return std::isfinite(seconds) && seconds > 0.0 && seconds <= maximumSeconds;
 }
 
 bool validVariableName(std::string_view name) {
@@ -150,13 +157,29 @@ bool Runtime::loadScripts(bool resetGlobals) {
     if (!staged.hasErrors()) staged.executeBootstrap();
     if (!staged.hasErrors()) staged.fireLoad();
 
-    const auto loadedAt = std::chrono::steady_clock::now();
-    if (staged.periodicNextRun_.size() != staged.program_.handlers.size())
-        staged.periodicNextRun_.assign(staged.program_.handlers.size(), std::chrono::steady_clock::time_point{});
-    for (std::size_t i = 0; i < staged.program_.handlers.size(); ++i) {
-        if (staged.program_.handlers[i].type == EventType::Periodic) {
-            staged.periodicNextRun_[i] = loadedAt + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-                periodicDuration(staged.program_.handlers[i], staged.settings_.tickRate));
+    // The parser bounds raw tick counts against the largest supported rate.
+    // Now that config, bootstrap, and on-load handlers have run, validate each
+    // interval against the actual effective logic tick rate before scheduling it.
+    if (!staged.hasErrors()) {
+        for (const auto& handler : staged.program_.handlers) {
+            if (handler.type == EventType::Periodic &&
+                !periodicIntervalWithinLimit(handler, staged.settings_.tickRate)) {
+                appendDiagnostic(staged.diagnostics_, {false, handler.file, handler.line,
+                    "This periodic interval exceeds the 7-day maximum at the active engine::tick_rate.",
+                    "Shorten the interval or choose an engine::tick_rate that keeps its converted duration within 7 days."});
+            }
+        }
+    }
+
+    if (!staged.hasErrors()) {
+        const auto loadedAt = std::chrono::steady_clock::now();
+        if (staged.periodicNextRun_.size() != staged.program_.handlers.size())
+            staged.periodicNextRun_.assign(staged.program_.handlers.size(), std::chrono::steady_clock::time_point{});
+        for (std::size_t i = 0; i < staged.program_.handlers.size(); ++i) {
+            if (staged.program_.handlers[i].type == EventType::Periodic) {
+                staged.periodicNextRun_[i] = loadedAt + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                    periodicDuration(staged.program_.handlers[i], staged.settings_.tickRate));
+            }
         }
     }
 
@@ -220,6 +243,11 @@ bool Runtime::loadScripts(bool resetGlobals) {
     keysDown_ = std::move(staged.keysDown_);
     lightsRevision_ = staged.lightsRevision_;
     beamsRevision_ = staged.beamsRevision_;
+    screenEffects_ = staged.screenEffects_;
+    screenFadeStartOpacity_ = staged.screenFadeStartOpacity_;
+    screenFadeTargetOpacity_ = staged.screenFadeTargetOpacity_;
+    screenFadeElapsedSeconds_ = staged.screenFadeElapsedSeconds_;
+    screenFadeDurationSeconds_ = staged.screenFadeDurationSeconds_;
     settings_ = std::move(staged.settings_);
     tickCount_ = staged.tickCount_;
     scheduledExecutions_ = std::move(staged.scheduledExecutions_);
@@ -258,6 +286,21 @@ void Runtime::resetRuntimeState(bool resetGlobals) {
     activeInteractionFocus_.clear();
     interactionFocusRoomContextRevision_ = roomContextRevision_;
     randomStreams_.clear();
+    // Ordinary Skript-style random expressions use this runtime-local default
+    // stream. Authors can explicitly seed "default" for reproducible runs, or
+    // use named streams to isolate deterministic systems from one another.
+    std::uint64_t defaultRandomSeed = static_cast<std::uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+    defaultRandomSeed ^= static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(this));
+    try {
+        std::random_device entropy;
+        defaultRandomSeed ^= (static_cast<std::uint64_t>(entropy()) << 32U) ^
+                             static_cast<std::uint64_t>(entropy());
+    } catch (...) {
+        // The clock/address mix is a portable fallback for environments without
+        // a usable operating-system entropy source. Gameplay RNG is not crypto.
+    }
+    randomStreams_.emplace("default", RandomStreamState{defaultRandomSeed});
     entityLabelIds_.clear();
     nextEntityLabelId_ = 1;
     projectileCounter_ = 0;
@@ -266,6 +309,11 @@ void Runtime::resetRuntimeState(bool resetGlobals) {
     projectileLimitDiagnosticIssued_ = false;
     projectileLimitRequiredCapacity_ = 1;
     keysDown_.clear();
+    screenEffects_ = ScreenEffectsState{};
+    screenFadeStartOpacity_ = 0.0F;
+    screenFadeTargetOpacity_ = 0.0F;
+    screenFadeElapsedSeconds_ = 0.0F;
+    screenFadeDurationSeconds_ = 0.0F;
     audio_.reset();
     std::string audioWarning;
     if (!audio_.discoverAssets(projectRoot_, audioWarning) && !audioWarning.empty()) {
@@ -416,6 +464,25 @@ void Runtime::tick() {
     resumeScheduledExecutions();
     fire(EventType::Tick);
     const float effectDt = 1.0F / static_cast<float>(std::max(1U, settings_.tickRate));
+    if (screenFadeDurationSeconds_ > 0.0F) {
+        screenFadeElapsedSeconds_ = std::min(screenFadeDurationSeconds_, screenFadeElapsedSeconds_ + effectDt);
+        const float progress = screenFadeElapsedSeconds_ / screenFadeDurationSeconds_;
+        screenEffects_.fadeOpacity = std::clamp(
+            screenFadeStartOpacity_ + (screenFadeTargetOpacity_ - screenFadeStartOpacity_) * progress,
+            0.0F, 1.0F);
+        if (progress >= 1.0F) screenFadeDurationSeconds_ = 0.0F;
+    }
+    if (screenEffects_.shakeRemainingSeconds > 0.0F) {
+        screenEffects_.shakeElapsedSeconds = std::min(
+            screenEffects_.shakeDurationSeconds, screenEffects_.shakeElapsedSeconds + effectDt);
+        screenEffects_.shakeRemainingSeconds = std::max(
+            0.0F, screenEffects_.shakeDurationSeconds - screenEffects_.shakeElapsedSeconds);
+        if (screenEffects_.shakeRemainingSeconds <= 0.0F) {
+            screenEffects_.shakeAmplitudeTiles = 0.0F;
+            screenEffects_.shakeDurationSeconds = 0.0F;
+            screenEffects_.shakeElapsedSeconds = 0.0F;
+        }
+    }
     bool expiredBeam = false;
     for (auto it = beams_.begin(); it != beams_.end();) {
         BeamEffect& beam = it->second;
@@ -1253,6 +1320,11 @@ void Runtime::setVariable(std::string_view rawName, Value value, ExecutionContex
         transient_[name.substr(1)] = std::move(value);
         return;
     }
+    if (value.isObjectReference()) {
+        if (origin) runtimeError(*origin, "Sprite/entity references cannot be stored in persistent global variables.",
+            "Store object handles in a local variable like `{_sprite}` or a process-only temporary like `{^active_sprite}`. Handles are valid only while their object instance exists.");
+        return;
+    }
     if (name.starts_with("engine::")) {
         std::string error;
         if (!applySetting(name, value, error)) {
@@ -1290,7 +1362,16 @@ bool Runtime::applySetting(std::string_view nameView, const Value& value, std::s
     } else if (name == "engine::target_fps") {
         if (!unsignedSetting(settings_.targetFps, 0, 1000, "target FPS")) return false;
     } else if (name == "engine::tick_rate") {
-        if (!unsignedSetting(settings_.tickRate, 1, 1000, "tick rate")) return false;
+        unsigned int nextTickRate = settings_.tickRate;
+        if (!unsignedSetting(nextTickRate, 1, 1000, "tick rate")) return false;
+        for (const auto& handler : program_.handlers) {
+            if (handler.type == EventType::Periodic &&
+                !periodicIntervalWithinLimit(handler, nextTickRate)) {
+                error = "Changing `engine::tick_rate` would make a periodic event interval exceed the 7-day maximum.";
+                return false;
+            }
+        }
+        settings_.tickRate = nextTickRate;
     } else if (name == "engine::console_enabled") {
         if (!value.isBool()) { error = "`engine::console_enabled` must be true or false."; return false; }
         settings_.consoleEnabled = value.truthy();

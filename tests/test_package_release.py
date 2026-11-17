@@ -134,12 +134,15 @@ class PackageReleaseTests(unittest.TestCase):
         )
         self.assertIsNotNone(block, "CMake runtime dependency exclusion block must exist")
         patterns = re.findall(r'"([^"]+)"', block.group(1))
-        dll_pattern = next((pattern for pattern in patterns if "azureattest" in pattern), None)
-        self.assertIsNotNone(dll_pattern, "CMake must explicitly filter the Windows runner-only system components")
-        assert dll_pattern is not None
         # CMake quoted arguments unescape each doubled source backslash before regex matching.
-        dll_pattern = dll_pattern.replace("\\\\", "\\")
-        self.assertEqual(dll_pattern, dll_pattern.lower(), "CMake matches lowercased Windows DLL names")
+        dll_patterns = [
+            re.compile(pattern.replace("\\\\", "\\"))
+            for pattern in patterns
+            if "\\\\.dll$" in pattern
+        ]
+        self.assertTrue(dll_patterns, "CMake must explicitly filter Windows runner-only system DLLs")
+        for pattern in dll_patterns:
+            self.assertEqual(pattern.pattern, pattern.pattern.lower(), "CMake matches lowercased Windows DLL names")
 
         system_names = (
             "AzureAttestManager.dll",
@@ -157,10 +160,14 @@ class PackageReleaseTests(unittest.TestCase):
             "certenroll.dll",
             "setupapi.dll",
             "windows.storage.dll",
+            "fwpuclnt.dll",
         )
         for name in system_names:
             with self.subTest(name=name):
-                self.assertRegex(name.lower(), dll_pattern)
+                self.assertTrue(
+                    any(pattern.fullmatch(name.lower()) for pattern in dll_patterns),
+                    f"{name} must be excluded by a CMake DLL pattern",
+                )
 
     def test_windows_runtime_zip_contains_executables_dependencies_and_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -183,13 +190,109 @@ class PackageReleaseTests(unittest.TestCase):
             (stage / "bin" / "cx-cli.exe").write_bytes(b"Windows CLI fixture")
             (stage / "bin" / "sfml-graphics-3.dll").write_bytes(b"SFML DLL fixture")
             (stage / "bin" / "kernel32.dll").write_bytes(b"Windows system DLL must not be redistributed")
-            for name in (
-                "AzureAttestManager.dll", "AzureAttestNormal.dll", "HvsiFileTrust.dll",
-                "PdmUtilities.dll", "wpaxholder.dll", "shell32.dll", "shlwapi.dll",
-                "dbgeng.dll", "d2d1.dll", "uiautomationcore.dll", "esent.dll",
-                "coreuicomponents.dll", "certenroll.dll", "setupapi.dll",
+            windows_system_dll_fixtures = (
+                "AzureAttestManager.dll",
+                "AzureAttestNormal.dll",
+                "HvsiFileTrust.dll",
+                "PdmUtilities.dll",
+                "wpaxholder.dll",
+                "shell32.dll",
+                "shlwapi.dll",
+                "dbgeng.dll",
+                "d2d1.dll",
+                "uiautomationcore.dll",
+                "esent.dll",
+                "coreuicomponents.dll",
+                "certenroll.dll",
+                "setupapi.dll",
                 "windows.storage.dll",
-            ):
+                "contactactivation.dll",
+                "coremessaging.dll",
+                "d3d12.dll",
+                "d3dscache.dll",
+                "diagnosticdatasettings.dll",
+                "firewallapi.dll",
+                "fwpuclnt.dll",
+                "microsoft.internal.warppal.dll",
+                "tpmcoreprovisioning.dll",
+                "userdatatypehelperutil.dll",
+                "authz.dll",
+                "bcd.dll",
+                "credui.dll",
+                "cryptdll.dll",
+                "cryptngc.dll",
+                "cryptxml.dll",
+                "d3d11.dll",
+                "d3d11on12.dll",
+                "dcomp.dll",
+                "declaredconfiguration.dll",
+                "dmcmnutils.dll",
+                "dmenrollengine.dll",
+                "dmenterprisediagnostics.dll",
+                "dmpushproxy.dll",
+                "dmxmlhelputils.dll",
+                "drvstore.dll",
+                "dsclient.dll",
+                "dsreg.dll",
+                "dsrole.dll",
+                "dxgi.dll",
+                "edpauditapi.dll",
+                "edpcsp.dll",
+                "edputil.dll",
+                "efscore.dll",
+                "efsutil.dll",
+                "efswrt.dll",
+                "enterpriseresourcemanager.dll",
+                "feclient.dll",
+                "fveapi.dll",
+                "fvecerts.dll",
+                "fveskybackup.dll",
+                "fwbase.dll",
+                "fwpolicyiomgr.dll",
+                "gmsaclient.dll",
+                "hid.dll",
+                "iertutil.dll",
+                "iri.dll",
+                "kerb3961.dll",
+                "ktmw32.dll",
+                "lsaadt.dll",
+                "lsasrv.dll",
+                "mdmregistration.dll",
+                "msvcp110_win.dll",
+                "netlogon.dll",
+                "ngcrecovery.dll",
+                "ngcutils.dll",
+                "noise.dll",
+                "ntdsapi.dll",
+                "omadmapi.dll",
+                "pcrpf.dll",
+                "policymanager.dll",
+                "policymanagerprecheck.dll",
+                "popkeycli.dll",
+                "samcli.dll",
+                "samsrv.dll",
+                "schannel.dll",
+                "setupcl.dll",
+                "srpapi.dll",
+                "twinapi.appcore.dll",
+                "unenrollhook.dll",
+                "urlmon.dll",
+                "vaultcli.dll",
+                "vbsapi.dll",
+                "virtdisk.dll",
+                "w32topl.dll",
+                "webauthn.dll",
+                "webservices.dll",
+                "wevtapi.dll",
+                "winbrand.dll",
+                "wininet.dll",
+                "winipcfile.dll",
+                "winmsipc.dll",
+                "wldp.dll",
+                "wtdccm.dll",
+                "wuceffects.dll",
+            )
+            for name in windows_system_dll_fixtures:
                 (stage / "bin" / name).write_bytes(b"Windows system component must not be bundled")
             (stage / "include" / "SFML").mkdir(parents=True)
             (stage / "include" / "SFML" / "Graphics.hpp").write_text("development header\\n", encoding="utf-8")
@@ -300,7 +403,7 @@ class PackageReleaseTests(unittest.TestCase):
                 self.assertEqual(zipped.read("CX-Engine/sfml-graphics-3.dll"), b"SFML DLL fixture")
                 names = set(zipped.namelist())
                 self.assertNotIn("CX-Engine/kernel32.dll", names, "Windows system DLLs must not be bundled")
-                for name in ("AzureAttestManager.dll", "AzureAttestNormal.dll", "HvsiFileTrust.dll", "PdmUtilities.dll", "wpaxholder.dll"):
+                for name in windows_system_dll_fixtures:
                     self.assertNotIn(f"CX-Engine/{name}", names, f"{name} is a Windows system component and must not be bundled")
                 self.assertFalse(any(name.startswith("include/") for name in names), "development headers must not be bundled")
                 self.assertFalse(any(name.startswith("bin/") or name.startswith("lib/") for name in names), "runtime files must be flattened inside CX-Engine/")

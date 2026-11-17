@@ -21,7 +21,7 @@ on entity "player" exit trigger "door_area":
     set {near_door} to false
 ```
 
-Both event headers name the actor and trigger entity. Names are normalized case-insensitively, just like the existing entity APIs. Event-local values available to either handler are:
+Both event headers name the actor and trigger entity. Names are normalized case-insensitively, just like the existing entity APIs. The runtime dispatches only these authored pairs rather than enumerating every possible actor/trigger combination each tick. Event-local values available to either handler are:
 
 - `{_trigger_actor}` — the actor's script-visible entity name.
 - `{_trigger_entity}` — the trigger area's script-visible entity name.
@@ -53,9 +53,9 @@ Visibility is independent of collision, so an invisible trigger entity can be us
 ## Deliberate boundaries
 
 - This is endpoint overlap sampling, not swept trigger collision. An actor that completely crosses a very thin trigger between two samples can be missed; use a sufficiently wide trigger volume or smaller fixed-step movement until a swept-entity query exists.
-- The first version dispatches only explicitly named actor/trigger pairs. There are no wildcard selectors, general `on collision` events, trigger enter/exit for projectiles, or automatic team/faction rules.
+- The first version dispatches only explicitly named actor/trigger pairs. There are no wildcard selectors, general `on collision` events, trigger enter/exit for projectiles, or automatic team/faction rules. This is also a bounded-work choice: the runtime walks the authored pairs rather than scanning every actor against every trigger on each tick. A future wildcard form needs an indexed or otherwise bounded dispatch design before it can be added safely.
 - Trigger contacts do not move or block actors. Solid room tiles remain a separate grid system.
 - There is no radius-based proximity query yet. A trigger volume is currently the reusable proximity mechanism.
 - This does not add rigid-body response, swept actor movement, spatial broadphase, per-tile collision metadata, or Room Studio collision authoring.
 
-The implementation lives in `Runtime::updateTriggerEvents` and uses the shared `spritesOverlap` filter. Regression coverage is included in `tests/collision_runtime_tests.cpp` under the existing `cx-collision-tests` target. It covers stable overlap, separation/re-entry, same-name replacement, mutual-mask changes, callback-driven deletion, and room-context reset.
+The event locals are also listed in the [event context reference](../event-context.md). The implementation lives in `Runtime::updateTriggerEvents` and uses the shared `spritesOverlap` filter. Regression coverage is included in `tests/collision_runtime_tests.cpp` under the existing `cx-collision-tests` target. It covers stable overlap, separation/re-entry, same-name replacement, mutual-mask changes, callback-driven deletion, and room-context reset.

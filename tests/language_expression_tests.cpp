@@ -1,0 +1,822 @@
+#include "cx/diagnostics.hpp"
+#include "cx/runtime.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace {
+int failures = 0;
+
+void expect(bool condition, const std::string& message) {
+    if (condition) return;
+    ++failures;
+    std::cerr << "FAIL: " << message << '\n';
+}
+
+void write(const std::filesystem::path& path, const std::string& contents) {
+    std::filesystem::create_directories(path.parent_path());
+    std::ofstream output(path, std::ios::binary);
+    output << contents;
+    if (!output) throw std::runtime_error("could not write test fixture: " + path.string());
+}
+
+std::filesystem::path fixture(const std::string& name, const std::string& script) {
+    const auto root = std::filesystem::temp_directory_path() / ("cx-language-expression-" + name);
+    std::filesystem::remove_all(root);
+    write(root / "scripts" / "main.cx", script);
+    return root;
+}
+
+void testSkriptStyleRandomNumberGrammar() {
+    const auto root = fixture("natural-random", R"CX(
+seed random stream "loot" with 0
+set {between_int} to a random integer between 1 and 10
+set {from_int} to random integer from 10 to 1
+set {between_number} to a random number between 2.7 and -1.5
+set {named_stream} to a random integer between 1 and 10 using random stream "loot"
+set {items::*} to "red", "blue", 42
+set {random_item} to a random element out of {items::*}
+set {random_item_alias} to a random item out of {items::*}
+set {message} to "You rolled %random integer from 1 to 6%!"
+)CX");
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "Skript-style random expressions should use the automatic default stream without explicit setup");
+    const double betweenInt = runtime.getGlobal("between_int").numberOr(-1.0);
+    const double fromInt = runtime.getGlobal("from_int").numberOr(-1.0);
+    const double namedStream = runtime.getGlobal("named_stream").numberOr(-1.0);
+    const double betweenNumber = runtime.getGlobal("between_number").numberOr(-100.0);
+    expect(betweenInt >= 1.0 && betweenInt <= 10.0 && std::trunc(betweenInt) == betweenInt,
+           "a random integer between returns an inclusive whole-number result");
+    expect(fromInt >= 1.0 && fromInt <= 10.0 && std::trunc(fromInt) == fromInt,
+           "random integer from ... to ... accepts reversed endpoints like Skript");
+    expect(namedStream >= 1.0 && namedStream <= 10.0 && std::trunc(namedStream) == namedStream,
+           "natural random expressions can opt into a named deterministic stream");
+    expect(betweenNumber >= -1.5 && betweenNumber < 2.7,
+           "a random number between accepts reversed decimal endpoints");
+    const auto isValidListChoice = [](const cx::Value& value) {
+        return value.toString() == "red" || value.toString() == "blue" ||
+               (value.isNumber() && value.numberOr(-1.0) == 42.0);
+    };
+    expect(isValidListChoice(runtime.getGlobal("random_item")),
+           "random element out of a list returns one original list value");
+    expect(isValidListChoice(runtime.getGlobal("random_item_alias")),
+           "random item is a natural-language alias for random element");
+    const std::string message = runtime.getGlobal("message").toString();
+    expect(message.starts_with("You rolled ") && message.ends_with("!") && message.size() > 12,
+           "Skript-style percent interpolation evaluates expressions inside text");
+    expect(!runtime.hasErrors(), "valid natural random expressions should not emit diagnostics");
+    std::filesystem::remove_all(root);
+}
+
+void testNaturalMathAndSkriptDegreeTrigonometry() {
+    const auto root = fixture("math", R"CX(
+set {absolute} to the absolute value of -12.5
+set {square_root} to the square root of 81
+set {floor} to the floor of -1.2
+set {ceiling} to the ceiling of 1.2
+set {rounded} to round 2.345 to 2 decimal places
+set {square} to the square of 9
+set {sin_degrees} to sin(90)
+set {cos_degrees} to cos(180)
+set {tan_degrees} to tan(45)
+set {sin_radians} to sin_radians(1.5707963267948966)
+set {arcsin_degrees} to asin(1)
+set {atan2_degrees} to atan2(1, 1)
+set {log_default_base} to log(1000)
+set {log_custom_base} to log(81, 3)
+set {natural_log} to ln(exp(1))
+set {root} to root(3, -8)
+set {root_skript_order} to root(2, 4)
+set {factorial_five} to factorial(5)
+set {combinations_five_two} to combinations(5, 2)
+set {permutations_five_two} to permutations(5, 2)
+set {hex_text} to toBase(32, 16)
+set {hex_value} to fromBase("20", 16)
+set {formatted_number} to formatNumber(1234567.891, "#,##0.00")
+set {joined_text} to concat("score: ", 42, " pts")
+set {positive_mod} to mod(-1, 10)
+set {mod_zero_is_nan} to isNaN(mod(1, 0))
+set {log_zero_is_nan} to isNaN(log(0))
+set {log_zero_is_finite} to isFinite(log(0))
+set {overflow_is_finite} to isFinite(factorial(171))
+set {values::*} to 1, 2, 3, 4
+set {mean_values} to mean({values::*})
+set {median_values} to median({values::*})
+set {average_values} to the average of {values::*}
+set {sum_values} to sum({values::*})
+set {product_values} to product({values::*})
+set {bad_root} to sqrt(-1)
+set {bad_root_is_nan} to isNaN({bad_root})
+set {finite_number} to isFinite(42)
+set {power_right_associative} to 2 ^ 3 ^ 2
+set {power_precedence} to 2 + 3 * 4 ^ 2
+set {negative_product} to 2 * -3
+set {negative_exponent} to 2 ^ -2
+set {minimum} to min(5, -2, 9, 4)
+set {maximum} to max(5, -2, 9, 4)
+set {clamped} to clamp(15, 0, 10)
+set {natural_clamp_low} to clamp -5 between 0 and 10
+set {natural_clamp_high} to clamp 15 between 0 and 10
+set {natural_clamp_nested} to clamp (5 + 20) between (2 * 3) and max(10, 30)
+set {interpolated} to lerp(10, 20, 0.25)
+)CX");
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "natural and function-form math expressions should load");
+    const auto number = [&](const char* name) { return runtime.getGlobal(name).numberOr(std::numeric_limits<double>::quiet_NaN()); };
+    expect(std::abs(number("absolute") - 12.5) < 1e-12, "absolute value should work in natural English form");
+    expect(std::abs(number("square_root") - 9.0) < 1e-12, "square root should work in natural English form");
+    expect(std::abs(number("floor") + 2.0) < 1e-12, "floor should round negative values downward");
+    expect(std::abs(number("ceiling") - 2.0) < 1e-12, "ceiling should round upward");
+    expect(std::abs(number("rounded") - 2.35) < 1e-12, "round with decimal-place precision should work");
+    expect(std::abs(number("square") - 81.0) < 1e-12, "square should be a convenient power helper");
+    expect(std::abs(number("sin_degrees") - 1.0) < 1e-12, "Skript-compatible sin uses degrees");
+    expect(std::abs(number("cos_degrees") + 1.0) < 1e-12, "Skript-compatible cos uses degrees");
+    expect(std::abs(number("tan_degrees") - 1.0) < 1e-12, "Skript-compatible tan uses degrees");
+    expect(std::abs(number("sin_radians") - 1.0) < 1e-12, "explicit radians aliases preserve technical radians use");
+    expect(std::abs(number("arcsin_degrees") - 90.0) < 1e-12, "inverse trigonometry returns degrees");
+    expect(std::abs(number("atan2_degrees") - 45.0) < 1e-12, "atan2 should return screen/game-friendly degrees");
+    expect(std::abs(number("log_default_base") - 3.0) < 1e-12, "log defaults to base ten like Skript");
+    expect(std::abs(number("log_custom_base") - 4.0) < 1e-12, "log accepts a custom base");
+    expect(std::abs(number("natural_log") - 1.0) < 1e-12, "natural logarithm and exponential should be inverses");
+    expect(std::abs(number("root") + 2.0) < 1e-12, "odd roots of negative values should remain real");
+    expect(std::abs(number("root_skript_order") - 2.0) < 1e-12, "root accepts the Skript argument order: degree, value");
+    expect(std::abs(number("factorial_five") - 120.0) < 1e-12, "factorial should return exact small factorials");
+    expect(std::abs(number("combinations_five_two") - 10.0) < 1e-12, "combinations counts unordered selections");
+    expect(std::abs(number("permutations_five_two") - 20.0) < 1e-12, "permutations counts ordered selections");
+    expect(runtime.getGlobal("hex_text").toString() == "20", "toBase converts a decimal integer to hexadecimal text");
+    expect(std::abs(number("hex_value") - 32.0) < 1e-12, "fromBase converts hexadecimal text to a decimal number");
+    expect(runtime.getGlobal("formatted_number").toString() == "1,234,567.89", "formatNumber groups thousands and rounds decimal places");
+    expect(runtime.getGlobal("joined_text").toString() == "score: 42 pts", "concat joins text and numeric values");
+    expect(std::abs(number("positive_mod") - 9.0) < 1e-12, "mod always returns a positive remainder like Skript");
+    expect(runtime.getGlobal("mod_zero_is_nan").truthy(), "mod with a zero divisor returns NaN instead of aborting execution");
+    expect(!runtime.getGlobal("log_zero_is_nan").truthy() && !runtime.getGlobal("log_zero_is_finite").truthy(),
+           "log of zero is negative infinity, not NaN");
+    expect(!runtime.getGlobal("overflow_is_finite").truthy(), "factorial overflow remains Infinity and can be inspected");
+    expect(std::abs(number("mean_values") - 2.5) < 1e-12, "mean accepts a list variable");
+    expect(std::abs(number("median_values") - 2.5) < 1e-12, "median accepts a list variable and averages its middle pair");
+    expect(std::abs(number("average_values") - 2.5) < 1e-12, "natural average form accepts a list variable");
+    expect(std::abs(number("sum_values") - 10.0) < 1e-12, "sum accepts a list variable");
+    expect(std::abs(number("product_values") - 24.0) < 1e-12, "product accepts a list variable");
+    expect(runtime.getGlobal("bad_root_is_nan").truthy(), "sqrt of a negative number follows Skript NaN behavior");
+    expect(runtime.getGlobal("finite_number").truthy(), "isFinite recognizes finite values");
+    expect(std::abs(number("power_right_associative") - 512.0) < 1e-12, "power operator should be right-associative");
+    expect(std::abs(number("power_precedence") - 50.0) < 1e-12, "power should bind more tightly than multiplication and addition");
+    expect(std::abs(number("negative_product") + 6.0) < 1e-12, "unary negative values should work after multiplication");
+    expect(std::abs(number("negative_exponent") - 0.25) < 1e-12, "negative exponents should be parsed as unary values");
+    expect(std::abs(number("minimum") + 2.0) < 1e-12, "min should accept multiple numeric arguments");
+    expect(std::abs(number("maximum") - 9.0) < 1e-12, "max should accept multiple numeric arguments");
+    expect(std::abs(number("clamped") - 10.0) < 1e-12, "clamp should constrain a value to the requested range");
+    expect(std::abs(number("natural_clamp_low") - 0.0) < 1e-12, "natural clamp syntax should enforce its lower bound");
+    expect(std::abs(number("natural_clamp_high") - 10.0) < 1e-12, "natural clamp syntax should enforce its upper bound");
+    expect(std::abs(number("natural_clamp_nested") - 25.0) < 1e-12, "natural clamp should respect nested arithmetic and function expressions when finding its separators");
+    expect(std::abs(number("interpolated") - 12.5) < 1e-12, "lerp should interpolate between endpoints");
+    expect(!runtime.hasErrors(), "valid math expressions should not emit diagnostics");
+    std::filesystem::remove_all(root);
+}
+
+void testNaturalComparisonAndListConditions() {
+    const auto root = fixture("condition-language", R"CX(
+set {score} to 8
+set {items::*} to "blue", "green", 3
+if {score} greater than 7:
+    set {plain_greater_than} to true
+if {score} is higher than 7:
+    set {higher_than} to true
+if {score} bigger than 7:
+    set {bigger_than} to true
+if {score} is larger than 7:
+    set {larger_than} to true
+if {score} are more than 7:
+    set {are_more_than} to true
+if {score} is lower than 9:
+    set {lower_than} to true
+if {score} smaller than 9:
+    set {smaller_than} to true
+if {score} is smaller than 9:
+    set {is_smaller_than} to true
+if {score} are lower than 9:
+    set {are_lower_than} to true
+if {score} is at least 8:
+    set {at_least} to true
+if {score} at most 8:
+    set {at_most} to true
+if {score} is greater than or equal to 8:
+    set {inclusive_greater} to true
+if {score} is not equal to 9:
+    set {not_equal} to true
+if {score} is between 5 and 10:
+    set {between} to true
+if {score} is not between 9 and 12:
+    set {not_between} to true
+if {score} is even:
+    set {even} to true
+if 7 is odd:
+    set {odd} to true
+if -3 is negative:
+    set {negative} to true
+if "hello" is text:
+    set {text_type} to true
+if {score} is a number:
+    set {number_type} to true
+if "" is empty:
+    set {empty_string} to true
+if "blue" is in {items::*}:
+    set {list_membership} to true
+if {items::*} contains "green":
+    set {list_contains} to true
+if {items::*} does not contain "red":
+    set {list_not_contains} to true
+)CX");
+    cx::Runtime runtime(root);
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics())
+            std::cerr << "CONDITION FIXTURE DIAGNOSTIC: " << diagnostic.message << '\n';
+    }
+    expect(loaded, "Skript-style comparison and membership conditions should load");
+    expect(!runtime.hasErrors(), "valid English comparison and list conditions should not diagnose");
+    expect(runtime.getGlobal("plain_greater_than").truthy(), "plain greater-than wording should work");
+    expect(runtime.getGlobal("higher_than").truthy(), "higher-than is a greater-than alias");
+    expect(runtime.getGlobal("bigger_than").truthy(), "bigger-than is a greater-than alias");
+    expect(runtime.getGlobal("larger_than").truthy(), "larger-than is a greater-than alias");
+    expect(runtime.getGlobal("are_more_than").truthy(), "are-more-than is a greater-than alias");
+    expect(runtime.getGlobal("lower_than").truthy(), "lower-than is a less-than alias");
+    expect(runtime.getGlobal("smaller_than").truthy(), "smaller-than is a less-than alias");
+    expect(runtime.getGlobal("is_smaller_than").truthy(), "is-smaller-than is a less-than alias");
+    expect(runtime.getGlobal("are_lower_than").truthy(), "are-lower-than is a less-than alias");
+    expect(runtime.getGlobal("at_least").truthy(), "at least should map to greater-than-or-equal");
+    expect(runtime.getGlobal("at_most").truthy(), "at most should map to less-than-or-equal");
+    expect(runtime.getGlobal("inclusive_greater").truthy(), "is greater than or equal to should be parsed as one operator");
+    expect(runtime.getGlobal("not_equal").truthy(), "is not equal to should compare unequal values");
+    expect(runtime.getGlobal("between").truthy(), "is between should include values inside the numeric range");
+    expect(runtime.getGlobal("not_between").truthy(), "is not between should negate the inclusive range check");
+    expect(runtime.getGlobal("even").truthy(), "is even should accept whole even numbers");
+    expect(runtime.getGlobal("odd").truthy(), "is odd should accept whole odd numbers");
+    expect(runtime.getGlobal("negative").truthy(), "is negative should recognize negative values");
+    expect(runtime.getGlobal("text_type").truthy(), "is text should test the string value type");
+    expect(runtime.getGlobal("number_type").truthy(), "is a number should test the numeric value type");
+    expect(runtime.getGlobal("empty_string").truthy(), "is empty should recognize empty strings");
+    expect(runtime.getGlobal("list_membership").truthy(), "is in should test typed values against a list");
+    expect(runtime.getGlobal("list_contains").truthy(), "list contains should find a typed list value");
+    expect(runtime.getGlobal("list_not_contains").truthy(), "does not contain should negate list membership");
+    std::filesystem::remove_all(root);
+}
+
+
+void testNaturalTypeAndValuePredicateAliases() {
+    const auto root = fixture("natural-value-predicate-aliases", R"CX(
+set {positive_value} to 5
+set {negative_value} to -5
+set {zero_value} to 0
+set {enabled} to true
+set {items::*} to "red", "blue"
+
+if {positive_value} is positive:
+    set {positive_predicate} to true
+if {negative_value} is negative:
+    set {negative_predicate} to true
+if {zero_value} is zero:
+    set {zero_predicate} to true
+if {zero_value} is even:
+    set {even_predicate} to true
+if 3 is odd:
+    set {odd_predicate} to true
+
+if {enabled} is a boolean:
+    set {boolean_with_article} to true
+if {enabled} is boolean:
+    set {boolean_without_article} to true
+if {items::*} is a list:
+    set {list_with_article} to true
+if {items::*} is list:
+    set {list_without_article} to true
+if 12 is a number:
+    set {number_with_article} to true
+if 12 is number:
+    set {number_without_article} to true
+if "hello" is a text:
+    set {text_with_article} to true
+if "hello" is text:
+    set {text_without_article} to true
+if "hello" is a string:
+    set {string_with_article} to true
+if "hello" is string:
+    set {string_without_article} to true
+if "" is empty:
+    set {empty_predicate} to true
+
+if "12" is a number:
+    set {string_was_number} to true
+if {enabled} is a list:
+    set {boolean_was_list} to true
+if {positive_value} is zero:
+    set {positive_was_zero} to true
+)CX");
+    cx::Runtime runtime(root);
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics())
+            std::cerr << "VALUE PREDICATE DIAGNOSTIC: " << diagnostic.message << '\n';
+    }
+    expect(loaded, "natural type/value predicate aliases should parse and execute");
+    expect(!runtime.hasErrors(), "valid type/value predicates should not produce runtime diagnostics");
+    for (const auto& name : {
+             "positive_predicate", "negative_predicate", "zero_predicate",
+             "even_predicate", "odd_predicate", "boolean_with_article",
+             "boolean_without_article", "list_with_article", "list_without_article",
+             "number_with_article", "number_without_article", "text_with_article",
+             "text_without_article", "string_with_article", "string_without_article", "empty_predicate"}) {
+        expect(runtime.getGlobal(name).truthy(),
+               "the documented value predicate should evaluate true: " + std::string(name));
+    }
+    expect(!runtime.getGlobal("string_was_number").truthy(),
+           "a numeric-looking string should not pass the number type predicate");
+    expect(!runtime.getGlobal("boolean_was_list").truthy(),
+           "a boolean should not pass the list type predicate");
+    expect(!runtime.getGlobal("positive_was_zero").truthy(),
+           "a positive number should not pass the zero predicate");
+    std::filesystem::remove_all(root);
+}
+
+
+void testSkriptStyleElseIfChains() {
+    const auto root = fixture("else-if-chains", R"CX(
+if 2 is equal to 2:
+    set {first_branch} to "first"
+else if 3 is equal to 3:
+    set {first_branch} to "second"
+else if 4 is equal to 4:
+    set {first_branch} to "third"
+else:
+    set {first_branch} to "else"
+
+if 1 is equal to 2:
+    set {second_branch} to "first"
+else if 2 is equal to 3:
+    set {second_branch} to "second"
+else if 3 is equal to 3:
+    set {second_branch} to "third"
+else:
+    set {second_branch} to "else"
+
+if 1 is equal to 2:
+    set {third_branch} to "first"
+else if 2 is equal to 3:
+    set {third_branch} to "second"
+else:
+    set {third_branch} to "else"
+
+if 1 is equal to 2:
+    set {nested_parent} to "wrong"
+else if 2 is equal to 2:
+    if 3 is equal to 3:
+        set {nested_child} to "nested-first"
+    else if 4 is equal to 4:
+        set {nested_child} to "nested-second"
+    else:
+        set {nested_child} to "nested-else"
+else:
+    set {nested_parent} to "wrong-else"
+)CX");
+    cx::Runtime runtime(root);
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics())
+            std::cerr << "ELSE-IF DIAGNOSTIC: " << diagnostic.message << '\n';
+    }
+    expect(loaded, "Skript-style else-if chains should parse and execute");
+    expect(!runtime.hasErrors(), "valid else-if branches should not produce runtime diagnostics");
+    expect(runtime.getGlobal("first_branch").toString() == "first",
+           "the first matching branch should execute and prevent later branches");
+    expect(runtime.getGlobal("second_branch").toString() == "third",
+           "an intermediate else-if branch should execute after earlier conditions fail");
+    expect(runtime.getGlobal("third_branch").toString() == "else",
+           "a final else should run when every if/else-if condition fails");
+    expect(runtime.getGlobal("nested_child").toString() == "nested-first",
+           "else-if chains should compose with nested if/else blocks");
+    expect(!runtime.getGlobal("nested_parent").truthy(),
+           "the parent chain should select only its matching else-if branch");
+    std::filesystem::remove_all(root);
+}
+
+
+void testTypedFunctionSignaturesDefaultsAndReturnContracts() {
+    const auto root = fixture("typed-function-signatures", R"CX(
+function add_step(value: number, step: number = 2) returns number:
+    return {_value} + {_step}
+
+function wrapped(value: number = add_step(3, 4)) returns number:
+    return {_value}
+
+function is_five(value: number, matches: boolean = {_value} == 5) returns boolean:
+    return {_matches}
+
+function add_from_prior(first: number, second: number = {_first} * 2) returns number:
+    return {_first} + {_second}
+
+function cube(value: integer) :: number:
+    return {_value} * {_value} * {_value}
+
+function bool_alias(value: bool = true) returns bool:
+    return {_value}
+
+function object_identity(target: object) returns object:
+    return {_target}
+
+function greeting(name: string = "friend, pal") returns text:
+    return "Hello, " + {_name}
+
+function is_enabled(enabled: boolean) returns boolean:
+    return {_enabled}
+
+function mark_ready() returns none:
+    set {ready} to true
+
+function legacy_double(value):
+    return {_value} * 2
+
+function entity_identity(target: entity) returns entity:
+    return {_target}
+
+function entity_is_visible(target: entity) returns boolean:
+    return visible of {_target}
+
+function sprite_x(target: sprite) returns number:
+    return x-coordinate of {_target}
+
+on load:
+    create entity "player" with texture {$blank}
+    create sprite "crate" with texture {$blank}
+    set sprite "crate"'s x-coordinate to 23
+    set {_entity_copy} to entity_identity(entity "player")
+    set {entity_result} to entity_is_visible({_entity_copy})
+    set {sprite_result} to sprite_x(sprite "crate")
+    set {typed_default} to add_step(5)
+    set {typed_explicit} to add_step(5, 7)
+    set {nested_default} to wrapped()
+    set {equal_default_true} to is_five(5)
+    set {equal_default_false} to is_five(4)
+    set {dependent_default} to add_from_prior(4)
+    set {cube_result} to cube(3)
+    set {bool_alias_result} to bool_alias()
+    set {_object_copy} to object_identity(sprite "crate")
+    set {object_copy_x} to sprite_x({_object_copy})
+    set {text_default} to greeting()
+    set {text_explicit} to greeting("Ada")
+    set {boolean_result} to is_enabled(true)
+    set {none_result} to mark_ready()
+    set {legacy_result} to legacy_double(6)
+)CX");
+    write(root / "assets" / "textures" / "blank.png", "placeholder texture data");
+    cx::ScriptParser parser;
+    const auto parsed = parser.parseDirectory(root / "scripts");
+    if (cx::hasErrors(parsed.diagnostics)) {
+        for (const auto& diagnostic : parsed.diagnostics) {
+            if (!diagnostic.warning) {
+                std::cerr << "PARSE DIAGNOSTIC: " << diagnostic.file.string() << ':'
+                          << diagnostic.line << ": " << diagnostic.message << '\n';
+            }
+        }
+    }
+    expect(!cx::hasErrors(parsed.diagnostics),
+           "typed function headers, defaults, and return types should parse");
+    expect(parsed.functions.size() == 14, "all typed and legacy functions should be collected");
+    if (parsed.functions.contains("add_step")) {
+        const auto& addStep = parsed.functions.at("add_step");
+        expect(addStep.parameters.size() == 2 && addStep.parameters[0].type == "number" &&
+                   addStep.parameters[1].hasDefault && addStep.returnType == "number" &&
+                   addStep.hasReturnType,
+               "the parsed function contract should retain parameter types, defaults, and return type");
+    }
+    if (parsed.functions.contains("greeting")) {
+        const auto& greeting = parsed.functions.at("greeting");
+        expect(greeting.parameters.size() == 1 && greeting.parameters[0].type == "text" &&
+                   greeting.parameters[0].defaultExpression == "\"friend, pal\"" &&
+                   greeting.returnType == "text",
+               "string should normalize to text while keeping a comma inside its default string");
+    }
+    if (parsed.functions.contains("legacy_double")) {
+        const auto& legacy = parsed.functions.at("legacy_double");
+        expect(legacy.parameters.size() == 1 && legacy.parameters[0].type == "any" &&
+                   !legacy.parameters[0].hasDefault && !legacy.hasReturnType,
+               "legacy untyped function declarations should remain accepted as any");
+    }
+
+    cx::Runtime runtime(root);
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics()) {
+            if (!diagnostic.warning) {
+                std::cerr << "RUNTIME DIAGNOSTIC: " << diagnostic.file.string() << ':'
+                          << diagnostic.line << ": " << diagnostic.message << '\n';
+            }
+        }
+    }
+    expect(loaded, "typed and legacy function calls should execute");
+    expect(runtime.getGlobal("typed_default").numberOr(-1.0) == 7.0,
+           "omitted trailing parameters should use their declared default");
+    expect(runtime.getGlobal("typed_explicit").numberOr(-1.0) == 12.0,
+           "an explicitly supplied argument should override its default");
+    expect(runtime.getGlobal("nested_default").numberOr(-1.0) == 7.0,
+           "default expressions should be evaluated at call time and may call another function");
+    expect(runtime.getGlobal("dependent_default").numberOr(-1.0) == 12.0,
+           "a default expression should read an earlier parameter from the same call");
+    expect(runtime.getGlobal("equal_default_true").truthy() &&
+               !runtime.getGlobal("equal_default_false").truthy(),
+           "the default-value parser should preserve comparison operators such as == inside expressions");
+    expect(runtime.getGlobal("cube_result").numberOr(-1.0) == 27.0,
+           "integer should be a number alias, and :: should declare the return type");
+    expect(runtime.getGlobal("bool_alias_result").truthy(),
+           "bool should be accepted as a boolean type alias");
+    expect(runtime.getGlobal("object_copy_x").numberOr(-1.0) == 23.0,
+           "object should accept a live sprite/entity reference without erasing its concrete kind");
+    expect(runtime.getGlobal("text_default").toString() == "Hello, friend, pal",
+           "text defaults should preserve commas and be returned with their declared text type");
+    expect(runtime.getGlobal("text_explicit").toString() == "Hello, Ada",
+           "typed text parameters should accept explicit text arguments");
+    expect(runtime.getGlobal("boolean_result").truthy(),
+           "boolean parameters and return types should preserve boolean values");
+    expect(runtime.getGlobal("ready").truthy() && runtime.getGlobal("none_result").isNull(),
+           "none-returning functions should allow a side effect and no value");
+    expect(runtime.getGlobal("legacy_result").numberOr(-1.0) == 12.0,
+           "legacy untyped functions should retain their existing behavior");
+    expect(runtime.getGlobal("entity_result").truthy(),
+           "typed entity parameters and returns should preserve live entity handles");
+    expect(runtime.getGlobal("sprite_result").numberOr(-1.0) == 23.0,
+           "typed sprite parameters should preserve live sprite handles and property access");
+    expect(!runtime.hasErrors(), "valid typed function calls should not produce diagnostics");
+    std::filesystem::remove_all(root);
+
+    const auto invalidOrderRoot = fixture("typed-function-invalid-default-order", R"CX(
+function invalid(optional: number = 1, required: number):
+    return {_required}
+)CX");
+    const auto invalidOrder = parser.parseDirectory(invalidOrderRoot / "scripts");
+    expect(cx::hasErrors(invalidOrder.diagnostics),
+           "a required parameter after an optional parameter should be rejected");
+    expect(std::any_of(invalidOrder.diagnostics.begin(), invalidOrder.diagnostics.end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("cannot follow a parameter with a default") != std::string::npos;
+                       }),
+           "invalid default ordering should produce a specific diagnostic");
+    std::filesystem::remove_all(invalidOrderRoot);
+
+    const auto invalidTypeRoot = fixture("typed-function-invalid-type", R"CX(
+function unsupported(value: item) returns number:
+    return 1
+)CX");
+    const auto invalidType = parser.parseDirectory(invalidTypeRoot / "scripts");
+    expect(cx::hasErrors(invalidType.diagnostics),
+           "unsupported function value types should not be silently discarded");
+    expect(std::any_of(invalidType.diagnostics.begin(), invalidType.diagnostics.end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("Unsupported function parameter type") != std::string::npos;
+                       }),
+           "unsupported function value types should produce a clear parser diagnostic");
+    std::filesystem::remove_all(invalidTypeRoot);
+
+    const auto invalidReturnDeclarationRoot = fixture("typed-function-empty-return-type", R"CX(
+function invalid_return() :::
+    return 1
+)CX");
+    const auto invalidReturnDeclaration = parser.parseDirectory(invalidReturnDeclarationRoot / "scripts");
+    expect(cx::hasErrors(invalidReturnDeclaration.diagnostics),
+           "an empty Skript return-type marker should not be treated as an untyped function");
+    expect(std::any_of(invalidReturnDeclaration.diagnostics.begin(), invalidReturnDeclaration.diagnostics.end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("return-type marker needs a type") != std::string::npos;
+                       }),
+           "an empty return-type marker should produce an actionable diagnostic");
+    std::filesystem::remove_all(invalidReturnDeclarationRoot);
+
+    const auto invalidReturnTypeRoot = fixture("typed-function-unsupported-return-type", R"CX(
+function unsupported_return() returns item:
+    return 1
+)CX");
+    const auto invalidReturnType = parser.parseDirectory(invalidReturnTypeRoot / "scripts");
+    expect(cx::hasErrors(invalidReturnType.diagnostics),
+           "unsupported declared return types should not be silently ignored");
+    expect(std::any_of(invalidReturnType.diagnostics.begin(), invalidReturnType.diagnostics.end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("Unsupported function return type") != std::string::npos;
+                       }),
+           "unsupported declared return types should produce a clear parser diagnostic");
+    std::filesystem::remove_all(invalidReturnTypeRoot);
+
+    const auto wrongArgumentRoot = fixture("typed-function-wrong-argument", R"CX(
+function square(value: number) returns number:
+    return {_value} * {_value}
+on load:
+    set {bad_result} to square("not a number")
+)CX");
+    cx::Runtime wrongArgument(wrongArgumentRoot);
+    expect(!wrongArgument.loadScripts(),
+           "a typed function parameter should reject an argument of the wrong type");
+    expect(std::any_of(wrongArgument.diagnostics().begin(), wrongArgument.diagnostics().end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("parameter value expects number, but received text") != std::string::npos;
+                       }),
+           "a typed function argument mismatch should identify the parameter and expected type");
+    std::filesystem::remove_all(wrongArgumentRoot);
+
+    const auto wrongReturnRoot = fixture("typed-function-wrong-return", R"CX(
+function wrong_result() returns number:
+    return "not a number"
+on load:
+    set {bad_result} to wrong_result()
+)CX");
+    cx::Runtime wrongReturn(wrongReturnRoot);
+    expect(!wrongReturn.loadScripts(),
+           "a declared function return type should reject a mismatched returned value");
+    expect(std::any_of(wrongReturn.diagnostics().begin(), wrongReturn.diagnostics().end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("declares return type number, but returned text") != std::string::npos;
+                       }),
+           "a function return mismatch should name its declared and actual types");
+    std::filesystem::remove_all(wrongReturnRoot);
+
+    const auto wrongArityRoot = fixture("typed-function-wrong-arity", R"CX(
+function add(value: number) returns number:
+    return {_value}
+on load:
+    set {missing_argument} to add()
+)CX");
+    cx::Runtime wrongArity(wrongArityRoot);
+    expect(!wrongArity.loadScripts(),
+           "a typed function call should reject omitted required arguments");
+    expect(std::any_of(wrongArity.diagnostics().begin(), wrongArity.diagnostics().end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("expects 1 argument(s), but received 0") != std::string::npos;
+                       }),
+           "a missing required argument should produce an explicit arity diagnostic");
+    std::filesystem::remove_all(wrongArityRoot);
+
+    const auto tooManyRoot = fixture("typed-function-too-many-arguments", R"CX(
+function add(value: number) returns number:
+    return {_value}
+on load:
+    set {too_many} to add(1, 2)
+)CX");
+    cx::Runtime tooMany(tooManyRoot);
+    expect(!tooMany.loadScripts(),
+           "a typed function call should reject extra arguments");
+    expect(std::any_of(tooMany.diagnostics().begin(), tooMany.diagnostics().end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("expects 1 argument(s), but received 2") != std::string::npos;
+                       }),
+           "extra arguments should produce an explicit arity diagnostic");
+    std::filesystem::remove_all(tooManyRoot);
+
+    const auto wrongObjectKindRoot = fixture("typed-function-wrong-object-kind", R"CX(
+function only_entity(target: entity) returns entity:
+    return {_target}
+on load:
+    create sprite "crate" with texture {$blank}
+    set {wrong_object} to only_entity(sprite "crate")
+)CX");
+    write(wrongObjectKindRoot / "assets" / "textures" / "blank.png", "placeholder texture data");
+    cx::Runtime wrongObjectKind(wrongObjectKindRoot);
+    expect(!wrongObjectKind.loadScripts(),
+           "an entity parameter should reject a sprite reference");
+    expect(std::any_of(wrongObjectKind.diagnostics().begin(), wrongObjectKind.diagnostics().end(),
+                       [](const cx::Diagnostic& diagnostic) {
+                           return diagnostic.message.find("parameter target expects entity, but received sprite") != std::string::npos;
+                       }),
+           "an object-kind mismatch should identify expected and actual kinds");
+    std::filesystem::remove_all(wrongObjectKindRoot);
+}
+
+void testNaturalClampRejectsInvalidRange() {
+    const auto root = fixture("natural-clamp-invalid-range", R"CX(
+set {value} to clamp 5 between 10 and 0
+)CX");
+    cx::Runtime runtime(root);
+    expect(!runtime.loadScripts(), "natural clamp should reject a minimum greater than its maximum");
+    const bool hasRangeDiagnostic = std::any_of(runtime.diagnostics().begin(), runtime.diagnostics().end(),
+        [](const cx::Diagnostic& diagnostic) {
+            return diagnostic.message.find("clamp minimum must not exceed its maximum") != std::string::npos;
+        });
+    expect(hasRangeDiagnostic, "natural clamp should report the existing clamp range diagnostic");
+    std::filesystem::remove_all(root);
+}
+void testSkriptStyleCountedRandomListAssignment() {
+    const auto root = fixture("counted-random-list", R"CX(
+on load:
+    seed random stream "batch_a" with 4815
+    seed random stream "batch_b" with 4815
+    set {_count} to 5
+    set {integers_a::*} to {_count} random integers between 5 and 96 using random stream "batch_a"
+    set {integers_b::*} to 5 random integers from 5 to 96 using random stream "batch_b"
+    set {fractions::*} to 3 random numbers from 0 to 1 using random stream "batch_a"
+    set {one_random::*} to a random integer between 7 and 7
+    set {empty_random::*} to 0 random integers between 1 and 5
+)CX");
+    cx::Runtime runtime(root);
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics())
+            std::cerr << "COUNTED RANDOM DIAGNOSTIC: " << diagnostic.message << '\n';
+    }
+    expect(loaded, "count-prefix random integer/number expressions should load as list assignments");
+    expect(!runtime.hasErrors(), "valid counted random list assignments should not emit diagnostics");
+    for (int i = 1; i <= 5; ++i) {
+        const std::string firstName = "integers_a::" + std::to_string(i);
+        const std::string secondName = "integers_b::" + std::to_string(i);
+        const cx::Value first = runtime.getGlobal(firstName);
+        const cx::Value second = runtime.getGlobal(secondName);
+        const double value = first.numberOr(-1.0);
+        expect(first.isNumber() && value >= 5.0 && value <= 96.0 && std::trunc(value) == value,
+               "counted random integers should append exactly bounded whole-number values");
+        expect(second.isNumber() && second.numberOr(-2.0) == value,
+               "counted random expressions should preserve seeded stream sequences across between/from aliases");
+    }
+    for (int i = 1; i <= 3; ++i) {
+        const cx::Value sample = runtime.getGlobal("fractions::" + std::to_string(i));
+        const double value = sample.numberOr(-1.0);
+        expect(sample.isNumber() && value >= 0.0 && value < 1.0,
+               "counted random numbers should append fractional values in the requested range");
+    }
+    expect(runtime.getGlobal("one_random::1").numberOr(-1.0) == 7.0,
+           "assigning one ordinary random expression to a list should retain scalar-list behavior");
+    expect(runtime.getGlobal("one_random::2").isNull(),
+           "a single random expression should create exactly one list entry");
+    expect(runtime.getGlobal("empty_random::1").isNull(),
+           "a zero-count random assignment should clear the destination list without drawing values");
+    std::filesystem::remove_all(root);
+}
+
+void testCountedRandomListRejectsUnsafeCounts() {
+    const auto rejects = [](const std::string& name, const std::string& countExpression) {
+        const auto root = fixture(name, "set {rolls::*} to " + countExpression + " random integers between 1 and 10\n");
+        cx::Runtime runtime(root);
+        expect(!runtime.loadScripts(), "invalid random batch count should fail validation: " + countExpression);
+        const bool hasCountDiagnostic = std::any_of(runtime.diagnostics().begin(), runtime.diagnostics().end(),
+            [](const cx::Diagnostic& diagnostic) {
+                return diagnostic.message.find("A random batch count must be a whole number from 0 to 4096") != std::string::npos;
+            });
+        expect(hasCountDiagnostic, "invalid random batch count should explain the permitted range: " + countExpression);
+        std::filesystem::remove_all(root);
+    };
+    rejects("counted-random-fractional-count", "1.5");
+    rejects("counted-random-negative-count", "-1");
+    rejects("counted-random-excessive-count", "4097");
+}
+void testMathDomainResultsCanBeCheckedAsNaN() {
+    const auto root = fixture("math-domain", R"CX(
+on load:
+    set {_bad_root} to sqrt(-1)
+    set {_bad_log} to ln(-1)
+    set {_bad_inverse} to asin(2)
+    set {root_is_nan} to isNaN({_bad_root})
+    set {log_is_nan} to isNaN({_bad_log})
+    set {inverse_is_nan} to isNaN({_bad_inverse})
+    set {normal_is_finite} to isFinite(3.5)
+    set {log_zero_is_not_nan} to isNaN(log(0))
+    set {log_zero_is_infinite} to isFinite(log(0))
+)CX");
+    cx::Runtime runtime(root);
+    const bool loaded = runtime.loadScripts();
+    if (!loaded) {
+        for (const auto& diagnostic : runtime.diagnostics())
+            std::cerr << "MATH FIXTURE DIAGNOSTIC: " << diagnostic.message << '\n';
+    }
+    expect(loaded, "out-of-domain math results should remain numeric NaN values instead of aborting script execution");
+    expect(!runtime.hasErrors(), "valid NaN and infinity math results should not emit runtime diagnostics");
+    expect(runtime.getGlobal("root_is_nan").truthy(), "isNaN should detect sqrt of a negative value");
+    expect(runtime.getGlobal("log_is_nan").truthy(), "isNaN should detect negative logarithm inputs");
+    expect(runtime.getGlobal("inverse_is_nan").truthy(), "inverse trig outside its real domain should return NaN");
+    expect(runtime.getGlobal("normal_is_finite").truthy(), "isFinite should distinguish ordinary finite numbers");
+    expect(!runtime.getGlobal("log_zero_is_not_nan").truthy(), "log(0) should be negative infinity, not NaN");
+    expect(!runtime.getGlobal("log_zero_is_infinite").truthy(), "isFinite should detect the negative infinity result");
+    std::filesystem::remove_all(root);
+}
+}
+
+int main() {
+    testSkriptStyleRandomNumberGrammar();
+    testNaturalMathAndSkriptDegreeTrigonometry();
+    testNaturalComparisonAndListConditions();
+    testNaturalTypeAndValuePredicateAliases();
+    testSkriptStyleElseIfChains();
+    testTypedFunctionSignaturesDefaultsAndReturnContracts();
+    testMathDomainResultsCanBeCheckedAsNaN();
+    testNaturalClampRejectsInvalidRange();
+    testSkriptStyleCountedRandomListAssignment();
+    testCountedRandomListRejectsUnsafeCounts();
+    if (failures != 0) {
+        std::cerr << "CX_LANGUAGE_EXPRESSION_TESTS_FAILED failures=" << failures << '\n';
+        return 1;
+    }
+    std::cout << "CX_LANGUAGE_EXPRESSION_TESTS_OK\n";
+    return 0;
+}

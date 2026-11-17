@@ -42,6 +42,7 @@ on entity "player" focus enter entity "alpha":
     add 1 to {alpha_enters}
     set {focus_actor} to {_focus_actor}
     set {focus_entity} to {_focus_entity}
+    set {focused_entity_alias} to {_focused_entity}
 on entity "player" focus enter entity "zeta":
     add 1 to {zeta_enters}
 on entity "player" focus exit entity "alpha":
@@ -62,8 +63,9 @@ on entity "player" focus enter entity "zeta":
     expect(runtime.getGlobal("zeta_enters").numberOr(0.0) == 0.0,
            "an unselected equal-distance candidate must not emit focus-enter");
     expect(runtime.getGlobal("focus_actor").toString() == "player" &&
-           runtime.getGlobal("focus_entity").toString() == "alpha",
-           "focus handlers should receive the actor and target through event-local variables");
+           runtime.getGlobal("focus_entity").toString() == "alpha" &&
+           runtime.getGlobal("focused_entity_alias").toString() == "alpha",
+           "focus handlers should receive the actor, target, and documented compatibility alias");
     expect(!runtime.hasErrors(), "valid focus setup should not emit diagnostics");
 
     runtime.executeInline("set entity \"alpha\" interactable to false");

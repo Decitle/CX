@@ -58,6 +58,85 @@ on press key "B":
     std::filesystem::remove_all(root);
 }
 
+void testWaitDurationLimitUsesConvertedSeconds() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-engine-test-wait-duration-unit-limit";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root / "scripts");
+    {
+        std::ofstream script(root / "scripts" / "main.cx");
+        script << R"CX(
+on press key "A":
+    wait 10081 minutes
+    set {over_limit_wait_continued} to true
+on press key "B":
+    wait 604800000 milliseconds
+    set {seven_day_boundary_continued} to true
+)CX";
+    }
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "wait unit-limit fixture should load");
+    runtime.pressKey("A");
+    expect(runtime.hasErrors(), "a wait longer than seven days after unit conversion must be rejected");
+    runtime.clearDiagnostics();
+
+    runtime.pressKey("B");
+    expect(!runtime.hasErrors(), "a wait exactly seven days long must be accepted regardless of its raw unit value");
+    expect(runtime.getGlobal("seven_day_boundary_continued").isNull(),
+           "an accepted seven-day wait must suspend before its continuation");
+    expect(runtime.getGlobal("over_limit_wait_continued").isNull(),
+           "a rejected over-limit wait must not execute its continuation");
+    std::filesystem::remove_all(root);
+}
+
+void testPeriodicTickIntervalsUseConfiguredTickRate() {
+    const auto validRoot = std::filesystem::temp_directory_path() / "cx-engine-test-periodic-configured-tick-rate";
+    std::filesystem::remove_all(validRoot);
+    std::filesystem::create_directories(validRoot / "scripts");
+    {
+        std::ofstream script(validRoot / "scripts" / "main.cx");
+        script << R"CX(
+set engine::tick_rate to 1000
+every 604800000 ticks:
+    set {periodic_fired} to true
+on press key "A":
+    set engine::tick_rate to 60
+)CX";
+    }
+
+    cx::Runtime validRuntime(validRoot);
+    expect(validRuntime.loadScripts(),
+           "the seven-day maximum tick interval should load when the configured tick rate makes it exactly seven days");
+    expect(validRuntime.settings().tickRate == 1000,
+           "the bootstrap tick-rate setting should be active before periodic deadlines are initialized");
+    validRuntime.pressKey("A");
+    expect(validRuntime.hasErrors(),
+           "changing the tick rate must be rejected when it would stretch a periodic interval beyond seven days");
+    expect(validRuntime.settings().tickRate == 1000,
+           "a rejected tick-rate change must leave the previous valid setting untouched");
+    expect(validRuntime.getGlobal("periodic_fired").isNull(),
+           "the seven-day periodic handler should remain dormant during this lifecycle test");
+    std::filesystem::remove_all(validRoot);
+
+    const auto invalidRoot = std::filesystem::temp_directory_path() / "cx-engine-test-periodic-default-tick-rate-limit";
+    std::filesystem::remove_all(invalidRoot);
+    std::filesystem::create_directories(invalidRoot / "scripts");
+    {
+        std::ofstream script(invalidRoot / "scripts" / "main.cx");
+        script << R"CX(
+every 604800000 ticks:
+    set {periodic_fired} to true
+)CX";
+    }
+
+    cx::Runtime invalidRuntime(invalidRoot);
+    expect(!invalidRuntime.loadScripts(),
+           "the same raw tick interval must be rejected when the default 60 Hz rate makes it longer than seven days");
+    expect(invalidRuntime.hasErrors(),
+           "an interval that exceeds seven days after conversion must provide a load diagnostic");
+    std::filesystem::remove_all(invalidRoot);
+}
+
 void testWaitsDueTogetherRespectRoomContextAndCanRewaitAfterTransition() {
     const auto root = std::filesystem::temp_directory_path() / "cx-engine-test-wait-room-context-due";
     std::filesystem::remove_all(root);
@@ -211,6 +290,8 @@ every 200 milliseconds:
 int main() {
     try {
         testWaitContinuationIsCancelledAfterRoomContextChanges();
+        testWaitDurationLimitUsesConvertedSeconds();
+        testPeriodicTickIntervalsUseConfiguredTickRate();
         testWaitsDueTogetherRespectRoomContextAndCanRewaitAfterTransition();
         testFailedReloadPreservesExistingWaitContinuation();
         testSuccessfulReloadReplacesOldWaitAndKeepsOnLoadWait();
