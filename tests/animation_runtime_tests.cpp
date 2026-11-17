@@ -199,7 +199,7 @@ on animation complete "wake" for entity "actor":
     set {completed_entity} to {_animation_entity}
     set {completed_animation} to {_animation_name}
     set {completed_frame} to {_animation_frame}
-    enter room "hall" at {entrance::hall::spawn}
+    enter room "hall" at (1, 1)
 on animation complete "wake" for entity "actor":
     add 1 to {stale_completion_count}
 )CX");

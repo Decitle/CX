@@ -31,7 +31,7 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Cross-platform runtime packaging fixes and successful six-target validation.
 - CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
-Run #132 passed all six native targets for source/docs commit `ce59fec`, including converted wait/periodic limits, configured tick-rate validation, key-header quote balancing, and the suspended trigger-handler lifecycle regression. The animation/room integration test in this update requires a fresh CI run.
+Run #132 passed all six native targets for source/docs commit `ce59fec`, including converted wait/periodic limits, configured tick-rate validation, key-header quote balancing, and the suspended trigger-handler lifecycle regression. Run #133 exposed a fixture issue in the new animation/room integration test: it referenced an entrance symbol after that room had been unloaded. The return transition now uses explicit room coordinates; fresh validation is pending in run #134.
 
 ## Remaining v0.11.0 acceptance work
 
