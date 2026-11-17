@@ -1697,8 +1697,8 @@ void Runtime::runExecution(ExecutionContext& context) {
                     break;
                 }
                 const double amount = durationValue.numberOr(std::numeric_limits<double>::quiet_NaN());
-                if (!std::isfinite(amount) || amount < 0.0 || amount > 604800.0) {
-                    runtimeError(statement, "Wait duration must be a finite non-negative number no larger than 7 days.",
+                if (!std::isfinite(amount) || amount < 0.0) {
+                    runtimeError(statement, "Wait duration must be a finite non-negative number.",
                         "Examples: `wait 0.5 seconds`, `wait 250 milliseconds`, `wait 1 tick`.");
                     break;
                 }
@@ -1708,6 +1708,11 @@ void Runtime::runExecution(ExecutionContext& context) {
                 else if (unit == "m" || unit.starts_with("min")) seconds *= 60.0;
                 else if (unit == "h" || unit.starts_with("hour") || unit.starts_with("hr")) seconds *= 3600.0;
                 else if (unit == "t" || unit.starts_with("tick")) seconds *= 1.0 / static_cast<double>(std::max(1U, settings_.tickRate));
+                if (!std::isfinite(seconds) || seconds > 604800.0) {
+                    runtimeError(statement, "Wait duration must not exceed 7 days after unit conversion.",
+                        "Examples: `wait 0.5 seconds`, `wait 250 milliseconds`, `wait 1 tick`.");
+                    break;
+                }
                 context.wakeAt = std::chrono::steady_clock::now() + std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(seconds));
                 // Bind this continuation to the scene at the point where the wait
                 // suspends. If this handler entered/reloaded a room earlier in the

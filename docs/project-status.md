@@ -31,7 +31,7 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Cross-platform runtime packaging fixes and successful six-target validation.
 - CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
-Run #129 validates the exact runtime/source commit `3b3c9cc` across all six native targets. This commit also refreshes the syntax and project-status documentation without changing runtime code; later source changes must receive their own validation.
+Run #130 passed all six native targets for documentation head `27443a5`; the runtime/source commit `3b3c9cc` was separately validated by run #129. The wait-duration correction and suspended trigger-handler regression coverage in this update are newer changes and require a fresh CI run.
 
 ## Remaining v0.11.0 acceptance work
 
@@ -46,7 +46,7 @@ The implementation accepts a numeric count expression from 0 through 4096 and ex
 Other remaining acceptance work includes:
 
 - Complete the subsystem-by-subsystem grammar audit. Some APIs intentionally retain technical arguments or specialized commands; their language surface still needs a consistency review.
-- The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage, including getter/setter aliases and live-instance validation. Event payload locals are catalogued in one source-of-truth page and now have direct runtime assertions for all documented fields; the event-header vocabulary and suspended-handler lifecycle audit remain open.
+- The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage, including getter/setter aliases and live-instance validation. Event headers are enumerated in the syntax guide and covered by positive alias and negative selector tests. The suspended-handler audit found a unit-conversion error in the seven-day `wait` limit; this update fixes the guard and adds duration-boundary plus suspended trigger-payload cancellation tests. Fresh CI is pending.
 - The first-steps example and quickstart now demonstrate a live canvas score HUD, and the beginner/getting-started guides explain that on-screen text is distinct from developer-log output.
 - Added an asset-free first complete game, Number Hunt, with a multi-file example project, step-by-step tutorial, and runtime coverage of a full round lifecycle.
 - Expand the initial positive/negative syntax corpus across all advertised language families and compatibility aliases. The current subsystem corpus checks canonical/legacy forms, normalized parser meaning, invalid values, ambiguous anchors, missing selectors, and whitespace-only quoted event selectors. Runtime CTest coverage now checks every documented event payload field and the full implemented English comparison operator vocabulary; broader condition lifecycle cases remain part of the audit.
@@ -61,7 +61,7 @@ The development documentation changes are still confined to the unmerged branch.
 
 ## Next priorities
 
-1. Continue the event-header vocabulary and suspended-handler lifecycle audit; documented payload fields, comparison predicates, conditional chains, and the object-property contract now have direct runtime regression coverage.
+1. Complete CI validation for the wait-duration fix and trigger-handler suspension tests, then close the event-header/suspended-handler audit if green.
 2. Use `docs/ENGINE_INTEROPERABILITY_AUDIT.md` to choose cross-system end-to-end scenarios; do not treat isolated subsystem tests as proof of whole-game composition.
 3. Expand the positive/negative syntax corpus to every advertised syntax family and compatibility alias.
 4. Bring examples, beginner materials, feature pages, and versioned reference generation into alignment with accepted canonical grammar.

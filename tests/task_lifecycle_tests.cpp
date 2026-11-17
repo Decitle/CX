@@ -58,6 +58,37 @@ on press key "B":
     std::filesystem::remove_all(root);
 }
 
+void testWaitDurationLimitUsesConvertedSeconds() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-engine-test-wait-duration-unit-limit";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root / "scripts");
+    {
+        std::ofstream script(root / "scripts" / "main.cx");
+        script << R"CX(
+on press key "A":
+    wait 10081 minutes
+    set {over_limit_wait_continued} to true
+on press key "B":
+    wait 604800000 milliseconds
+    set {seven_day_boundary_continued} to true
+)CX";
+    }
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "wait unit-limit fixture should load");
+    runtime.pressKey("A");
+    expect(runtime.hasErrors(), "a wait longer than seven days after unit conversion must be rejected");
+    runtime.clearDiagnostics();
+
+    runtime.pressKey("B");
+    expect(!runtime.hasErrors(), "a wait exactly seven days long must be accepted regardless of its raw unit value");
+    expect(runtime.getGlobal("seven_day_boundary_continued").isNull(),
+           "an accepted seven-day wait must suspend before its continuation");
+    expect(runtime.getGlobal("over_limit_wait_continued").isNull(),
+           "a rejected over-limit wait must not execute its continuation");
+    std::filesystem::remove_all(root);
+}
+
 void testWaitsDueTogetherRespectRoomContextAndCanRewaitAfterTransition() {
     const auto root = std::filesystem::temp_directory_path() / "cx-engine-test-wait-room-context-due";
     std::filesystem::remove_all(root);
@@ -211,6 +242,7 @@ every 200 milliseconds:
 int main() {
     try {
         testWaitContinuationIsCancelledAfterRoomContextChanges();
+        testWaitDurationLimitUsesConvertedSeconds();
         testWaitsDueTogetherRespectRoomContextAndCanRewaitAfterTransition();
         testFailedReloadPreservesExistingWaitContinuation();
         testSuccessfulReloadReplacesOldWaitAndKeepsOnLoadWait();

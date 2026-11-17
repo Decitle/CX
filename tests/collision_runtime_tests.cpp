@@ -2,11 +2,13 @@
 #include "cx/runtime.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 namespace {
 
@@ -350,6 +352,65 @@ on entity "player" exit trigger "gate":
     std::filesystem::remove_all(root);
 }
 
+void testSuspendedTriggerHandlerIsCancelledAfterRoomTransition() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-trigger-event-suspended-room-context-tests";
+    std::filesystem::remove_all(root);
+    createTextures(root);
+    const auto writeRoom = [&](const std::string& name) {
+        write(root / "rooms" / (name + ".room.json"),
+            "{\"schema\":\"cx-room\",\"version\":1,\"name\":\"" + name +
+            "\",\"width\":3,\"height\":3,\"tileSize\":16,"
+            "\"tiles\":[[null,null,null],[null,null,null],[null,null,null]],"
+            "\"entrances\":{\"spawn\":{\"x\":1,\"y\":1}}}");
+    };
+    writeRoom("hall");
+    writeRoom("cave");
+    write(root / "scripts" / "main.cx", R"CX(
+load room "hall"
+load room "cave"
+create entity "player" with texture {$player}
+create entity "gate" with texture {$crate}
+set entity "player" position to (32, 32)
+set entity "gate" position to (32, 32)
+set entity "player" collision layer to "actors"
+set entity "player" collision mask to "triggers"
+set entity "gate" collision layer to "triggers"
+set entity "gate" collision mask to "actors"
+on load:
+    enter room "hall" at {entrance::hall::spawn}
+on entity "player" enter trigger "gate":
+    set {trigger_wait_started_actor} to {_trigger_actor}
+    set {trigger_wait_started_gate} to {_trigger_entity}
+    wait 100 milliseconds
+    set {trigger_wait_resumed_actor} to {_trigger_actor}
+    set {trigger_wait_resumed_gate} to {_trigger_entity}
+on press key "SPACE":
+    delete sprite "player"
+    enter room "cave" at {entrance::cave::spawn}
+)CX");
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "suspended trigger-context fixture should load");
+    runtime.tick();
+    expect(runtime.getGlobal("trigger_wait_started_actor").toString() == "player" &&
+           runtime.getGlobal("trigger_wait_started_gate").toString() == "gate",
+           "a trigger handler should receive its captured locals before it suspends");
+    expect(runtime.getGlobal("trigger_wait_resumed_actor").isNull(),
+           "the trigger handler should yield at wait before running its continuation");
+
+    runtime.pressKey("SPACE");
+    expect(runtime.rooms().activeRoomName() == "cave",
+           "the second event should transition away from the trigger's room");
+    runtime.tick(); // Drop the old-room continuation before its deadline.
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    runtime.tick();
+    expect(runtime.getGlobal("trigger_wait_resumed_actor").isNull() &&
+           runtime.getGlobal("trigger_wait_resumed_gate").isNull(),
+           "a suspended trigger handler must not resume with stale payload after its room changes");
+    expect(!runtime.hasErrors(), "cancelling a suspended trigger handler should not create diagnostics");
+    std::filesystem::remove_all(root);
+}
+
 void testEntityProximityQueries() {
     const auto root = std::filesystem::temp_directory_path() / "cx-entity-proximity-query-tests";
     std::filesystem::remove_all(root);
@@ -522,6 +583,7 @@ int main() {
         testTriggerEnterExitLifecycleAndInstanceIdentity();
         testTriggerCallbacksMayDeleteContactEntitiesSafely();
         testTriggerContactsResetAcrossRoomContextChanges();
+        testSuspendedTriggerHandlerIsCancelledAfterRoomTransition();
         testEntityProximityQueries();
         testEntityProximityRejectsInvalidRadius();
         testEntityProximityRejectsNonNumericRadius();

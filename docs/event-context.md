@@ -122,7 +122,9 @@ The runtime payload contract is checked in CTest alongside the subsystem behavio
 - Animation entity name, clip name, final frame and resolved row: `tests/animation_runtime_tests.cpp`.
 - Attached absolute path, cursor coordinates, matching and empty button-ID cases, and preservation of all captured file-attachment locals across `wait` suspension: `tests/event_context_runtime_tests.cpp`.
 
-A suspended event keeps its own local-variable scope and resumes with the same captured payload as long as its room context remains valid. Room changes still cancel stale continuations, as covered by `tests/task_lifecycle_tests.cpp`.
+A suspended event keeps its own local-variable scope and resumes with the same captured payload while its room context remains valid. Each `wait` captures the room-context revision at the point where it yields: a later room transition/reload/unload cancels that suspended continuation, while a handler that explicitly changes rooms before reaching a subsequent `wait` binds that next suspension to the new context. A successful script reload replaces old program continuations and retains only waits created by the successfully staged startup; a failed reload leaves the last-good runtime and its pending waits intact.
+
+Program-level handlers (startup, tick, periodic, key, button, and file attachment) finish dispatching the original event to their matching handlers even when an earlier handler changes rooms. Room-bound event batches (trigger, focus, projectile hit, tween completion, and animation completion) stop dispatching later handlers once the captured room or event state becomes invalid. The relevant lifecycle paths are covered by `tests/task_lifecycle_tests.cpp`, `tests/collision_runtime_tests.cpp`, and the subsystem runtime tests.
 
 These value assertions complement the existing lifecycle checks for contact separation, callback-driven deletion/replacement, playback/tween identity, and room-context changes. The file-attachment test uses the public host API with a temporary regular file; it does not depend on a native desktop file-drop bridge.
 
