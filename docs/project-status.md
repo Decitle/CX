@@ -31,7 +31,7 @@ The branch has moved well beyond the original v0.10.14 baseline. Its implemented
 - Cross-platform runtime packaging fixes and successful six-target validation.
 - CI now syntax-checks each standalone `.cx` example and every multi-file example project through `tools/check_examples.py`; graphical smoke tests and runtime behavior tests remain separate.
 
-Run #131 passed all six native targets for source/docs commit `712a0c5`, including the wait-duration correction and suspended trigger-handler lifecycle regression. The periodic tick-rate validation and tighter key-header grammar in this update are newer changes and require a fresh CI run.
+Run #132 passed all six native targets for source/docs commit `ce59fec`, including converted wait/periodic limits, configured tick-rate validation, key-header quote balancing, and the suspended trigger-handler lifecycle regression. The animation/room integration test in this update requires a fresh CI run.
 
 ## Remaining v0.11.0 acceptance work
 
@@ -46,7 +46,7 @@ The implementation accepts a numeric count expression from 0 through 4096 and ex
 Other remaining acceptance work includes:
 
 - Complete the subsystem-by-subsystem grammar audit. Some APIs intentionally retain technical arguments or specialized commands; their language surface still needs a consistency review.
-- The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage, including getter/setter aliases and live-instance validation. Event headers are enumerated in the syntax guide and covered by positive alias and negative selector tests. The seven-day `wait` limit now checks converted seconds, and suspended trigger handlers are tested for cancellation after room transitions. This follow-up aligns periodic tick intervals with the active `engine::tick_rate`, validates tick-rate changes before applying them, and rejects malformed key quotes while preserving single-token unquoted key forms.
+- The natural possessive property setter alias now normalizes to the shared object-property operation and has object-handle regression coverage, including getter/setter aliases and live-instance validation. Event headers are enumerated in the syntax guide and covered by positive alias and negative selector tests. Run #132 validates the converted seven-day wait and periodic limits, suspended trigger cancellation, effective `engine::tick_rate` checks, and balanced key-header grammar on all six native targets.
 - The first-steps example and quickstart now demonstrate a live canvas score HUD, and the beginner/getting-started guides explain that on-screen text is distinct from developer-log output.
 - Added an asset-free first complete game, Number Hunt, with a multi-file example project, step-by-step tutorial, and runtime coverage of a full round lifecycle.
 - Expand the initial positive/negative syntax corpus across all advertised language families and compatibility aliases. The current subsystem corpus checks canonical/legacy forms, normalized parser meaning, invalid values, ambiguous anchors, missing selectors, and whitespace-only quoted event selectors. Runtime CTest coverage now checks every documented event payload field and the full implemented English comparison operator vocabulary; broader condition lifecycle cases remain part of the audit.
@@ -61,8 +61,8 @@ The development documentation changes are still confined to the unmerged branch.
 
 ## Next priorities
 
-1. Complete six-target CI for the periodic tick-rate and key-header grammar changes; if green, close the event-header/suspended-handler audit.
-2. Use `docs/ENGINE_INTEROPERABILITY_AUDIT.md` to choose cross-system end-to-end scenarios; do not treat isolated subsystem tests as proof of whole-game composition.
+1. Complete six-target CI for the animation/room-transition integration test; the event-header and suspended-handler audit is now closed on run #132.
+2. Continue cross-system end-to-end scenarios from `docs/ENGINE_INTEROPERABILITY_AUDIT.md`; the animation → room transition → completion callback path now has a combined fixture.
 3. Expand the positive/negative syntax corpus to every advertised syntax family and compatibility alias.
 4. Bring examples, beginner materials, feature pages, and versioned reference generation into alignment with accepted canonical grammar.
 5. Verify Number Hunt through a clean download, extraction, and launch using an installed package.

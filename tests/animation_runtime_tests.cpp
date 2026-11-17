@@ -167,6 +167,78 @@ on animation complete "wake" for entity "actor":
     std::filesystem::remove_all(root);
 }
 
+void testAnimationCompletionSurvivesRoomTransitionAndGuardsCallbacks() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-animation-room-transition-integration-tests";
+    std::filesystem::remove_all(root);
+    createTexture(root);
+
+    const auto writeRoom = [&](const std::string& name) {
+        write(root / "rooms" / (name + ".room.json"),
+            "{\"schema\":\"cx-room\",\"version\":1,\"name\":\"" + name +
+            "\",\"width\":4,\"height\":4,\"tileSize\":16,"
+            "\"tiles\":[[null,null,null,null],[null,null,null,null],"
+            "[null,null,null,null],[null,null,null,null]],"
+            "\"entrances\":{\"spawn\":{\"x\":1,\"y\":1}}}");
+    };
+    writeRoom("hall");
+    writeRoom("cave");
+
+    write(root / "scripts" / "main.cx", R"CX(
+load room "hall"
+load room "cave"
+create entity "actor" with texture {$hero}
+set entity "actor" animation sheet to (16, 16) columns 4 rows 2
+define animation "wake" for entity "actor" frames 0 to 1 row 0 at 60 fps once
+on load:
+    enter room "hall" at {entrance::hall::spawn}
+    play animation "wake" for entity "actor"
+on press key "B":
+    enter room "cave" at {entrance::cave::spawn}
+on animation complete "wake" for entity "actor":
+    add 1 to {completion_count}
+    set {completed_entity} to {_animation_entity}
+    set {completed_animation} to {_animation_name}
+    set {completed_frame} to {_animation_frame}
+    enter room "hall" at {entrance::hall::spawn}
+on animation complete "wake" for entity "actor":
+    add 1 to {stale_completion_count}
+)CX");
+
+    cx::Runtime runtime(root);
+    expect(runtime.loadScripts(), "animation/room integration fixture should load");
+    expect(runtime.rooms().activeRoomName() == "hall", "startup should activate the first room");
+    expect(runtime.sprites().at("actor").animationPlaying &&
+           runtime.sprites().at("actor").animationFrame == 0,
+           "the one-shot animation should begin in the first room");
+
+    runtime.tick();
+    expect(runtime.sprites().at("actor").animationPlaying &&
+           runtime.sprites().at("actor").animationFrame == 1,
+           "the entity animation should advance on the first fixed simulation tick");
+
+    runtime.pressKey("B");
+    expect(runtime.rooms().activeRoomName() == "cave",
+           "the key event should transition rooms while the animation is still active");
+    expect(runtime.sprites().at("actor").animationPlaying,
+           "the world entity and its active clip should survive the room transition");
+
+    runtime.tick();
+    expect(!runtime.sprites().at("actor").animationPlaying,
+           "the one-shot animation should finish after the room transition");
+    expect(runtime.rooms().activeRoomName() == "hall",
+           "the first completion callback should be able to initiate a second room transition");
+    expect(runtime.getGlobal("completion_count").numberOr(0.0) == 1.0,
+           "the animation completion callback should fire once in the room where playback completes");
+    expect(runtime.getGlobal("completed_entity").toString() == "actor" &&
+           runtime.getGlobal("completed_animation").toString() == "wake" &&
+           runtime.getGlobal("completed_frame").numberOr(-1.0) == 1.0,
+           "the completion event should preserve its captured payload across the preceding room transition");
+    expect(runtime.getGlobal("stale_completion_count").isNull(),
+           "a completion callback that changes rooms must invalidate later callbacks from the old event batch");
+    expect(!runtime.hasErrors(), "the combined animation and room-transition scenario should not produce diagnostics");
+    std::filesystem::remove_all(root);
+}
+
 void testInvalidClipDoesNotInstallPartialDefinition() {
     const auto root = std::filesystem::temp_directory_path() / "cx-animation-invalid-clip-tests";
     std::filesystem::remove_all(root);
@@ -196,6 +268,7 @@ int main() {
         testLoopingClipWrapsWithoutCompletion();
         testReplacingEntityInvalidatesLaterCompletionHandlers();
         testRestartingPlaybackInvalidatesLaterCompletionHandlers();
+        testAnimationCompletionSurvivesRoomTransitionAndGuardsCallbacks();
         testInvalidClipDoesNotInstallPartialDefinition();
         std::cout << "CX_ANIMATION_TESTS_OK checks=passed failures=0\n";
         return 0;
