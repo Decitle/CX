@@ -17,6 +17,80 @@ void write(const std::filesystem::path& path, const std::string& contents) {
 }
 }
 
+bool testFadeAndShakeContinueAcrossRoomTransitions() {
+    const auto root = std::filesystem::temp_directory_path() / "cx-screen-effect-room-transition-tests";
+    std::filesystem::remove_all(root);
+    const auto writeRoom = [&](const std::string& name) {
+        write(root / "rooms" / (name + ".room.json"),
+            "{\"schema\":\"cx-room\",\"version\":1,\"name\":\"" + name +
+            "\",\"width\":4,\"height\":4,\"tileSize\":16,"
+            "\"tiles\":[[null,null,null,null],[null,null,null,null],"
+            "[null,null,null,null],[null,null,null,null]],"
+            "\"entrances\":{\"spawn\":{\"x\":1,\"y\":1}}}");
+    };
+    writeRoom("hall");
+    writeRoom("cave");
+    write(root / "scripts" / "main.cx", R"CX(
+load room "hall"
+load room "cave"
+on load:
+    set screen opacity to 0
+    enter room "hall" at {entrance::hall::spawn}
+on press key "B":
+    fade screen to black over 100 milliseconds
+    shake screen for 200 milliseconds with amplitude 0.35
+    enter room "cave" at {entrance::cave::spawn}
+on press key "C":
+    fade screen to opacity 0 over 100 milliseconds
+    enter room "hall" at (1, 1)
+)CX");
+
+    const auto fail = [&](const std::string& message) {
+        std::cerr << message << '\n';
+        std::filesystem::remove_all(root);
+        return false;
+    };
+    cx::Runtime runtime(root);
+    if (!runtime.loadScripts() || runtime.hasErrors())
+        return fail("Screen-effect room-transition fixture should load without diagnostics.");
+    if (runtime.rooms().activeRoomName() != "hall")
+        return fail("Startup should activate the first room.");
+    if (runtime.screenEffects().fadeOpacity != 0.0F)
+        return fail("The screen should begin clear before the transition.");
+
+    runtime.pressKey("B");
+    if (runtime.rooms().activeRoomName() != "cave")
+        return fail("The first key event should enter the cave while starting screen effects.");
+    if (runtime.screenEffects().fadeOpacity != 0.0F)
+        return fail("Starting a fade should preserve its current opacity until a simulation tick.");
+    for (int i = 0; i < 3; ++i) runtime.tick();
+    const float midwayOpacity = runtime.screenEffects().fadeOpacity;
+    if (!(midwayOpacity > 0.45F && midwayOpacity < 0.55F))
+        return fail("The fade should progress to roughly half opacity after three fixed ticks.");
+    if (!(runtime.screenEffects().shakeElapsedSeconds > 0.0F &&
+          runtime.screenEffects().shakeRemainingSeconds < 0.2F))
+        return fail("The screen shake should continue advancing after the room transition.");
+
+    runtime.pressKey("C");
+    if (runtime.rooms().activeRoomName() != "hall")
+        return fail("The second key event should transition back while redirecting the active fade.");
+    if (std::abs(runtime.screenEffects().fadeOpacity - midwayOpacity) >= 0.0001F)
+        return fail("Redirecting a fade should begin at the current opacity rather than jumping.");
+    for (int i = 0; i < 3; ++i) runtime.tick();
+    if (!(runtime.screenEffects().fadeOpacity > 0.2F && runtime.screenEffects().fadeOpacity < 0.3F))
+        return fail("The redirected fade should interpolate from its captured midpoint.");
+    for (int i = 0; i < 3; ++i) runtime.tick();
+    if (runtime.screenEffects().fadeOpacity >= 0.0001F)
+        return fail("The redirected fade should reach its new clear-screen target.");
+    if (runtime.screenEffects().shakeElapsedSeconds <= 0.0F)
+        return fail("Screen shake timing should remain active independently of room transitions.");
+    if (runtime.hasErrors())
+        return fail("The combined fade, shake, interruption and room-transition scenario should not produce diagnostics.");
+
+    std::filesystem::remove_all(root);
+    return true;
+}
+
 int main() {
     const std::string script = R"CX(
 on load:
@@ -80,6 +154,7 @@ on load:
     }
     (void)effects;
     std::filesystem::remove_all(root);
+    if (!testFadeAndShakeContinueAcrossRoomTransitions()) return 1;
     std::cout << "CX_SCREEN_EFFECT_TESTS_OK\n";
     return 0;
 }
