@@ -31,7 +31,7 @@ on tween complete for entity "boulder":
     set {last_boulder_x} to {_tween_x}
 ```
 
-An event header ends with `:`. Its commands are indented under it. Required quoted selectors—entity, trigger, clip, key, and button IDs—must contain a non-whitespace name; leading and trailing whitespace is trimmed and selector matching is case-insensitive. `on tick:` uses the fixed logic rate, so avoid file I/O, expensive searches, and unbounded loops there. Use `{^...}` for high-frequency counters that do not need persistence, so they do not trigger unnecessary variable-file writes. Named trigger handlers run once when an actor starts overlapping a trigger area and once when that contact ends. Tween completion handlers run once when a deterministic entity movement finishes. Event-specific local values are catalogued in the [event context reference](event-context.md).
+An event header ends with `:`. Its commands are indented under it. Entity, trigger, animation-clip, and canvas-button selectors are quoted and must contain a non-whitespace name. The `on press key` and `on key press` forms also accept an unquoted single-token key name; multi-word key names use the `on key "..." pressed` or `when key "..." is pressed` forms. Quotes must be balanced. Surrounding whitespace in quoted selectors is trimmed and matching is case-insensitive. Key aliases are normalized: `RETURN` maps to `ENTER`, and `ESC` maps to `ESCAPE`. `on tick:` uses the fixed logic rate, so avoid file I/O, expensive searches, and unbounded loops there. Use `{^...}` for high-frequency counters that do not need persistence, so they do not trigger unnecessary variable-file writes. Named trigger handlers run once when an actor starts overlapping a trigger area and once when that contact ends. Tween completion handlers run once when a deterministic entity movement finishes. Event-specific local values are catalogued in the [event context reference](event-context.md).
 
 ### Currently accepted event headers
 
@@ -39,7 +39,7 @@ An event header ends with `:`. Its commands are indented under it. Required quot
 |---|---|---|
 | Startup | `on load:` | `on start:`, `on startup:`, `on project start:`, `on project load:`, `on initialize:` |
 | Fixed logic tick | `on tick:` | `every tick:`, `on every tick:`, `each tick:`, `on each tick:` |
-| Periodic | `every 1 second:` | Optional `on` prefix; positive numeric intervals in milliseconds, seconds, ticks, minutes, or hours (including documented abbreviations) |
+| Periodic | `every 1 second:` | Optional `on` prefix; positive numeric intervals in milliseconds, seconds, ticks, minutes, or hours (including documented abbreviations). The converted interval may not exceed seven days; tick intervals use the active `engine::tick_rate` setting. |
 | File attachment | `on file attach:` | `on file attached:` |
 | Key press | `on press key "SPACE":` | `on key press "SPACE":`, `on key "SPACE" pressed:`, `when key "SPACE" is pressed:`, `on press escape:`, `on press key escape:`, `when escape is pressed:` |
 | Canvas button click | `on click button "resume_btn":` | `on button click "resume_btn":`, `on button "resume_btn" click:`, `on button "resume_btn" clicked:`, `when button "resume_btn" is clicked:` |

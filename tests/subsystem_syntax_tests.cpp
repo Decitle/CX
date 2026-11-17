@@ -137,6 +137,15 @@ void testNegativeAmbiguousAndMissingContextForms() {
         {R"CX(on button click "   ":
     set {clicked} to true
 )CX", "button event with an empty quoted selector"},
+        {R"CX(on press key "SPACE:
+    set {pressed} to true
+)CX", "key event with an unmatched opening quote"},
+        {R"CX(on key press SPACE":
+    set {pressed} to true
+)CX", "key event with an unmatched closing quote"},
+        {R"CX(every 604800001 ticks:
+    set {periodic} to true
+)CX", "periodic tick count above the maximum possible seven-day interval"},
         {R"CX(canvas "Bad":
     create button "play" at grid (127, 1) anchor top right bottom left size (180, 44) label "Play"
 )CX", "ambiguous multiple-anchor phrase"}

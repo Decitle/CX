@@ -69,6 +69,12 @@ std::chrono::duration<double> periodicDuration(const EventHandler& handler, unsi
     return std::chrono::duration<double>(seconds);
 }
 
+bool periodicIntervalWithinLimit(const EventHandler& handler, unsigned int tickRate) {
+    constexpr double maximumSeconds = 604800.0; // Seven days.
+    const double seconds = periodicDuration(handler, tickRate).count();
+    return std::isfinite(seconds) && seconds > 0.0 && seconds <= maximumSeconds;
+}
+
 bool validVariableName(std::string_view name) {
     // This validation runs on assignment and interpolation, including inside on tick.
     // A direct character scan avoids regex overhead on this hot path.
@@ -151,13 +157,29 @@ bool Runtime::loadScripts(bool resetGlobals) {
     if (!staged.hasErrors()) staged.executeBootstrap();
     if (!staged.hasErrors()) staged.fireLoad();
 
-    const auto loadedAt = std::chrono::steady_clock::now();
-    if (staged.periodicNextRun_.size() != staged.program_.handlers.size())
-        staged.periodicNextRun_.assign(staged.program_.handlers.size(), std::chrono::steady_clock::time_point{});
-    for (std::size_t i = 0; i < staged.program_.handlers.size(); ++i) {
-        if (staged.program_.handlers[i].type == EventType::Periodic) {
-            staged.periodicNextRun_[i] = loadedAt + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-                periodicDuration(staged.program_.handlers[i], staged.settings_.tickRate));
+    // The parser bounds raw tick counts against the largest supported rate.
+    // Now that config, bootstrap, and on-load handlers have run, validate each
+    // interval against the actual effective logic tick rate before scheduling it.
+    if (!staged.hasErrors()) {
+        for (const auto& handler : staged.program_.handlers) {
+            if (handler.type == EventType::Periodic &&
+                !periodicIntervalWithinLimit(handler, staged.settings_.tickRate)) {
+                appendDiagnostic(staged.diagnostics_, {false, handler.file, handler.line,
+                    "This periodic interval exceeds the 7-day maximum at the active engine::tick_rate.",
+                    "Shorten the interval or choose an engine::tick_rate that keeps its converted duration within 7 days."});
+            }
+        }
+    }
+
+    if (!staged.hasErrors()) {
+        const auto loadedAt = std::chrono::steady_clock::now();
+        if (staged.periodicNextRun_.size() != staged.program_.handlers.size())
+            staged.periodicNextRun_.assign(staged.program_.handlers.size(), std::chrono::steady_clock::time_point{});
+        for (std::size_t i = 0; i < staged.program_.handlers.size(); ++i) {
+            if (staged.program_.handlers[i].type == EventType::Periodic) {
+                staged.periodicNextRun_[i] = loadedAt + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                    periodicDuration(staged.program_.handlers[i], staged.settings_.tickRate));
+            }
         }
     }
 
@@ -1340,7 +1362,16 @@ bool Runtime::applySetting(std::string_view nameView, const Value& value, std::s
     } else if (name == "engine::target_fps") {
         if (!unsignedSetting(settings_.targetFps, 0, 1000, "target FPS")) return false;
     } else if (name == "engine::tick_rate") {
-        if (!unsignedSetting(settings_.tickRate, 1, 1000, "tick rate")) return false;
+        unsigned int nextTickRate = settings_.tickRate;
+        if (!unsignedSetting(nextTickRate, 1, 1000, "tick rate")) return false;
+        for (const auto& handler : program_.handlers) {
+            if (handler.type == EventType::Periodic &&
+                !periodicIntervalWithinLimit(handler, nextTickRate)) {
+                error = "Changing `engine::tick_rate` would make a periodic event interval exceed the 7-day maximum.";
+                return false;
+            }
+        }
+        settings_.tickRate = nextTickRate;
     } else if (name == "engine::console_enabled") {
         if (!value.isBool()) { error = "`engine::console_enabled` must be true or false."; return false; }
         settings_.consoleEnabled = value.truthy();

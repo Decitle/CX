@@ -1535,12 +1535,20 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         try {
             const double amount = std::stod(periodicMatch[1].str());
             const std::string unit = lower(periodicMatch[2].str());
+            const bool tickInterval = unit == "t" || unit.starts_with("tick");
             double seconds = amount;
-            if (unit == "ms" || unit.starts_with("msec") || unit.starts_with("millisecond")) seconds *= 0.001;
-            else if (unit == "m" || unit.starts_with("min")) seconds *= 60.0;
-            else if (unit == "h" || unit.starts_with("hour") || unit.starts_with("hr")) seconds *= 3600.0;
-            else if (unit == "t" || unit.starts_with("tick")) seconds *= 1.0 / 60.0; // Resolution is limited by engine tick rate.
-            if (!std::isfinite(seconds) || seconds <= 0.0 || seconds > 604800.0) return false;
+            if (tickInterval) {
+                // The real duration depends on engine::tick_rate, which may be set
+                // by project config or bootstrap code. The setting is capped at
+                // 1000 Hz, so reject only raw counts that cannot fit seven days at
+                // any supported rate; Runtime validates against the active rate.
+                if (!std::isfinite(amount) || amount <= 0.0 || amount > 604800000.0) return false;
+            } else {
+                if (unit == "ms" || unit.starts_with("msec") || unit.starts_with("millisecond")) seconds *= 0.001;
+                else if (unit == "m" || unit.starts_with("min")) seconds *= 60.0;
+                else if (unit == "h" || unit.starts_with("hour") || unit.starts_with("hr")) seconds *= 3600.0;
+                if (!std::isfinite(seconds) || seconds <= 0.0 || seconds > 604800.0) return false;
+            }
             event.type = EventType::Periodic;
             event.intervalValue = amount;
             event.intervalUnit = unit;
@@ -1618,7 +1626,7 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
         event.selector = "ESCAPE";
         return true;
     }
-    static const std::regex keyPattern(R"REGEX(^on\s+(?:press\s+key|key\s+press)\s+"?([^"\s:]+)"?\s*:$)REGEX", std::regex::icase);
+    static const std::regex keyPattern(R"REGEX(^on\s+(?:press\s+key|key\s+press)\s+(?:"([^"\s:]+)"|([^"\s:]+))\s*:$)REGEX", std::regex::icase);
     static const std::regex keyPressedPattern(R"REGEX(^on\s+key\s+"([^"\n]+)"\s+pressed\s*:$)REGEX", std::regex::icase);
     static const std::regex whenKeyPressedPattern(R"REGEX(^when\s+key\s+"([^"\n]+)"\s+is\s+pressed\s*:$)REGEX", std::regex::icase);
     static const std::regex buttonPattern(R"REGEX(^on\s+click\s+button\s+"([^"\n]+)"\s*:$)REGEX", std::regex::icase);
@@ -1626,8 +1634,14 @@ bool parseEventHeader(const std::string& header, EventHandler& event) {
     static const std::regex buttonClickedPattern(R"REGEX(^on\s+button\s+"([^"\n]+)"\s+(?:click|clicked)\s*:$)REGEX", std::regex::icase);
     static const std::regex whenButtonClickedPattern(R"REGEX(^when\s+button\s+"([^"\n]+)"\s+is\s+clicked\s*:$)REGEX", std::regex::icase);
     std::smatch match;
-    if (std::regex_match(header, match, keyPattern) ||
-        std::regex_match(header, match, keyPressedPattern) ||
+    if (std::regex_match(header, match, keyPattern)) {
+        const auto rawKey = trim(match[1].matched ? match[1].str() : match[2].str());
+        if (rawKey.empty()) return false;
+        event.type = EventType::KeyPress;
+        event.selector = canonicalEventKey(rawKey);
+        return true;
+    }
+    if (std::regex_match(header, match, keyPressedPattern) ||
         std::regex_match(header, match, whenKeyPressedPattern)) {
         const auto rawKey = trim(match[1].str());
         if (rawKey.empty()) return false;

@@ -43,6 +43,8 @@ every 250 milliseconds:
     set {periodic_seen} to true
 on every 1 second:
     set {periodic_seconds_seen} to true
+every 604800000 ticks:
+    set {periodic_ticks_seen} to true
 
 on file attach:
     set {file_attach_seen} to true
@@ -66,6 +68,10 @@ on entity " Player " exit trigger " Door ":
 
 on press key "SPACE":
     set {space_seen} to true
+on press key P:
+    set {unquoted_p_seen} to true
+on key press Q:
+    set {unquoted_q_seen} to true
 on key press "A":
     set {a_seen} to true
 on key "RETURN" pressed:
@@ -93,7 +99,7 @@ when button "save" is clicked:
 
     const auto program = cx::ScriptParser{}.parseText(source);
     expect(program.diagnostics.empty(), "all canonical event headers and documented aliases should parse without diagnostics");
-    expect(program.handlers.size() == 34, "every event declaration should produce one handler");
+    expect(program.handlers.size() == 37, "every event declaration should produce one handler");
 
     const auto countType = [&](cx::EventType type) {
         return static_cast<std::size_t>(std::count_if(
@@ -111,7 +117,11 @@ when button "save" is clicked:
 
     expect(countType(cx::EventType::Load) == 6, "all startup aliases should map to the load event");
     expect(countType(cx::EventType::Tick) == 5, "all fixed-step tick aliases should map to tick");
-    expect(countType(cx::EventType::Periodic) == 2, "duration-based schedules should retain the periodic event type");
+    expect(countType(cx::EventType::Periodic) == 3, "duration-based schedules should retain the periodic event type");
+    expect(std::any_of(program.handlers.begin(), program.handlers.end(), [](const cx::EventHandler& handler) {
+        return handler.type == cx::EventType::Periodic && handler.intervalValue == 604800000.0 &&
+               handler.intervalUnit == "ticks";
+    }), "the parser should retain long tick intervals until the effective tick rate is known");
     expect(countType(cx::EventType::FileAttach) == 2, "both file-attachment headers should map to file attach");
 
     expect(hasEvent(cx::EventType::ProjectileHit, "warden"), "projectile-hit selectors should trim and lowercase entity names");
@@ -125,10 +135,12 @@ when button "save" is clicked:
            hasEvent(cx::EventType::TriggerExit, "player", "door"),
            "trigger transition headers should preserve their explicit actor/trigger pair");
 
-    expect(hasEvent(cx::EventType::KeyPress, "SPACE"), "press-key syntax should remain valid");
+    expect(hasEvent(cx::EventType::KeyPress, "SPACE"), "quoted press-key syntax should remain valid");
+    expect(hasEvent(cx::EventType::KeyPress, "P") && hasEvent(cx::EventType::KeyPress, "Q"),
+           "single-token key names should remain valid without quotes in both supported word orders");
     expect(hasEvent(cx::EventType::KeyPress, "A"), "key-press word order should remain valid");
     expect(hasEvent(cx::EventType::KeyPress, "ENTER"), "RETURN should canonicalize to ENTER");
-    expect(countType(cx::EventType::KeyPress) == 7, "all documented special escape forms should map to key press");
+    expect(countType(cx::EventType::KeyPress) == 9, "all documented key forms should map to key press");
     expect(hasEvent(cx::EventType::KeyPress, "ESCAPE"), "ESC and the escape aliases should canonicalize consistently");
 
     expect(hasEvent(cx::EventType::ButtonClick, "resume"), "click-button syntax should remain valid");
